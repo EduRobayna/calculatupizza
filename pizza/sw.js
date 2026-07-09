@@ -1,6 +1,6 @@
 // v3: el usuario decide cuándo actualizar (banner "Actualizar") en vez de recarga forzada.
 // Sigue usando estrategia "red primero" para que el contenido esté siempre al día.
-const CACHE_NAME = 'pizza-calc-v4';
+const CACHE_NAME = 'pizza-calc-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -44,13 +44,24 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  // Solo cacheamos GET sobre http/https. Peticiones POST o esquemas como
+  // chrome-extension:// hacen que cache.put() lance una excepción.
+  const cacheable = req.method === 'GET' && req.url.startsWith('http');
+
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((networkResponse) => {
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        if (cacheable && networkResponse && networkResponse.ok) {
+          const responseClone = networkResponse.clone();
+          // El put se aísla: si falla (respuesta opaca, cuota, etc.) no debe
+          // romper la respuesta al navegador ni generar un rechazo sin capturar.
+          caches.open(CACHE_NAME)
+            .then((cache) => cache.put(req, responseClone))
+            .catch(() => {});
+        }
         return networkResponse;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req))
   );
 });

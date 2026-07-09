@@ -117,6 +117,16 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   function fmtInt(n) { return Math.round(n).toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES'); }
   function fmt2(n) { return n.toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+  // Reparte la masa total exactamente entre sus cuatro componentes.
+  // masa = harina·(1 + h) + sal + levadura, con sal = agua·(sal/1000) = harina·h·(sal/1000)
+  // y levadura = harina·(lev/1000). Despejando la harina:
+  //   harina = masa / (1 + h + h·sal/1000 + lev/1000)
+  // Antes se dividía solo por (1 + h), lo que dejaba cada bola ~1,6% pasada de peso.
+  function harinaDesdeMasa(masaTotal, h, salPorKgAgua, levPorKgHarina) {
+    const divisor = 1 + h + h * (salPorKgAgua / 1000) + (levPorKgHarina / 1000);
+    return masaTotal / divisor;
+  }
+
   function renderFlours() {
     el.flourRowsContainer.innerHTML = '';
 
@@ -290,7 +300,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     const pesoTotalMasa = numPaneteos * pesoPaneto;
     const levaduraPorKgHarina = TABLA_LEVADURA[temp] || 1.0;
     const h = hidratacionPct / 100;
-    const harinaTotal = pesoTotalMasa / (1 + h);
+    const harinaTotal = harinaDesdeMasa(pesoTotalMasa, h, salPorKgAgua, levaduraPorKgHarina);
     const aguaTotal = harinaTotal * h;
     const salTotal = aguaTotal * (salPorKgAgua / 1000);
     const levaduraTotal = harinaTotal * (levaduraPorKgHarina / 1000);
@@ -482,7 +492,9 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   document.getElementById('btnCopiarReceta').addEventListener('click', function() {
     const masaT = parseFloat(el.numPaneteos.value) * parseFloat(el.pesoPaneto.value);
     const hyd = parseFloat(el.hidratacion.value) / 100;
-    const harinaT = masaT / (1 + hyd);
+    const salT = parseFloat(el.sal.value) || 0;
+    const levT = TABLA_LEVADURA[parseInt(el.temperatura.value, 10)] || 1.0;
+    const harinaT = harinaDesdeMasa(masaT, hyd, salT, levT);
 
     const text = `${I18N.t('recipeHeader')}
 ${I18N.t('recipePizzas')}: ${el.numPaneteos.value} ${I18N.t('recipeOf')} ${el.pesoPaneto.value}g
@@ -498,17 +510,46 @@ ${I18N.t('recipeTotals')}
 ${I18N.t('recipeFlourMix')}
 ${flours.map(f => `- ${flourName(f.catalogId)}: ${Math.round(harinaT * (f.pct/100))}g (${f.pct}%)`).join('\n')}`;
 
-    navigator.clipboard.writeText(text).then(() => {
-      const originalHtml = this.innerHTML;
-      this.innerHTML = I18N.t('copiado');
-      this.style.background = 'var(--basilico)';
-      this.style.color = 'white';
+    const btn = this;
+    const showCopied = () => {
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = I18N.t('copiado');
+      btn.style.background = 'var(--basilico)';
+      btn.style.color = 'white';
       setTimeout(() => {
-        this.innerHTML = originalHtml;
-        this.style.background = 'rgba(255,255,255,0.06)';
-        this.style.color = 'var(--farina)';
+        btn.innerHTML = originalHtml;
+        btn.style.background = 'rgba(255,255,255,0.06)';
+        btn.style.color = 'var(--farina)';
       }, 2500);
-    });
+    };
+
+    // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.
+    function fallbackCopy(str) {
+      const ta = document.createElement('textarea');
+      ta.value = str;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed; top:-9999px; left:-9999px;';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(showCopied)
+        .catch(() => {
+          if (fallbackCopy(text)) showCopied();
+          else showToast(I18N.t('copyError'));
+        });
+    } else if (fallbackCopy(text)) {
+      showCopied();
+    } else {
+      showToast(I18N.t('copyError'));
+    }
   });
 
 })();
