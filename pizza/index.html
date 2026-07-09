@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Masa de Pizza Napolitana · Edu Robayna</title>
+
+<!-- Aplica el tema guardado antes de pintar, para evitar parpadeos -->
+<script>
+  (function(){
+    try{
+      const saved = localStorage.getItem('pizza-calc-theme');
+      const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const tema = saved || (prefiereOscuro ? 'dark' : 'light');
+      if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    } catch(e){}
+  })();
+</script>
+
+<!-- Meta Etiquetas SEO y Open Graph -->
+<meta name="description" content="Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.">
+<meta property="og:title" content="Calculadora de Masa de Pizza · Edu Robayna">
+<meta property="og:description" content="Calculadora para hacer la auténtica masa de pizza napolitana en casa. Calcula levadura, hidratación y harinas al instante.">
+<meta property="og:image" content="https://calculatupizza.com/logo.png">
+<meta property="og:url" content="https://calculatupizza.com/">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://calculatupizza.com/">
+<link rel="icon" type="image/png" href="logo.png">
+
+<!-- Forzar actualización de Caché en el navegador -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c1432e">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+  :root{
+    --forno:#241a15; --forno-2:#332419; --farina:#f3ead9; --farina-2:#e8dcc4;
+    --pomodoro:#c1432e; --pomodoro-dark:#9c3423; --basilico:#5c7d4f;
+    --ink:#2a2018; --ink-soft:#6b5d4f; --line: rgba(42,32,24,0.14);
+    --card-shadow: 0 20px 50px -20px rgba(36,26,21,0.35);
+    --radius: 18px;
+    --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --color-h1: #4f46e5; --color-h2: #16a34a; --color-h3: #d97706; --color-h4: #9333ea; --color-h5: #db2777;
+
+    /* Variables de superficie/texto: se invierten en modo oscuro */
+    --page-bg: var(--farina);
+    --surface: #fffdf8;
+    --surface-2: #fffefb;
+    --surface-3: var(--farina-2);
+    --text: var(--ink);
+    --text-soft: var(--ink-soft);
+    --border: var(--line);
+    --tint-a: rgba(42,32,24,0.03);
+    --tint-b: rgba(42,32,24,0.08);
+    --tint-c: rgba(42,32,24,0.12);
+    --chip-ink: var(--forno);
+    --heading: var(--forno);
+  }
+
+  html[data-theme="dark"]{
+    --page-bg: #17120e;
+    --surface: #221b15;
+    --surface-2: #2a2118;
+    --surface-3: #362b20;
+    --text: #f3ead9;
+    --text-soft: #b3a48d;
+    --border: rgba(243,234,217,0.14);
+    --tint-a: rgba(243,234,217,0.04);
+    --tint-b: rgba(243,234,217,0.09);
+    --tint-c: rgba(243,234,217,0.14);
+    --chip-ink: var(--farina);
+    --card-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+    --heading: var(--farina);
+  }
+
+  @font-face{ font-family:'Fraunces'; src: local('Georgia'); }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+
+  /* Evita que un tap rápido o mantenido seleccione texto y saque el menú copiar/pegar,
+     en botones, labels y demás elementos puramente de interfaz. Los inputs sí se pueden seleccionar. */
+  button, .icon-btn, .btn-icon, .stepper-btn, .btn-outline, .btn-secondary, .add-flour-btn,
+  .rebalance-btn, label, .section-title, .flour-index, .w-badge, .unit-tag, .temp-readout,
+  .results-title, .results-badge, .headline-label, .stat-label, a.social-link, .theme-toggle{
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+  input, select, textarea{
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+  }
+  body{
+    background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(193,67,46,0.14), transparent 60%),
+                radial-gradient(ellipse 700px 600px at 100% 0%, rgba(92,125,79,0.10), transparent 55%),
+                var(--page-bg);
+    color: var(--text); font-family: var(--font-body); line-height: 1.5;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 28px 20px 40px; }
+  
+  header.hero{ display:flex; flex-direction:column; gap:10px; padding: 18px 4px 34px; border-bottom: 1px solid var(--border); margin-bottom: 34px; position: relative; }
+  .hero-logo { align-self: center; width: 85px; height: auto; object-fit: contain; margin-bottom: 16px; transition: transform 0.3s ease; filter: drop-shadow(0 4px 6px rgba(36,26,21,0.15)); }
+  .hero-logo:hover { transform: scale(1.05) rotate(-5deg); }
+  
+  h1{ font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 48px); letter-spacing: -0.01em; margin: 0; color: var(--heading); text-align: center; }
+  h1 em{ font-style: italic; color: var(--pomodoro); }
+  .sub{ max-width: 720px; margin: 16px auto 0; color: var(--text-soft); font-size: 15px; line-height: 1.6; text-align: center; }
+  
+  /* Layout y Paneles */
+  .layout{ display:grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
+  .panel{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; transition: background-color 0.25s ease, border-color 0.25s ease; }
+  .section{ padding: 26px 28px; border-bottom: 1px solid var(--border); }
+  .section:last-child{ border-bottom:none; }
+  .section-head{ display:flex; align-items:baseline; gap: 12px; margin-bottom: 18px; }
+  .section-num{ font-family: var(--font-mono); font-size: 12px; color: var(--pomodoro); background: rgba(193,67,46,0.08); border: 1px solid rgba(193,67,46,0.25); border-radius: 999px; padding: 3px 9px; letter-spacing: 0.06em; }
+  .section-num.section-icon{ display:inline-flex; align-items:center; justify-content:center; width: 26px; height: 26px; padding: 0; }
+  .section-title{ font-family: var(--font-display); font-size: 19px; font-weight: 600; color: var(--heading); margin:0; }
+  .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width:520px){ .grid-2{ grid-template-columns: 1fr; } }
+  label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-soft); margin-bottom: 7px; text-transform: uppercase; }
+
+  /* Stepper & Inputs */
+  .stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+  .stepper:focus-within { border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
+  .stepper-btn { background: var(--tint-a); border: none; padding: 0 16px; height: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
+  .stepper-btn:hover { background: var(--tint-b); }
+  .stepper-btn:active { background: var(--tint-c); transform: scale(0.92); }
+  .stepper input[type="number"] { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+  .stepper input[type="number"]:focus { box-shadow: none; outline: none; }
+  
+  select, input[type="number"].plain-input, input[type="text"].plain-input { width:100%; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-2); font-family: var(--font-mono); font-size: 16px; color: var(--text); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+  select{ font-family: var(--font-body); font-weight: 500; cursor: pointer; }
+  select:focus, input[type="number"].plain-input:focus, input[type="text"].plain-input:focus{ outline: none; border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
+  input[type="number"]:disabled{ background: var(--surface-3); color: var(--text); font-weight: 600; cursor: not-allowed; }
+
+  /* Ocultar spinners nativos de los inputs numéricos (Chrome, Safari, Edge, Firefox) */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+  input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
+
+  .stepper-unit-wrap, .unit-field { display: flex; align-items: center; flex: 1; position: relative; }
+  .stepper-unit-wrap input { text-align: left; padding-left: 12px; }
+  .unit-tag { position: absolute; right: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-soft); pointer-events: none; }
+
+  /* Temp slider */
+  .temp-row{ display:flex; align-items:center; gap: 16px; }
+  .temp-readout{ font-family: var(--font-mono); font-size: 28px; font-weight: 600; color: var(--pomodoro-dark); min-width: 78px; text-align:center; background: var(--surface-3); border-radius: 12px; padding: 8px 6px; border: 1.5px solid var(--border); }
+  input[type="range"]{ -webkit-appearance:none; appearance:none; flex:1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--basilico), var(--surface-3) 40%, var(--pomodoro)); cursor: pointer; }
+  input[type="range"]::-webkit-slider-thumb{ -webkit-appearance:none; width: 26px; height:26px; border-radius:50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor:pointer; transition: transform 0.1s; }
+  input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
+  .temp-scale{ display:flex; justify-content:space-between; font-family: var(--font-mono); font-size: 11px; color: var(--text-soft); margin-top: 12px; padding: 0 2px; }
+
+  /* Progress Bar */
+  .progress-container { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; transition: background-color 0.25s ease, border-color 0.25s ease; }
+  .progress-header { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .progress-status { color: var(--pomodoro); }
+  .progress-status.ok { color: var(--basilico); }
+  .progress-bar { height: 32px; background: var(--surface-3); border-radius: 8px; display: flex; overflow: hidden; position: relative; }
+  .progress-segment { height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-family: var(--font-mono); font-size: 12px; font-weight: 700; transition: width 0.3s ease; overflow: hidden; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.2); container-type: inline-size; }
+  .segment-label { display: flex; align-items: center; gap: 4px; }
+  .segment-index, .segment-pct { display: none; }
+  @container (min-width: 28px) { .segment-index { display: block; opacity: 0.85; font-weight: 500; } }
+  @container (min-width: 60px) { .segment-pct { display: block; } }
+
+  /* Flour Rows - Desktop */
+  @media (min-width: 560px) {
+    .flour-header-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 90px 96px; gap: 12px; padding: 8px 0; margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--text-soft); }
+    .flour-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 90px 96px; gap: 12px; align-items: center; margin-bottom: 10px; }
+    .flour-index { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: center; }
+    .flour-select-wrap { position: relative; flex: 1; }
+    .flour-row select { width: 100%; padding: 10px 85px 10px 8px; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
+    .w-badge { position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: var(--surface-3); color: var(--text); font-size: 10px; padding: 3px 6px; border-radius: 4px; font-family: var(--font-mono); pointer-events: none; }
+    .flour-row .unit-field input { width: 100%; padding: 10px 18px 10px 4px; font-size: 16px; text-align: center; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); font-family: var(--font-mono); }
+    .flour-row .unit-field .unit-tag { right: 6px; }
+    .flour-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  }
+
+  /* Flour Rows - Mobile Optimized */
+  @media (max-width: 559px) {
+    .flour-header-row { display: none; }
+    .flour-row { 
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; 
+      background: var(--tint-a); border: 1px solid var(--border); 
+      padding: 14px 12px; border-radius: 12px; margin-bottom: 16px; 
+    }
+    .flour-index { width: 24px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: left; }
+    .flour-select-wrap { position: relative; width: calc(100% - 36px); }
+    .flour-row select { width: 100%; padding: 10px 75px 10px 8px; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
+    .w-badge { position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: var(--surface-3); color: var(--text); font-size: 10px; padding: 3px 6px; border-radius: 4px; font-family: var(--font-mono); pointer-events: none; }
+    .flour-row .unit-field { margin-left: 36px; width: 110px; position: relative; }
+    .flour-row .unit-field input { width: 100%; padding: 10px 18px 10px 4px; font-size: 16px; text-align: center; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); font-family: var(--font-mono); }
+    .flour-row .unit-field .unit-tag { right: 6px; }
+    .flour-actions { flex: 1; display: flex; justify-content: flex-end; gap: 4px; }
+  }
+
+  .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; width: 44px; height: 44px; min-width: 44px; color: var(--text-soft); border-radius: 10px; transition: background 0.08s, color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; }
+  .btn-icon:hover { background: var(--surface-3); color: var(--text); }
+  .btn-icon:active { transform: scale(0.88); }
+  .btn-icon.active-lock { color: var(--chip-ink); background: var(--surface-3); }
+  .btn-icon.delete:hover { color: var(--pomodoro); background: rgba(193,67,46,0.1); }
+
+  .flour-buttons { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+  .btn-outline { flex: 1; background: transparent; border: 1.5px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 14px; font-weight: 600; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.08s, border-color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-outline:hover { border-color: var(--forno); background: var(--tint-a); }
+  .btn-outline:active { transform: scale(0.97); }
+  .btn-secondary { background: var(--surface-3); border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: background 0.08s, transform 0.08s; }
+  .btn-secondary:hover { background: #dfd1b3; }
+  .btn-secondary:active { transform: scale(0.96); }
+
+  .warning-banner{ display:none; margin-top: 14px; background: rgba(193,67,46,0.09); border: 1.5px solid rgba(193,67,46,0.4); color: var(--pomodoro-dark); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; align-items:flex-start; gap: 8px; }
+  .warning-banner.show{ display:flex; }
+
+  /* Results Card */
+  .results{ position: sticky; top: 20px; background: var(--forno); background-image: radial-gradient(ellipse 500px 300px at 100% 0%, rgba(193,67,46,0.25), transparent 60%); border-radius: var(--radius); padding: 30px 26px 26px; color: var(--farina); box-shadow: var(--card-shadow); border: 1px solid rgba(255,255,255,0.06); }
+  @media (max-width:900px){ .results{ position:static; } }
+  .results-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 22px; }
+  .results-title{ font-family: var(--font-display); font-size: 21px; font-weight:600; margin:0; }
+  .results-badge{ font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 4px 10px; color: var(--farina-2); }
+  .headline-stat{ display:flex; align-items:baseline; gap:10px; padding-bottom:18px; margin-bottom:18px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .headline-number{ font-family: var(--font-mono); font-size: 42px; font-weight:700; letter-spacing: -0.02em; }
+  .headline-label{ font-size: 13px; color: rgba(243,234,217,0.65); }
+  .stat-row{ display:flex; justify-content:space-between; align-items:center; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .stat-row:last-of-type{ border-bottom:none; }
+  .stat-label{ font-size: 13.5px; color: rgba(243,234,217,0.72); display:flex; align-items:center; gap:8px; }
+  .swatch{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
+  .stat-value{ font-family: var(--font-mono); font-size: 16px; font-weight:600; }
+  .flour-breakdown{ margin-top: 8px; padding-top: 8px; }
+  .flour-sub{ display:flex; justify-content:space-between; padding: 8px 0 8px 17px; font-size: 13px; color: rgba(243,234,217,0.6); border-bottom: 1px dashed rgba(255,255,255,0.08); align-items: center; }
+  .flour-sub .fname{ color: rgba(243,234,217,0.85); display: flex; align-items: center; gap: 8px; }
+  .flour-sub:last-child{ border-bottom:none; }
+  .flour-sub .fval{ font-family: var(--font-mono); color: var(--farina); font-weight:600; }
+  .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
+  .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
+  
+  /* Footer & Socials */
+  footer.note{ text-align:center; font-size: 12.5px; color: var(--text-soft); margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--tint-a); }
+  footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02em; opacity: 0.55; }
+  .social-block { display: flex; flex-direction: column; align-items: center; gap: 16px; padding-bottom: 20px; }
+  .social-block span { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-soft); font-weight: bold; }
+  .social-links { display: flex; gap: 16px; }
+  .social-link { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; color: var(--text-soft); transition: background 0.1s, border-color 0.1s, transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 12px rgba(36,26,21,0.05); }
+  .social-link:hover { color: white; background: var(--pomodoro); border-color: var(--pomodoro); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(193,67,46,0.25); }
+  .social-link:active { transform: scale(0.9); }
+  .social-link svg { width: 20px; height: 20px; fill: currentColor; }
+  #btnCopiarReceta:hover{ background: rgba(255,255,255,0.12) !important; border-color: rgba(255,255,255,0.4) !important; }
+
+  /* Botón de modo oscuro/claro */
+  .theme-toggle{
+    position: absolute;
+    top: 18px;
+    right: 4px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.08s, border-color 0.08s, transform 0.08s;
+    box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+  }
+  .theme-toggle:hover{ border-color: var(--pomodoro); }
+  .theme-toggle:active{ transform: scale(0.9); }
+  .theme-toggle .icon-moon{ display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-sun{ display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
+
+  /* Recetas guardadas */
+  .saved-recipes-row{ display:flex; gap: 8px; align-items:center; }
+  .saved-recipes-row select{ flex:1; min-width: 0; }
+  .icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
+  .icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
+  .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
+  .icon-btn-square:disabled{ opacity: 0.4; cursor: not-allowed; }
+  .icon-btn-square.delete:hover:not(:disabled){ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+
+  /* Modal guardar receta */
+  .modal-overlay{ position:fixed; inset:0; background: rgba(23,18,14,0.55); z-index: 10000; display:flex; align-items:center; justify-content:center; padding: 20px; }
+  .modal-card{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5); }
+  .modal-title{ font-family: var(--font-display); font-size: 19px; font-weight:600; color: var(--heading); margin: 0 0 6px; }
+  .modal-sub{ font-size: 13.5px; color: var(--text-soft); margin: 0 0 14px; }
+  .modal-actions{ display:flex; gap: 10px; margin-top: 16px; }
+  .modal-actions .btn-outline, .modal-actions .modal-confirm{ flex:1; margin-top:0; }
+
+  /* Botón de idioma ES/EN */
+  .lang-toggle{
+    position: absolute;
+    top: 18px;
+    right: 58px;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.03em;
+    transition: background 0.08s, border-color 0.08s, transform 0.08s;
+    box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+  }
+  .lang-toggle:hover{ border-color: var(--pomodoro); }
+  .lang-toggle:active{ transform: scale(0.94); }
+  .lang-toggle .lang-opt{ opacity: 0.4; }
+  .lang-toggle .lang-opt.active{ opacity: 1; color: var(--pomodoro); }
+  .lang-toggle .lang-sep{ opacity: 0.3; }
+  @media (max-width: 420px){
+    .lang-toggle{ right: 56px; padding: 0 10px; font-size: 11.5px; }
+    .theme-toggle{ right: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <button type="button" id="langToggle" class="lang-toggle" aria-label="Cambiar idioma" title="Cambiar idioma">
+      <span class="lang-opt" data-lang-opt="es">ES</span><span class="lang-sep">/</span><span class="lang-opt" data-lang-opt="en">EN</span>
+    </button>
+    <button type="button" id="themeToggle" class="theme-toggle" aria-label="Cambiar a modo oscuro" title="Cambiar tema">
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+    <img src="logo.png" alt="Logo de Edu Robayna" class="hero-logo" data-i18n-alt="heroLogoAlt">
+    <h1 data-i18n-html="h1">Calculadora de <em>masa</em> de pizza napolitana</h1>
+    <p class="sub" data-i18n="sub">Para hacer la auténtica pizza napolitana solo necesitas cuatro ingredientes: harina, agua, sal y levadura. El objetivo de esta calculadora es ahorrarte trabajo y ayudarte si te estás iniciando. Ajusta las cantidades y parámetros según tu preferencia. Por defecto está puesta la receta que yo utilizo habitualmente para 22-24 horas de fermentación a temperatura ambiente. La cantidad de levadura depende de la temperatura que tengas en casa o lugar de amasado.</p>
+  </header>
+
+  <div class="layout">
+
+    <div class="panel">
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num section-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 16.5 12 21l10-4.5L12 3 2 16.5Z"></path>
+              <path d="M6.8 14.2A9 9 0 0 1 12 12.2a9 9 0 0 1 5.2 2"></path>
+              <path d="M11 16h.01"></path>
+              <path d="M14.5 15h.01"></path>
+            </svg>
+          </span>
+          <h2 class="section-title" data-i18n="myRecipesTitle">Mis recetas</h2>
+        </div>
+
+        <div class="saved-recipes-row">
+          <select id="savedRecipesSelect" class="plain-input" data-i18n-aria="savedRecipesSelectAria">
+            <option value="" data-i18n="savedRecipesEmpty">No tienes recetas guardadas</option>
+          </select>
+          <button type="button" id="loadRecipeBtn" class="icon-btn-square" data-i18n-title="loadBtn" data-i18n-aria="loadBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+          </button>
+          <button type="button" id="deleteRecipeBtn" class="icon-btn-square delete" data-i18n-title="deleteBtn" data-i18n-aria="deleteBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
+
+        <button type="button" id="saveRecipeBtn" class="btn-outline" style="width:100%; margin-top:12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span data-i18n="saveRecipeBtn">Guardar receta actual</span>
+        </button>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">01</span>
+          <h2 class="section-title" data-i18n="section1Title">Tamaño de la tanda</h2>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="numPaneteos" data-i18n="numPizzasLabel">Número de pizzas</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('numPaneteos', -1, 1)" aria-label="Restar una pizza" data-i18n-aria="restarPizza">−</button>
+              <input type="number" id="numPaneteos" value="6" min="1" inputmode="numeric" aria-label="Número de pizzas" data-i18n-aria="numPizzasLabel">
+              <button type="button" class="stepper-btn" onclick="stepValue('numPaneteos', 1, 1)" aria-label="Añadir una pizza" data-i18n-aria="sumarPizza">+</button>
+            </div>
+          </div>
+          <div>
+            <label for="pesoPaneto" data-i18n="pesoPizzaLabel">Peso por pizza</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('pesoPaneto', -10, 10)" aria-label="Restar 10 gramos" data-i18n-aria="restar10g">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="number" id="pesoPaneto" value="280" min="100" inputmode="numeric" aria-label="Peso por pizza en gramos" data-i18n-aria="pesoPizzaAria">
+                <span class="unit-tag">g</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('pesoPaneto', 10, 10)" aria-label="Añadir 10 gramos" data-i18n-aria="sumar10g">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <h2 class="section-title" data-i18n="section2Title">Entorno</h2>
+        </div>
+        <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
+        <div class="temp-row">
+          <input type="range" id="temperatura" min="17" max="25" step="1" value="18" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
+          <div class="temp-readout"><span id="tempValue">18</span>°C</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <h2 class="section-title" data-i18n="section3Title">Parámetros de la masa</h2>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="hidratacion" data-i18n="hidratacionLabel">Hidratación</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', -0.5, 30, 100)" aria-label="Restar 0,5% de hidratación" data-i18n-aria="restarHidra">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="number" id="hidratacion" value="63" min="30" max="100" step="0.5" inputmode="decimal" aria-label="Hidratación en porcentaje" data-i18n-aria="hidratacionAria">
+                <span class="unit-tag">%</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', 0.5, 30, 100)" aria-label="Añadir 0,5% de hidratación" data-i18n-aria="sumarHidra">+</button>
+            </div>
+          </div>
+          <div>
+            <label for="sal" data-i18n="salLabel">Sal</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('sal', -1, 0, 100)" aria-label="Restar 1 gramo de sal por kilo de agua" data-i18n-aria="restarSal">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="number" id="sal" value="40" min="0" max="100" step="1" inputmode="decimal" aria-label="Sal en gramos por litro de agua" data-i18n-aria="salAria">
+                <span class="unit-tag" style="right: 12px;" data-i18n="salUnit">g/l agua</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('sal', 1, 0, 100)" aria-label="Añadir 1 gramo de sal por kilo de agua" data-i18n-aria="sumarSal">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">04</span>
+          <h2 class="section-title" data-i18n="section4Title">Mezcla de harinas</h2>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-header">
+            <span data-i18n="totalMezcla">TOTAL MEZCLA:</span>
+            <span id="progressStatus" class="progress-status ok" data-i18n="equilibrado">100% (EQUILIBRADO)</span>
+          </div>
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="flour-header-row">
+          <span>#</span>
+          <span data-i18n="flourHeaderTipo">TIPO DE HARINA</span>
+          <span style="text-align:center;">%</span>
+          <span style="text-align:right;" data-i18n="flourHeaderAccion">ACCIÓN</span>
+        </div>
+
+        <div id="flourRowsContainer"></div>
+
+        <div class="flour-buttons">
+          <button type="button" id="addFlourBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span data-i18n="addFlourBtn">Añadir otra harina</span>
+          </button>
+          <button type="button" id="autoBalanceBtn" class="btn-secondary" data-i18n="autoBalanceBtn">Auto-balancear</button>
+        </div>
+        
+        <button type="button" id="resetBtn" class="btn-outline" style="width: 100%; margin-top: 12px; color: var(--pomodoro); border-color: rgba(193,67,46,0.3);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          <span data-i18n="resetBtn">Restablecer receta original</span>
+        </button>
+
+        <div class="warning-banner" id="warningBanner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L15 14H1L8 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6V9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.3" r="0.9" fill="currentColor"/></svg>
+          <span data-i18n="warningText">La suma de los porcentajes de harina debe ser exactamente 100%.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="results">
+      <div class="results-head">
+        <h3 class="results-title" data-i18n="resultsTitle">Resultado</h3>
+        <span class="results-badge" id="resultsBadge" data-i18n="resultsBadgeReady">Listo</span>
+      </div>
+
+      <div id="resultsBody">
+        <div class="headline-stat">
+          <span class="headline-number" id="totalMasa">0</span>
+          <span class="headline-label" data-i18n="headlineLabel">g de masa total</span>
+        </div>
+
+        <div class="stat-row">
+          <span class="stat-label"><span class="swatch" style="background:#e8dcc4"></span><span data-i18n="statHarinaTotal">Harina total</span></span>
+          <span class="stat-value" id="totalHarina">0 g</span>
+        </div>
+
+        <div class="flour-breakdown" id="flourBreakdown"></div>
+
+        <div class="stat-row">
+          <span class="stat-label"><span class="swatch" style="background:#7fb0d9"></span><span data-i18n="statAgua">Agua</span></span>
+          <span class="stat-value" id="totalAgua">0 g</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label"><span class="swatch" style="background:#c1c1c1"></span><span data-i18n="statSal">Sal</span></span>
+          <span class="stat-value" id="totalSal">0 g</span>
+        </div>
+        
+        <div class="stat-row" style="border-bottom: none; padding-bottom: 4px;">
+          <span class="stat-label"><span class="swatch" style="background:#c1432e"></span><span data-i18n="statLevaduraFresca">Levadura fresca</span></span>
+          <span class="stat-value" id="totalLevadura">0 g</span>
+        </div>
+        <div class="stat-row" style="padding-top: 4px;">
+          <span class="stat-label"><span class="swatch" style="background:#c1432e"></span><span data-i18n="statLevaduraSeca">Levadura seca</span></span>
+          <span class="stat-value" id="totalLevaduraSeca">0 g</span>
+        </div>
+      </div>
+
+      <div class="disabled-overlay" id="disabledOverlay" style="display:none;">
+        <strong data-i18n="disabledTitle">Cálculo deshabilitado</strong>
+        <span data-i18n="disabledText">Corrige el porcentaje de harinas para ver el desglose.</span>
+      </div>
+      
+      <!-- Botón de Copiar Receta -->
+      <button type="button" id="btnCopiarReceta" class="btn-outline" style="width: 100%; margin-top: 16px; transition: background 0.2s, color 0.2s; color: var(--farina); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span data-i18n="copiarReceta">Copiar receta</span>
+      </button>
+
+      <div id="iosInstallBanner" style="display:none; margin-top:20px; padding:15px; background:rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius:10px; font-size:13.5px; color: var(--farina); line-height: 1.4;">
+        <strong style="display:block; margin-bottom:8px; color: white;" data-i18n="iosInstallTitle">Instalar en iPhone / iPad</strong>
+        <span data-i18n="iosInstallStep1">Para instalar la app, abre esta web en</span> <strong>Safari</strong>, <span data-i18n="iosInstallStep2">pulsa el botón Compartir</span> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> <span data-i18n="iosInstallStep3">en el menú inferior y selecciona</span> <strong data-i18n="iosInstallStep4">"Añadir a la pantalla de inicio"</strong> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>.
+      </div>
+
+      <button id="btnInstalar" style="display:none; width:100%; margin-top:20px; padding:15px; background:var(--pomodoro); color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; transition: background 0.15s;" data-i18n="instalarBtn">
+        Instalar Calculadora
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="panel" style="margin-top: 20px;">
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">💡</span>
+        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
+      </div>
+      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos formados.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2">Si sigues mi receta, la fermentación se hace a <b>temperatura ambiente</b>. Si lo prefieres, puedes meter la masa en bloque en la nevera (4 °C) o vinoteca (15-18 °C).</li>
+        <li style="margin-bottom: 10px;"><b data-i18n="fermentLi3Head">Tiempos orientativos:</b>
+          <ul style="margin-top: 5px;">
+            <li data-i18n="fermentLi3a">En bloque: 14-18 h (invierno/nevera: 14 h | verano: 18 h).</li>
+            <li data-i18n="fermentLi3b">En bollos: 6-10 h (invierno/nevera: 10 h | verano: 6 h).</li>
+          </ul>
+        </li>
+        <li style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+          <span data-i18n-html="fermentLi4"><b>¿Tienes prisa?</b> Si necesitas acortar el tiempo de fermentación (aunque no lo recomiendo, merece la pena esperar), aumenta la levadura multiplicando el resultado de la calculadora según las horas:</span>
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px;">
+              <span>8-10 h</span>
+              <span style="font-family: var(--font-mono); font-weight:700; font-size: 14px; color: var(--pomodoro);">x3</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px;">
+              <span>6 h</span>
+              <span style="font-family: var(--font-mono); font-weight:700; font-size: 14px; color: var(--pomodoro);">x5</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px;">
+              <span>4 h</span>
+              <span style="font-family: var(--font-mono); font-weight:700; font-size: 14px; color: var(--pomodoro);">x8</span>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="saveRecipeModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <h3 class="modal-title" data-i18n="saveModalTitle">Guardar receta</h3>
+      <p class="modal-sub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
+      <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
+      <div class="modal-actions">
+        <button type="button" id="saveRecipeCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
+        <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="update-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--forno); color:var(--farina); padding:16px 20px; border-radius:14px; z-index:9999; box-shadow:0 12px 30px -8px rgba(36,26,21,0.5); border:1px solid rgba(255,255,255,0.12); font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:13.5px; text-align:center; width:calc(100% - 40px); max-width:340px;">
+    <span data-i18n="updateBannerText">Hay una nueva versión de la calculadora disponible.</span>
+    <button id="update-btn" style="margin-top:10px; padding:9px 16px; background:var(--pomodoro); color:white; border:none; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; width:100%;" data-i18n="updateBtn">
+      Actualizar ahora
+    </button>
+  </div>
+
+  <footer class="note">
+    <div class="social-block">
+      <span data-i18n="footerCredit">CALCULADORA CREADA POR EDU ROBAYNA</span>
+      <div class="social-links">
+        <a href="https://x.com/EduRobayna" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter">
+          <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://www.instagram.com/edurobayna/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@edu.pizza" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="TikTok">
+          <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="credits" data-i18n="logoCredit">Logo: Mónica Pozo</div>
+  </footer>
+</div>
+
+<script>
+window.stepValue = function(id, delta, minVal, maxVal) {
+  const input = document.getElementById(id);
+  let val = parseFloat(input.value) || 0;
+  val += delta;
+  val = Math.round(val * 10) / 10;
+  if(minVal !== undefined && val < minVal) val = minVal;
+  if(maxVal !== undefined && val > maxVal) val = maxVal;
+  input.value = val;
+  input.dispatchEvent(new Event('input')); 
+};
+
+// ==================== SISTEMA DE IDIOMA (ES / EN) ====================
+window.PizzaI18N = (function(){
+  const DICT = {
+    es: {
+      title: "Calculadora de Masa de Pizza Napolitana · Edu Robayna",
+      metaDescription: "Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.",
+      heroLogoAlt: "Logo de Edu Robayna",
+      h1: 'Calculadora de <em>masa</em> de pizza napolitana',
+      sub: "Para hacer la auténtica pizza napolitana solo necesitas cuatro ingredientes: harina, agua, sal y levadura. El objetivo de esta calculadora es ahorrarte trabajo y ayudarte si te estás iniciando. Ajusta las cantidades y parámetros según tu preferencia. Por defecto está puesta la receta que yo utilizo habitualmente para 22-24 horas de fermentación a temperatura ambiente. La cantidad de levadura depende de la temperatura que tengas en casa o lugar de amasado.",
+      section1Title: "Tamaño de la tanda",
+      numPizzasLabel: "Número de pizzas",
+      restarPizza: "Restar una pizza",
+      sumarPizza: "Añadir una pizza",
+      pesoPizzaLabel: "Peso por pizza",
+      restar10g: "Restar 10 gramos",
+      sumar10g: "Añadir 10 gramos",
+      pesoPizzaAria: "Peso por pizza en gramos",
+      section2Title: "Entorno",
+      temperaturaLabel: "Temperatura ambiente",
+      temperaturaAria: "Temperatura ambiente en grados centígrados",
+      section3Title: "Parámetros de la masa",
+      hidratacionLabel: "Hidratación",
+      restarHidra: "Restar 0,5% de hidratación",
+      sumarHidra: "Añadir 0,5% de hidratación",
+      hidratacionAria: "Hidratación en porcentaje",
+      salLabel: "Sal",
+      restarSal: "Restar 1 gramo de sal por kilo de agua",
+      sumarSal: "Añadir 1 gramo de sal por kilo de agua",
+      salAria: "Sal en gramos por litro de agua",
+      salUnit: "g/l agua",
+      section4Title: "Mezcla de harinas",
+      totalMezcla: "TOTAL MEZCLA:",
+      equilibrado: "100% (EQUILIBRADO)",
+      tePasas: "TE PASAS",
+      falta: "FALTA",
+      flourHeaderTipo: "TIPO DE HARINA",
+      flourHeaderAccion: "ACCIÓN",
+      addFlourBtn: "Añadir otra harina",
+      autoBalanceBtn: "Auto-balancear",
+      resetBtn: "Restablecer receta original",
+      warningText: "La suma de los porcentajes de harina debe ser exactamente 100%.",
+      resultsTitle: "Resultado",
+      resultsBadgeReady: "Listo",
+      resultsBadgeBlocked: "Bloqueado",
+      headlineLabel: "g de masa total",
+      statHarinaTotal: "Harina total",
+      statAgua: "Agua",
+      statSal: "Sal",
+      statLevaduraFresca: "Levadura fresca",
+      statLevaduraSeca: "Levadura seca",
+      disabledTitle: "Cálculo deshabilitado",
+      disabledText: "Corrige el porcentaje de harinas para ver el desglose.",
+      copiarReceta: "Copiar receta",
+      copiado: "¡Copiada al portapapeles! ✅",
+      iosInstallTitle: "Instalar en iPhone / iPad",
+      iosInstallStep1: "Para instalar la app, abre esta web en",
+      iosInstallStep2: "pulsa el botón Compartir",
+      iosInstallStep3: "en el menú inferior y selecciona",
+      iosInstallStep4: '"Añadir a la pantalla de inicio"',
+      instalarBtn: "Instalar Calculadora",
+      fermentTitle: "Consejos sobre la fermentación",
+      fermentLi1: "Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos formados.",
+      fermentLi2: "Si sigues mi receta, la fermentación se hace a <b>temperatura ambiente</b>. Si lo prefieres, puedes meter la masa en bloque en la nevera (4 °C) o vinoteca (15-18 °C).",
+      fermentLi3Head: "Tiempos orientativos:",
+      fermentLi3a: "En bloque: 14-18 h (invierno/nevera: 14 h | verano: 18 h).",
+      fermentLi3b: "En bollos: 6-10 h (invierno/nevera: 10 h | verano: 6 h).",
+      fermentLi4: "<b>¿Tienes prisa?</b> Si necesitas acortar el tiempo de fermentación (aunque no lo recomiendo, merece la pena esperar), aumenta la levadura multiplicando el resultado de la calculadora según las horas:",
+      updateBannerText: "Hay una nueva versión de la calculadora disponible.",
+      updateBtn: "Actualizar ahora",
+      updateBtnUpdating: "Actualizando…",
+      footerCredit: "CALCULADORA CREADA POR EDU ROBAYNA",
+      logoCredit: "Logo: Mónica Pozo",
+      themeToggleToDark: "Cambiar a modo oscuro",
+      themeToggleToLight: "Cambiar a modo claro",
+      recipeHeader: "🍕 RECETA MASA NAPOLITANA (Edu Robayna)",
+      recipePizzas: "Pizzas",
+      recipeOf: "de",
+      recipeHydration: "Hidratación",
+      recipeSalt: "Sal",
+      recipeTotals: "TOTALES:",
+      recipeTotalFlour: "Harina Total",
+      recipeWater: "Agua",
+      recipeSalt2: "Sal",
+      recipeFreshYeast: "Levadura fresca",
+      recipeDryYeast: "o Seca",
+      recipeFlourMix: "MEZCLA DE HARINAS:",
+      myRecipesTitle: "Mis recetas",
+      savedRecipesEmpty: "No tienes recetas guardadas",
+      savedRecipesSelectAria: "Recetas guardadas",
+      loadBtn: "Cargar receta seleccionada",
+      deleteBtn: "Eliminar receta seleccionada",
+      saveRecipeBtn: "Guardar receta actual",
+      saveModalTitle: "Guardar receta",
+      saveModalSub: "Ponle un nombre para encontrarla luego.",
+      saveModalPlaceholder: "Nombre de la receta",
+      modalCancel: "Cancelar",
+      modalSave: "Guardar",
+      recipeSavedToast: "Receta guardada ✅",
+      recipeLoadedToast: "Receta cargada ✅",
+      recipeDeletedToast: "Receta eliminada",
+      confirmDeleteRecipe: "¿Eliminar esta receta guardada? No se puede deshacer.",
+      emptyNameAlert: "Ponle un nombre a la receta antes de guardar."
+    },
+    en: {
+      title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
+      metaDescription: "Precise calculator for Neapolitan pizza dough (24h). Adjust hydration, salt and your own flour blend.",
+      heroLogoAlt: "Edu Robayna logo",
+      h1: 'Neapolitan pizza <em>dough</em> calculator',
+      sub: "To make authentic Neapolitan pizza you only need four ingredients: flour, water, salt and yeast. This calculator aims to save you work and help you if you're just starting out. Adjust the amounts and parameters to your liking. By default it's set to the recipe I usually use for 22-24 hours of fermentation at room temperature. The amount of yeast depends on the temperature in your home or kneading space.",
+      section1Title: "Batch size",
+      numPizzasLabel: "Number of pizzas",
+      restarPizza: "Subtract one pizza",
+      sumarPizza: "Add one pizza",
+      pesoPizzaLabel: "Weight per pizza",
+      restar10g: "Subtract 10 grams",
+      sumar10g: "Add 10 grams",
+      pesoPizzaAria: "Weight per pizza in grams",
+      section2Title: "Environment",
+      temperaturaLabel: "Room temperature",
+      temperaturaAria: "Room temperature in degrees Celsius",
+      section3Title: "Dough parameters",
+      hidratacionLabel: "Hydration",
+      restarHidra: "Subtract 0.5% hydration",
+      sumarHidra: "Add 0.5% hydration",
+      hidratacionAria: "Hydration percentage",
+      salLabel: "Salt",
+      restarSal: "Subtract 1 gram of salt per kilo of water",
+      sumarSal: "Add 1 gram of salt per kilo of water",
+      salAria: "Salt in grams per liter of water",
+      salUnit: "g/l water",
+      section4Title: "Flour blend",
+      totalMezcla: "TOTAL BLEND:",
+      equilibrado: "100% (BALANCED)",
+      tePasas: "TOO MUCH",
+      falta: "MISSING",
+      flourHeaderTipo: "FLOUR TYPE",
+      flourHeaderAccion: "ACTION",
+      addFlourBtn: "Add another flour",
+      autoBalanceBtn: "Auto-balance",
+      resetBtn: "Reset to original recipe",
+      warningText: "The flour percentages must add up to exactly 100%.",
+      resultsTitle: "Result",
+      resultsBadgeReady: "Ready",
+      resultsBadgeBlocked: "Blocked",
+      headlineLabel: "g total dough",
+      statHarinaTotal: "Total flour",
+      statAgua: "Water",
+      statSal: "Salt",
+      statLevaduraFresca: "Fresh yeast",
+      statLevaduraSeca: "Dry yeast",
+      disabledTitle: "Calculation disabled",
+      disabledText: "Fix the flour percentages to see the breakdown.",
+      copiarReceta: "Copy recipe",
+      copiado: "Copied to clipboard! ✅",
+      iosInstallTitle: "Install on iPhone / iPad",
+      iosInstallStep1: "To install the app, open this site in",
+      iosInstallStep2: "tap the Share button",
+      iosInstallStep3: "in the bottom menu and select",
+      iosInstallStep4: '"Add to Home Screen"',
+      instalarBtn: "Install Calculator",
+      fermentTitle: "Fermentation tips",
+      fermentLi1: "Do a <b>double fermentation</b>: a first one in bulk (all the dough together) and a second one once the dough balls are shaped.",
+      fermentLi2: "If you follow my recipe, fermentation happens at <b>room temperature</b>. If you prefer, you can put the bulk dough in the fridge (4 °C) or a wine cooler (15-18 °C).",
+      fermentLi3Head: "Rough timings:",
+      fermentLi3a: "In bulk: 14-18 h (winter/fridge: 14 h | summer: 18 h).",
+      fermentLi3b: "As dough balls: 6-10 h (winter/fridge: 10 h | summer: 6 h).",
+      fermentLi4: "<b>In a hurry?</b> If you need to shorten the fermentation time (although I don't recommend it, it's worth the wait), increase the yeast by multiplying the calculator's result according to the hours:",
+      updateBannerText: "A new version of the calculator is available.",
+      updateBtn: "Update now",
+      updateBtnUpdating: "Updating…",
+      footerCredit: "CALCULATOR CREATED BY EDU ROBAYNA",
+      logoCredit: "Logo: Mónica Pozo",
+      themeToggleToDark: "Switch to dark mode",
+      themeToggleToLight: "Switch to light mode",
+      recipeHeader: "🍕 NEAPOLITAN DOUGH RECIPE (Edu Robayna)",
+      recipePizzas: "Pizzas",
+      recipeOf: "of",
+      recipeHydration: "Hydration",
+      recipeSalt: "Salt",
+      recipeTotals: "TOTALS:",
+      recipeTotalFlour: "Total Flour",
+      recipeWater: "Water",
+      recipeSalt2: "Salt",
+      recipeFreshYeast: "Fresh yeast",
+      recipeDryYeast: "or Dry",
+      recipeFlourMix: "FLOUR BLEND:",
+      myRecipesTitle: "My recipes",
+      savedRecipesEmpty: "You have no saved recipes",
+      savedRecipesSelectAria: "Saved recipes",
+      loadBtn: "Load selected recipe",
+      deleteBtn: "Delete selected recipe",
+      saveRecipeBtn: "Save current recipe",
+      saveModalTitle: "Save recipe",
+      saveModalSub: "Give it a name so you can find it later.",
+      saveModalPlaceholder: "Recipe name",
+      modalCancel: "Cancel",
+      modalSave: "Save",
+      recipeSavedToast: "Recipe saved ✅",
+      recipeLoadedToast: "Recipe loaded ✅",
+      recipeDeletedToast: "Recipe deleted",
+      confirmDeleteRecipe: "Delete this saved recipe? This can't be undone.",
+      emptyNameAlert: "Give the recipe a name before saving."
+    }
+  };
+
+  const LANG_KEY = 'pizza-calc-lang';
+  let lang = 'es';
+
+  function detectInitial(){
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved === 'es' || saved === 'en') return saved;
+    } catch(e){}
+    const nav = (navigator.language || 'es').toLowerCase();
+    return nav.startsWith('en') ? 'en' : 'es';
+  }
+
+  function t(key){
+    return (DICT[lang] && DICT[lang][key]) || (DICT.es[key]) || key;
+  }
+
+  function applyStaticDom(){
+    document.documentElement.setAttribute('lang', lang);
+    document.title = t('title');
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', t('metaDescription'));
+
+    document.querySelectorAll('[data-i18n]').forEach(elm => {
+      elm.textContent = t(elm.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(elm => {
+      elm.innerHTML = t(elm.getAttribute('data-i18n-html'));
+    });
+    document.querySelectorAll('[data-i18n-alt]').forEach(elm => {
+      elm.setAttribute('alt', t(elm.getAttribute('data-i18n-alt')));
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(elm => {
+      elm.setAttribute('aria-label', t(elm.getAttribute('data-i18n-aria')));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(elm => {
+      elm.setAttribute('title', t(elm.getAttribute('data-i18n-title')));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(elm => {
+      elm.setAttribute('placeholder', t(elm.getAttribute('data-i18n-placeholder')));
+    });
+
+    document.querySelectorAll('.lang-toggle .lang-opt').forEach(opt => {
+      opt.classList.toggle('active', opt.getAttribute('data-lang-opt') === lang);
+    });
+  }
+
+  function setLang(newLang){
+    lang = (newLang === 'en') ? 'en' : 'es';
+    try { localStorage.setItem(LANG_KEY, lang); } catch(e){}
+    applyStaticDom();
+    window.dispatchEvent(new CustomEvent('pizzaLangChange', { detail: { lang } }));
+  }
+
+  lang = detectInitial();
+
+  return { t, setLang, getLang: () => lang, applyStaticDom };
+})();
+</script>
+
+<script>
+(function(){
+  const I18N = window.PizzaI18N;
+  const TABLA_LEVADURA = { 17:1.3, 18:1.0, 19:0.9, 20:0.7, 21:0.6, 22:0.5, 23:0.4, 24:0.3, 25:0.2 };
+  const COLORES_HARINA = ['var(--color-h1)', 'var(--color-h2)', 'var(--color-h3)', 'var(--color-h4)', 'var(--color-h5)'];
+  const STORAGE_KEY = 'edu_pizza_calc_settings_v16';
+
+  // Catálogo de harinas bilingüe. Cada harina guarda su índice de catálogo (catalogId),
+  // no el nombre, para que el nombre mostrado cambie de idioma sin perder la selección.
+  const FLOUR_CATALOG = [
+    { es: "Caputo Doppio Zero (Tipo 00 - Clásica)", en: "Caputo Doppio Zero (Type 00 - Classic)", w: "W220/240" },
+    { es: "Caputo Pizzería (Tipo 00 - Media fuerza)", en: "Caputo Pizzeria (Type 00 - Medium strength)", w: "W260/270" },
+    { es: "Caputo Nuvola (Tipo 0 - Media/Alta fuerza)", en: "Caputo Nuvola (Type 0 - Medium/High strength)", w: "W260/280" },
+    { es: "Caputo Cuoco (Tipo 00 - Fuerza)", en: "Caputo Cuoco (Type 00 - Strong)", w: "W300/320" },
+    { es: "Caputo Manitoba Oro (Tipo 0 - Gran fuerza)", en: "Caputo Manitoba Oro (Type 0 - Very strong)", w: "W370/390" },
+    { es: "Caputo Tipo 1 (Semi-integral)", en: "Caputo Tipo 1 (Semi-wholemeal)", w: "W250/270" },
+    { es: "Harina de Fuerza (Supermercado)", en: "Bread/Strong Flour (Supermarket)", w: "" },
+    { es: "Harina de Trigo Común (Supermercado)", en: "All-Purpose Wheat Flour (Supermarket)", w: "" }
+  ];
+  function flourName(catalogId){
+    const cat = FLOUR_CATALOG[catalogId] || FLOUR_CATALOG[0];
+    return cat[I18N.getLang()] || cat.es;
+  }
+
+  const el = {
+    numPaneteos: document.getElementById('numPaneteos'),
+    pesoPaneto: document.getElementById('pesoPaneto'),
+    temperatura: document.getElementById('temperatura'),
+    tempValue: document.getElementById('tempValue'),
+    hidratacion: document.getElementById('hidratacion'),
+    sal: document.getElementById('sal'),
+    warningBanner: document.getElementById('warningBanner'),
+    resultsBody: document.getElementById('resultsBody'),
+    disabledOverlay: document.getElementById('disabledOverlay'),
+    resultsBadge: document.getElementById('resultsBadge'),
+    totalMasa: document.getElementById('totalMasa'),
+    totalHarina: document.getElementById('totalHarina'),
+    totalAgua: document.getElementById('totalAgua'),
+    totalSal: document.getElementById('totalSal'),
+    totalLevadura: document.getElementById('totalLevadura'),
+    totalLevaduraSeca: document.getElementById('totalLevaduraSeca'),
+    flourBreakdown: document.getElementById('flourBreakdown'),
+    flourRowsContainer: document.getElementById('flourRowsContainer'),
+    progressBar: document.getElementById('progressBar'),
+    progressStatus: document.getElementById('progressStatus'),
+    addFlourBtn: document.getElementById('addFlourBtn'),
+    autoBalanceBtn: document.getElementById('autoBalanceBtn'),
+    resetBtn: document.getElementById('resetBtn')
+  };
+
+  const defaultSettings = {
+    numPaneteos: 6,
+    pesoPaneto: 280,
+    temperatura: 18,
+    hidratacion: 63,
+    sal: 40,
+    flours: [
+      { id: 1, catalogId: 1, pct: 75, locked: false },
+      { id: 2, catalogId: 4, pct: 15, locked: false },
+      { id: 3, catalogId: 5, pct: 10, locked: false }
+    ]
+  };
+
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("No se pudo cargar la configuración", e);
+    }
+    return defaultSettings;
+  }
+
+  function saveSettings() {
+    const settingsToSave = {
+      numPaneteos: parseFloat(el.numPaneteos.value),
+      pesoPaneto: parseFloat(el.pesoPaneto.value),
+      temperatura: parseInt(el.temperatura.value, 10),
+      hidratacion: parseFloat(el.hidratacion.value),
+      sal: parseFloat(el.sal.value),
+      flours: flours
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
+    } catch (e) {}
+  }
+
+  const initData = loadSettings();
+  el.numPaneteos.value = initData.numPaneteos !== undefined ? initData.numPaneteos : defaultSettings.numPaneteos;
+  el.pesoPaneto.value = initData.pesoPaneto !== undefined ? initData.pesoPaneto : defaultSettings.pesoPaneto;
+  el.temperatura.value = initData.temperatura !== undefined ? initData.temperatura : defaultSettings.temperatura;
+  el.hidratacion.value = initData.hidratacion !== undefined ? initData.hidratacion : defaultSettings.hidratacion;
+  el.sal.value = initData.sal !== undefined ? initData.sal : defaultSettings.sal;
+  
+  let flours = initData.flours || defaultSettings.flours;
+  let maxId = 0;
+  flours.forEach(f => { if(f.id > maxId) maxId = f.id; });
+  let flourIdCounter = maxId + 1;
+  if(flourIdCounter < 1) flourIdCounter = 4;
+
+  function fmtInt(n) { return Math.round(n).toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES'); }
+  function fmt2(n) { return n.toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function renderFlours() {
+    el.flourRowsContainer.innerHTML = '';
+    
+    flours.forEach((flour, index) => {
+      const row = document.createElement('div');
+      row.className = 'flour-row';
+      const color = COLORES_HARINA[index % COLORES_HARINA.length];
+      
+      const optionsHtml = FLOUR_CATALOG.map((cat, catIdx) => 
+        `<option value="${catIdx}" ${catIdx === flour.catalogId ? 'selected' : ''}>${cat[I18N.getLang()] || cat.es}</option>`
+      ).join('');
+
+      const currentCat = FLOUR_CATALOG[flour.catalogId] || {w: ''};
+      const badgeHtml = currentCat.w ? `<span class="w-badge">${currentCat.w}</span>` : '';
+
+      row.innerHTML = `
+        <div class="flour-index" style="color: ${color};">[${index + 1}]</div>
+        <div class="field flour-select-wrap">
+          <select class="flour-type-select" data-id="${flour.id}" aria-label="${flourName(flour.catalogId)} ${index + 1}">${optionsHtml}</select>
+          ${badgeHtml}
+        </div>
+        <div class="field unit-field">
+          <input type="number" class="flour-pct-input plain-input" data-id="${flour.id}" value="${flour.pct}" min="0" max="100" step="0.5" inputmode="decimal" aria-label="%${index + 1}" ${flour.locked ? 'disabled' : ''}>
+          <span class="unit-tag">%</span>
+        </div>
+        <div class="flour-actions">
+          <button type="button" class="btn-icon toggle-lock ${flour.locked ? 'active-lock' : ''}" data-id="${flour.id}">
+            ${flour.locked 
+              ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` 
+              : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
+            }
+          </button>
+          <button type="button" class="btn-icon delete" data-id="${flour.id}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
+      `;
+      el.flourRowsContainer.appendChild(row);
+    });
+
+    attachFlourEvents();
+    calcular();
+  }
+
+  function attachFlourEvents() {
+    document.querySelectorAll('.flour-type-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const id = parseInt(e.target.dataset.id);
+        flours.find(f => f.id === id).catalogId = parseInt(e.target.value);
+        renderFlours(); 
+      });
+    });
+
+    document.querySelectorAll('.flour-pct-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const id = parseInt(e.target.dataset.id);
+        flours.find(f => f.id === id).pct = parseFloat(e.target.value) || 0;
+        calcular();
+      });
+    });
+
+    document.querySelectorAll('.toggle-lock').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(e.currentTarget.dataset.id);
+        const flour = flours.find(f => f.id === id);
+        flour.locked = !flour.locked;
+        renderFlours();
+      });
+    });
+
+    document.querySelectorAll('.btn-icon.delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = parseInt(e.currentTarget.dataset.id);
+        if(flours.length > 1) {
+          flours = flours.filter(f => f.id !== id);
+          renderFlours();
+        }
+      });
+    });
+  }
+
+  el.addFlourBtn.addEventListener('click', () => {
+    flours.push({ id: flourIdCounter++, catalogId: 0, pct: 0, locked: false });
+    renderFlours();
+  });
+
+  el.autoBalanceBtn.addEventListener('click', () => {
+    const lockedSum = flours.filter(f => f.locked).reduce((sum, f) => sum + f.pct, 0);
+    const unlockedFlours = flours.filter(f => !f.locked);
+    
+    if(unlockedFlours.length > 0) {
+      let remaining = Math.max(0, 100 - lockedSum);
+      const lastUnlocked = unlockedFlours[unlockedFlours.length - 1];
+      
+      unlockedFlours.forEach(f => {
+        if(f.id !== lastUnlocked.id) {
+          remaining -= f.pct;
+        }
+      });
+      
+      lastUnlocked.pct = Math.max(0, parseFloat(remaining.toFixed(2)));
+      renderFlours();
+    }
+  });
+
+  el.resetBtn.addEventListener('click', () => {
+    el.temperatura.value = defaultSettings.temperatura;
+    el.hidratacion.value = defaultSettings.hidratacion;
+    el.sal.value = defaultSettings.sal;
+    
+    flours = JSON.parse(JSON.stringify(defaultSettings.flours));
+    
+    let maxId = 0;
+    flours.forEach(f => { if(f.id > maxId) maxId = f.id; });
+    flourIdCounter = maxId + 1;
+
+    renderFlours();
+  });
+
+  function calcular(){
+    const numPaneteos = parseFloat(el.numPaneteos.value) || 0;
+    const pesoPaneto = parseFloat(el.pesoPaneto.value) || 0;
+    const temp = parseInt(el.temperatura.value, 10);
+    const hidratacionPct = parseFloat(el.hidratacion.value) || 0;
+    const salPorKgAgua = parseFloat(el.sal.value) || 0;
+
+    el.tempValue.textContent = temp;
+    saveSettings();
+
+    const sumaPct = flours.reduce((a, b) => a + b.pct, 0);
+    const sumaRedondeada = Math.round(sumaPct * 100) / 100;
+    const esValido = Math.abs(sumaRedondeada - 100) < 0.001;
+
+    el.progressBar.innerHTML = flours.map((f, i) => {
+      if(f.pct <= 0) return '';
+      const color = COLORES_HARINA[i % COLORES_HARINA.length];
+      return `<div class="progress-segment" style="width: ${f.pct}%; background: ${color};" title="${flourName(f.catalogId)} - ${f.pct}%">
+        <div class="segment-label">
+          <span class="segment-index">[${i + 1}]</span>
+          <span class="segment-pct">${f.pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    if (esValido) {
+      el.progressStatus.textContent = I18N.t('equilibrado');
+      el.progressStatus.className = "progress-status ok";
+    } else {
+      let text = sumaRedondeada > 100 ? I18N.t('tePasas') : I18N.t('falta');
+      el.progressStatus.textContent = `${sumaRedondeada}% (${text})`;
+      el.progressStatus.className = "progress-status";
+    }
+
+    el.warningBanner.classList.toggle('show', !esValido);
+
+    if(!esValido){
+      el.resultsBody.style.display = 'none';
+      el.disabledOverlay.style.display = 'block';
+      el.resultsBadge.textContent = I18N.t('resultsBadgeBlocked');
+      el.resultsBadge.style.background = 'rgba(193,67,46,0.25)';
+      el.resultsBadge.style.borderColor = 'rgba(193,67,46,0.5)';
+      return;
+    }
+
+    el.resultsBody.style.display = 'block';
+    el.disabledOverlay.style.display = 'none';
+    el.resultsBadge.textContent = I18N.t('resultsBadgeReady');
+    el.resultsBadge.style.background = 'rgba(255,255,255,0.08)';
+    el.resultsBadge.style.borderColor = 'rgba(255,255,255,0.14)';
+
+    const pesoTotalMasa = numPaneteos * pesoPaneto;
+    const levaduraPorKgHarina = TABLA_LEVADURA[temp] || 1.0;
+    const h = hidratacionPct / 100;
+    const harinaTotal = pesoTotalMasa / (1 + h);
+    const aguaTotal = harinaTotal * h;
+    const salTotal = aguaTotal * (salPorKgAgua / 1000);
+    const levaduraTotal = harinaTotal * (levaduraPorKgHarina / 1000);
+    const levaduraSecaTotal = levaduraTotal / 3;
+
+    el.flourBreakdown.innerHTML = flours.map((f, idx) => {
+      const gramos = harinaTotal * (f.pct / 100);
+      const color = COLORES_HARINA[idx % COLORES_HARINA.length];
+      return `<div class="flour-sub">
+        <span class="fname"><span class="swatch" style="background:${color}"></span>${flourName(f.catalogId)}</span>
+        <span class="fval">${fmtInt(gramos)} g</span>
+      </div>`;
+    }).join('');
+
+    el.totalMasa.textContent = fmtInt(pesoTotalMasa);
+    el.totalHarina.textContent = fmtInt(harinaTotal) + ' g';
+    el.totalAgua.textContent = fmtInt(aguaTotal) + ' g';
+    el.totalSal.textContent = fmtInt(salTotal) + ' g';
+    el.totalLevadura.textContent = fmt2(levaduraTotal) + ' g';
+    el.totalLevaduraSeca.textContent = fmt2(levaduraSecaTotal) + ' g';
+  }
+
+  [el.numPaneteos, el.pesoPaneto, el.temperatura, el.hidratacion, el.sal].forEach(input => {
+    input.addEventListener('input', calcular);
+  });
+
+  renderFlours();
+
+  // Al hacer foco/tap en cualquier input numérico, selecciona su contenido
+  // para que el usuario pueda escribir encima sin tener que borrar antes.
+  document.addEventListener('focus', (e) => {
+    if (e.target.matches('input[type="number"]')) {
+      e.target.select();
+    }
+  }, true);
+
+  // Vuelve a pintar las harinas y los textos calculados cuando cambia el idioma
+  window.addEventListener('pizzaLangChange', () => {
+    renderFlours();
+    populateSavedRecipesSelect();
+  });
+
+  // ==================== RECETAS GUARDADAS (con nombre) ====================
+  const SAVED_RECIPES_KEY = 'edu_pizza_saved_recipes_v1';
+  const savedRecipesSelect = document.getElementById('savedRecipesSelect');
+  const loadRecipeBtn = document.getElementById('loadRecipeBtn');
+  const deleteRecipeBtn = document.getElementById('deleteRecipeBtn');
+  const saveRecipeBtn = document.getElementById('saveRecipeBtn');
+  const saveRecipeModal = document.getElementById('saveRecipeModal');
+  const saveRecipeNameInput = document.getElementById('saveRecipeNameInput');
+  const saveRecipeCancelBtn = document.getElementById('saveRecipeCancelBtn');
+  const saveRecipeConfirmBtn = document.getElementById('saveRecipeConfirmBtn');
+
+  function getSavedRecipes() {
+    try {
+      const raw = localStorage.getItem(SAVED_RECIPES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function setSavedRecipes(list) {
+    try { localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(0); background:var(--forno); color:var(--farina); padding:12px 20px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:10001; box-shadow:0 12px 30px -8px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); transition: opacity 0.3s ease, transform 0.3s ease; opacity:1;';
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 1800);
+  }
+
+  function populateSavedRecipesSelect() {
+    const list = getSavedRecipes();
+    const previousValue = savedRecipesSelect.value;
+    savedRecipesSelect.innerHTML = '';
+
+    if (list.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = I18N.t('savedRecipesEmpty');
+      savedRecipesSelect.appendChild(opt);
+      loadRecipeBtn.disabled = true;
+      deleteRecipeBtn.disabled = true;
+      return;
+    }
+
+    list.slice().reverse().forEach(recipe => {
+      const opt = document.createElement('option');
+      opt.value = recipe.id;
+      opt.textContent = recipe.name;
+      savedRecipesSelect.appendChild(opt);
+    });
+
+    if (list.some(r => String(r.id) === previousValue)) {
+      savedRecipesSelect.value = previousValue;
+    }
+    loadRecipeBtn.disabled = false;
+    deleteRecipeBtn.disabled = false;
+  }
+
+  function openSaveModal() {
+    saveRecipeNameInput.value = '';
+    saveRecipeModal.style.display = 'flex';
+    setTimeout(() => saveRecipeNameInput.focus(), 50);
+  }
+  function closeSaveModal() {
+    saveRecipeModal.style.display = 'none';
+  }
+
+  saveRecipeBtn.addEventListener('click', openSaveModal);
+  saveRecipeCancelBtn.addEventListener('click', closeSaveModal);
+  saveRecipeModal.addEventListener('click', (e) => {
+    if (e.target === saveRecipeModal) closeSaveModal();
+  });
+  saveRecipeNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveRecipeConfirmBtn.click();
+    if (e.key === 'Escape') closeSaveModal();
+  });
+
+  saveRecipeConfirmBtn.addEventListener('click', () => {
+    const name = saveRecipeNameInput.value.trim();
+    if (!name) {
+      alert(I18N.t('emptyNameAlert'));
+      saveRecipeNameInput.focus();
+      return;
+    }
+    const list = getSavedRecipes();
+    list.push({
+      id: Date.now(),
+      name: name,
+      savedAt: new Date().toISOString(),
+      data: {
+        numPaneteos: parseFloat(el.numPaneteos.value),
+        pesoPaneto: parseFloat(el.pesoPaneto.value),
+        temperatura: parseInt(el.temperatura.value, 10),
+        hidratacion: parseFloat(el.hidratacion.value),
+        sal: parseFloat(el.sal.value),
+        flours: JSON.parse(JSON.stringify(flours))
+      }
+    });
+    setSavedRecipes(list);
+    populateSavedRecipesSelect();
+    savedRecipesSelect.value = String(list[list.length - 1].id);
+    closeSaveModal();
+    showToast(I18N.t('recipeSavedToast'));
+  });
+
+  loadRecipeBtn.addEventListener('click', () => {
+    const id = savedRecipesSelect.value;
+    if (!id) return;
+    const list = getSavedRecipes();
+    const recipe = list.find(r => String(r.id) === id);
+    if (!recipe) return;
+
+    const d = recipe.data;
+    el.numPaneteos.value = d.numPaneteos;
+    el.pesoPaneto.value = d.pesoPaneto;
+    el.temperatura.value = d.temperatura;
+    el.hidratacion.value = d.hidratacion;
+    el.sal.value = d.sal;
+    flours = JSON.parse(JSON.stringify(d.flours));
+    let maxIdLoaded = 0;
+    flours.forEach(f => { if (f.id > maxIdLoaded) maxIdLoaded = f.id; });
+    flourIdCounter = maxIdLoaded + 1;
+
+    renderFlours();
+    showToast(I18N.t('recipeLoadedToast'));
+  });
+
+  deleteRecipeBtn.addEventListener('click', () => {
+    const id = savedRecipesSelect.value;
+    if (!id) return;
+    if (!confirm(I18N.t('confirmDeleteRecipe'))) return;
+    let list = getSavedRecipes();
+    list = list.filter(r => String(r.id) !== id);
+    setSavedRecipes(list);
+    populateSavedRecipesSelect();
+    showToast(I18N.t('recipeDeletedToast'));
+  });
+
+  populateSavedRecipesSelect();
+
+  // Lógica Copiar Receta
+  document.getElementById('btnCopiarReceta').addEventListener('click', function() {
+    const masaT = parseFloat(el.numPaneteos.value) * parseFloat(el.pesoPaneto.value);
+    const hyd = parseFloat(el.hidratacion.value) / 100;
+    const harinaT = masaT / (1 + hyd);
+
+    const text = `${I18N.t('recipeHeader')}
+${I18N.t('recipePizzas')}: ${el.numPaneteos.value} ${I18N.t('recipeOf')} ${el.pesoPaneto.value}g
+${I18N.t('recipeHydration')}: ${el.hidratacion.value}% | ${I18N.t('recipeSalt')}: ${el.sal.value}g/L
+
+${I18N.t('recipeTotals')}
+- ${I18N.t('recipeTotalFlour')}: ${el.totalHarina.textContent}
+- ${I18N.t('recipeWater')}: ${el.totalAgua.textContent}
+- ${I18N.t('recipeSalt2')}: ${el.totalSal.textContent}
+- ${I18N.t('recipeFreshYeast')}: ${el.totalLevadura.textContent}
+- (${I18N.t('recipeDryYeast')}: ${el.totalLevaduraSeca.textContent})
+
+${I18N.t('recipeFlourMix')}
+${flours.map(f => `- ${flourName(f.catalogId)}: ${Math.round(harinaT * (f.pct/100))}g (${f.pct}%)`).join('\n')}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      const originalHtml = this.innerHTML;
+      this.innerHTML = I18N.t('copiado');
+      this.style.background = 'var(--basilico)';
+      this.style.color = 'white';
+      setTimeout(() => {
+        this.innerHTML = originalHtml;
+        this.style.background = 'rgba(255,255,255,0.06)';
+        this.style.color = 'var(--farina)';
+      }, 2500);
+    });
+  });
+
+})();
+</script>
+
+<script>
+  let deferredPrompt;
+  const btnInstalar = document.getElementById('btnInstalar');
+  const iosInstallBanner = document.getElementById('iosInstallBanner');
+  const I18N = window.PizzaI18N;
+
+  // Idioma ES / EN
+  I18N.applyStaticDom();
+  const langToggle = document.getElementById('langToggle');
+  langToggle.addEventListener('click', () => {
+    I18N.setLang(I18N.getLang() === 'es' ? 'en' : 'es');
+  });
+
+  // Modo oscuro / claro
+  const themeToggle = document.getElementById('themeToggle');
+  function temaActual(){
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function actualizarAriaTheme(){
+    const esOscuro = temaActual() === 'dark';
+    themeToggle.setAttribute('aria-label', esOscuro ? I18N.t('themeToggleToLight') : I18N.t('themeToggleToDark'));
+  }
+  actualizarAriaTheme();
+  window.addEventListener('pizzaLangChange', actualizarAriaTheme);
+  themeToggle.addEventListener('click', () => {
+    const nuevoTema = temaActual() === 'dark' ? 'light' : 'dark';
+    if (nuevoTema === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    try { localStorage.setItem('pizza-calc-theme', nuevoTema); } catch(e){}
+    actualizarAriaTheme();
+  });
+
+  const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  if (isStandalone) {
+    btnInstalar.style.display = 'none';
+    if(iosInstallBanner) iosInstallBanner.style.display = 'none';
+  } else {
+    if (isIos && iosInstallBanner) {
+      iosInstallBanner.style.display = 'block';
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone && !isIos) {
+      btnInstalar.style.display = 'block';
+    }
+  });
+
+  btnInstalar.addEventListener('click', async () => {
+    if (deferredPrompt !== null) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('El usuario aceptó la instalación');
+      } else {
+        console.log('El usuario rechazó la instalación');
+      }
+      deferredPrompt = null;
+      btnInstalar.style.display = 'none';
+    }
+  });
+
+  let newWorker;
+  const updateBanner = document.getElementById('update-banner');
+  const updateBtn = document.getElementById('update-btn');
+
+  function mostrarAvisoActualizacion(){
+    updateBanner.style.display = 'block';
+  }
+
+  updateBtn.addEventListener('click', () => {
+    updateBtn.textContent = I18N.t('updateBtnUpdating');
+    updateBtn.disabled = true;
+    if (newWorker) {
+      newWorker.postMessage({ action: 'skipWaiting' });
+    }
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('SW registrado con éxito');
+          registration.update();
+
+          registration.addEventListener('updatefound', () => {
+            newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('Nueva versión detectada. Mostrando aviso...');
+                mostrarAvisoActualizacion();
+              }
+            });
+          });
+        })
+        .catch((error) => console.log('Error al registrar el SW:', error));
+
+      // Recarga la página una sola vez cuando el nuevo SW toma el control
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
