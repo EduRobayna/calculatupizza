@@ -246,6 +246,9 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     renderFlours();
   });
 
+  // Hook que se dispara tras recalcular (se asigna cuando las recetas están listas).
+  let onConfigChange = null;
+
   function calcular(){
     const numPaneteos = parseFloat(el.numPaneteos.value) || 0;
     const pesoPaneto = parseFloat(el.pesoPaneto.value) || 0;
@@ -255,6 +258,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
     el.tempValue.textContent = temp;
     saveSettings();
+    if (onConfigChange) onConfigChange();
 
     const sumaPct = flours.reduce((a, b) => a + b.pct, 0);
     const sumaRedondeada = Math.round(sumaPct * 100) / 100;
@@ -358,6 +362,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   const saveModalError = document.getElementById('saveModalError');
   const saveRecipeNotesInput = document.getElementById('saveRecipeNotesInput');
   const recipeNotesDisplay = document.getElementById('recipeNotesDisplay');
+  const recipeStatusEl = document.getElementById('recipeStatus');
   const exportRecipesBtn = document.getElementById('exportRecipesBtn');
   const importRecipesBtn = document.getElementById('importRecipesBtn');
   const importRecipesInput = document.getElementById('importRecipesInput');
@@ -373,6 +378,29 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   function setSavedRecipes(list) {
     try { localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // ¿La configuración actual coincide exactamente con alguna receta guardada?
+  function findMatchingRecipe() {
+    const cur = JSON.stringify(currentData());
+    return getSavedRecipes().find(r => r.data && JSON.stringify(r.data) === cur) || null;
+  }
+
+  // Indica si lo que hay en pantalla está guardado como receta o no.
+  // La config se autoguarda en el navegador (reaparece al recargar), pero eso
+  // no es una receta persistida; este aviso evita esa confusión.
+  function updateRecipeStatus() {
+    if (!recipeStatusEl) return;
+    const match = findMatchingRecipe();
+    if (match) {
+      recipeStatusEl.className = 'recipe-status saved';
+      recipeStatusEl.textContent = I18N.t('statusSaved');
+      recipeStatusEl.title = match.name;
+    } else {
+      recipeStatusEl.className = 'recipe-status unsaved';
+      recipeStatusEl.textContent = I18N.t('statusUnsaved');
+      recipeStatusEl.removeAttribute('title');
+    }
   }
 
   function showToast(message) {
@@ -624,6 +652,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     populateSavedRecipesSelect();
     savedRecipesSelect.value = String(targetId);
     updateNotesDisplay();
+    updateRecipeStatus();
     showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
   }
 
@@ -662,6 +691,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     setSavedRecipes(list);
     populateSavedRecipesSelect();
     updateNotesDisplay();
+    updateRecipeStatus();
     showToast(I18N.t('recipeDeletedToast'));
   });
 
@@ -770,6 +800,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       } else {
         populateSavedRecipesSelect();
         updateNotesDisplay();
+        updateRecipeStatus();
         showToast(I18N.t('recipesImportedToast').replace('{n}', added));
       }
       importRecipesInput.value = ''; // permite reimportar el mismo archivo
@@ -780,6 +811,8 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   populateSavedRecipesSelect();
   updateNotesDisplay();
+  onConfigChange = updateRecipeStatus; // a partir de aquí, cada recálculo refresca el estado
+  updateRecipeStatus();
 
   // Lógica Copiar Receta
   document.getElementById('btnCopiarReceta').addEventListener('click', function() {
