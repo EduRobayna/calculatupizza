@@ -121,6 +121,18 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
           <span data-i18n="saveRecipeBtn">Guardar receta actual</span>
         </button>
+
+        <div class="recipes-io-row">
+          <button type="button" id="exportRecipesBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span data-i18n="exportBtn">Exportar</span>
+          </button>
+          <button type="button" id="importRecipesBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span data-i18n="importBtn">Importar</span>
+          </button>
+        </div>
+        <input type="file" id="importRecipesInput" accept="application/json,.json" hidden>
       </div>
 
       <div class="section">
@@ -342,9 +354,10 @@
       <h3 class="modal-title" id="saveModalTitle" data-i18n="saveModalTitle">Guardar receta</h3>
       <p class="modal-sub" id="saveModalSub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
       <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
-      <div class="modal-actions">
-        <button type="button" id="saveRecipeCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
+      <div class="modal-actions modal-actions-stack" id="saveModalActions">
         <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
+        <button type="button" id="saveRecipeNewBtn" class="btn-outline" data-i18n="modalSaveAsNew" style="display:none;">Guardar como nueva</button>
+        <button type="button" id="saveRecipeCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
       </div>
     </div>
   </div>

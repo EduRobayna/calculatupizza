@@ -105,7 +105,19 @@ window.PizzaI18N = (function(){
       recipeLoadedToast: "Receta cargada ✅",
       recipeDeletedToast: "Receta eliminada",
       confirmDeleteRecipe: "¿Eliminar esta receta guardada? No se puede deshacer.",
-      emptyNameAlert: "Ponle un nombre a la receta antes de guardar."
+      emptyNameAlert: "Ponle un nombre a la receta antes de guardar.",
+      modalUpdate: "Actualizar",
+      modalSaveAsNew: "Guardar como nueva",
+      saveModalSubEdit: "Actualiza «{name}» con los valores actuales o guárdala como una receta nueva.",
+      recipeUpdatedToast: "Receta actualizada ✅",
+      exportBtn: "Exportar",
+      importBtn: "Importar",
+      recipesExportedToast: "Recetas exportadas ✅",
+      recipesImportedToast: "Recetas importadas: {n} ✅",
+      importNothingNew: "No había recetas nuevas que importar.",
+      importError: "No se pudo importar. ¿Es un archivo de recetas válido?",
+      noRecipesToExport: "No tienes recetas para exportar.",
+      importedRecipeName: "Receta importada"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -209,7 +221,19 @@ window.PizzaI18N = (function(){
       recipeLoadedToast: "Recipe loaded ✅",
       recipeDeletedToast: "Recipe deleted",
       confirmDeleteRecipe: "Delete this saved recipe? This can't be undone.",
-      emptyNameAlert: "Give the recipe a name before saving."
+      emptyNameAlert: "Give the recipe a name before saving.",
+      modalUpdate: "Update",
+      modalSaveAsNew: "Save as new",
+      saveModalSubEdit: "Update «{name}» with the current values, or save it as a new recipe.",
+      recipeUpdatedToast: "Recipe updated ✅",
+      exportBtn: "Export",
+      importBtn: "Import",
+      recipesExportedToast: "Recipes exported ✅",
+      recipesImportedToast: "Recipes imported: {n} ✅",
+      importNothingNew: "No new recipes to import.",
+      importError: "Couldn't import. Is it a valid recipes file?",
+      noRecipesToExport: "You have no recipes to export.",
+      importedRecipeName: "Imported recipe"
     }
   };
 
