@@ -341,10 +341,11 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .mobile-summary.blocked .ms-stats{ display: none; }
 .mobile-summary.blocked .ms-blocked{ display: block; }
 
-/* ===== Foco de teclado consistente ===== */
+/* ===== Foco de teclado consistente (halo suave, como en los inputs) ===== */
 button:focus-visible, [role="button"]:focus-visible, a.social-link:focus-visible{
-  outline: 2px solid var(--pomodoro);
+  outline: 2px solid transparent;   /* visible en modo de alto contraste */
   outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(193,67,46,0.35);
 }
 
 /* ===== Respeta la preferencia de movimiento reducido ===== */
