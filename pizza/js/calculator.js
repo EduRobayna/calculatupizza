@@ -355,6 +355,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   const saveRecipeConfirmBtn = document.getElementById('saveRecipeConfirmBtn');
   const saveRecipeNewBtn = document.getElementById('saveRecipeNewBtn');
   const saveModalSub = document.getElementById('saveModalSub');
+  const saveModalError = document.getElementById('saveModalError');
   const exportRecipesBtn = document.getElementById('exportRecipesBtn');
   const importRecipesBtn = document.getElementById('importRecipesBtn');
   const importRecipesInput = document.getElementById('importRecipesInput');
@@ -459,6 +460,35 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     lastFocusedBeforeModal = null;
   }
 
+  // ¿Existe ya una receta con ese nombre? (sin distinguir mayúsculas ni espacios).
+  // exceptId permite ignorar la propia receta que se está editando.
+  function nameExists(name, exceptId) {
+    const n = name.trim().toLowerCase();
+    if (!n) return false;
+    return getSavedRecipes().some(r => r.id !== exceptId && (r.name || '').trim().toLowerCase() === n);
+  }
+
+  // Ajusta en vivo el estado de los botones y la pista según el nombre escrito.
+  function updateSaveButtons() {
+    const name = saveRecipeNameInput.value.trim();
+    const empty = !name;
+    const takenByAny = nameExists(name, null);            // lo usa alguna receta
+    const takenByOther = nameExists(name, editingRecipeId); // lo usa OTRA receta
+
+    // "Guardar como nueva": nunca puede reutilizar un nombre existente.
+    saveRecipeNewBtn.disabled = empty || takenByAny;
+    // Primario: crear (nueva) bloquea si el nombre existe; actualizar solo si
+    // choca con OTRA receta (mantener el nombre propio sí se permite).
+    saveRecipeConfirmBtn.disabled = empty || (editingRecipeId != null ? takenByOther : takenByAny);
+
+    if (takenByOther) {
+      saveModalError.textContent = I18N.t('duplicateNameError');
+      saveModalError.style.display = '';
+    } else {
+      saveModalError.style.display = 'none';
+    }
+  }
+
   // ---- Modal "Guardar receta" (crear nueva o actualizar la seleccionada) ----
   function openSaveModal() {
     const recipes = getSavedRecipes();
@@ -477,6 +507,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
       saveRecipeNewBtn.style.display = 'none';
     }
+    updateSaveButtons();
     openModal(saveRecipeModal, saveRecipeNameInput);
   }
   function closeSaveModal() {
@@ -489,6 +520,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     if (e.target === saveRecipeModal) closeSaveModal();
   });
   saveRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, saveRecipeModal, closeSaveModal));
+  saveRecipeNameInput.addEventListener('input', updateSaveButtons);
   saveRecipeNameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); guardarReceta({ overwriteId: editingRecipeId }); }
   });
@@ -544,6 +576,14 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     const name = saveRecipeNameInput.value.trim();
     if (!name) {
       showToast(I18N.t('emptyNameAlert'));
+      saveRecipeNameInput.focus();
+      return;
+    }
+    // No permitir nombres duplicados: al crear, contra cualquier receta; al
+    // actualizar, contra cualquier OTRA receta (conservar el propio nombre sí vale).
+    if (nameExists(name, opts.overwriteId != null ? opts.overwriteId : null)) {
+      showToast(I18N.t('duplicateNameError'));
+      updateSaveButtons();
       saveRecipeNameInput.focus();
       return;
     }

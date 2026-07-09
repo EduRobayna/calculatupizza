@@ -260,6 +260,10 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 /* Variante apilada (modal de guardar: hasta 3 acciones) */
 .modal-actions-stack{ flex-direction: column; }
 .modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
+/* Pista de validación del modal (p. ej. nombre duplicado) */
+.modal-error{ font-size: 12.5px; line-height: 1.4; color: var(--pomodoro); margin: 8px 2px 0; }
+/* Botones deshabilitados (acciones del modal) */
+.btn-outline:disabled, .btn-secondary:disabled{ opacity: 0.45; cursor: not-allowed; }
 
 /* Botón de idioma ES/EN */
 .lang-toggle{
