@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Masa de Pizza Napolitana · Edu Robayna</title>
 
+<!-- theme-color por tema; el script de abajo fija el color exacto antes de pintar -->
+<meta name="theme-color" id="themeColorMeta" content="#f3ead9">
+
 <!-- Aplica el tema guardado antes de pintar, para evitar parpadeos -->
 <script>
   (function(){
@@ -13,6 +16,8 @@
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const tema = saved || (prefiereOscuro ? 'dark' : 'light');
       if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      var tcMeta = document.getElementById('themeColorMeta');
+      if (tcMeta) tcMeta.setAttribute('content', tema === 'dark' ? '#17120e' : '#f3ead9');
     } catch(e){}
   })();
 </script>
@@ -32,7 +37,6 @@
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#c1432e">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

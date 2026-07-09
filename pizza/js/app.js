@@ -17,25 +17,47 @@
 
   // Modo oscuro / claro
   const themeToggle = document.getElementById('themeToggle');
+  const themeColorMeta = document.getElementById('themeColorMeta');
+  const THEME_COLORS = { dark: '#17120e', light: '#f3ead9' };
+
   function temaActual(){
     return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function actualizarThemeColor(){
+    if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_COLORS[temaActual()]);
   }
   function actualizarAriaTheme(){
     const esOscuro = temaActual() === 'dark';
     themeToggle.setAttribute('aria-label', esOscuro ? I18N.t('themeToggleToLight') : I18N.t('themeToggleToDark'));
   }
+  function aplicarTema(tema){
+    if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    actualizarThemeColor();
+    actualizarAriaTheme();
+  }
+
   actualizarAriaTheme();
   window.addEventListener('pizzaLangChange', actualizarAriaTheme);
+
   themeToggle.addEventListener('click', () => {
     const nuevoTema = temaActual() === 'dark' ? 'light' : 'dark';
-    if (nuevoTema === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    aplicarTema(nuevoTema);
     try { localStorage.setItem('pizza-calc-theme', nuevoTema); } catch(e){}
-    actualizarAriaTheme();
   });
+
+  // Reacciona en caliente a los cambios de tema del sistema, solo si el usuario
+  // no ha fijado un tema manualmente.
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSchemeChange = (e) => {
+      let saved = null;
+      try { saved = localStorage.getItem('pizza-calc-theme'); } catch(err){}
+      if (!saved) aplicarTema(e.matches ? 'dark' : 'light');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onSchemeChange);
+    else if (mq.addListener) mq.addListener(onSchemeChange);
+  }
 
   const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
