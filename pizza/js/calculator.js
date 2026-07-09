@@ -64,6 +64,15 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     resetBtn: document.getElementById('resetBtn')
   };
 
+  // Barra-resumen fija (solo móvil)
+  const mobileSummary = document.getElementById('mobileSummary');
+  const ms = {
+    harina: document.getElementById('ms-harina'),
+    agua: document.getElementById('ms-agua'),
+    sal: document.getElementById('ms-sal'),
+    lev: document.getElementById('ms-lev')
+  };
+
   const defaultSettings = {
     numPaneteos: 6,
     pesoPaneto: 280,
@@ -292,6 +301,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       el.resultsBadge.textContent = I18N.t('resultsBadgeBlocked');
       el.resultsBadge.style.background = 'rgba(193,67,46,0.25)';
       el.resultsBadge.style.borderColor = 'rgba(193,67,46,0.5)';
+      if (mobileSummary) mobileSummary.classList.add('blocked');
       return;
     }
 
@@ -325,6 +335,14 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     el.totalSal.textContent = fmtInt(salTotal) + ' g';
     el.totalLevadura.textContent = fmt2(levaduraTotal) + ' g';
     el.totalLevaduraSeca.textContent = fmt2(levaduraSecaTotal) + ' g';
+
+    if (mobileSummary) {
+      mobileSummary.classList.remove('blocked');
+      ms.harina.textContent = fmtInt(harinaTotal) + ' g';
+      ms.agua.textContent = fmtInt(aguaTotal) + ' g';
+      ms.sal.textContent = fmtInt(salTotal) + ' g';
+      ms.lev.textContent = fmt2(levaduraTotal) + ' g';
+    }
   }
 
   [el.numPaneteos, el.pesoPaneto, el.temperatura, el.hidratacion, el.sal].forEach(input => {
@@ -340,6 +358,33 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       e.target.select();
     }
   }, true);
+
+  // Barra-resumen fija en móvil: visible mientras el resultado sigue por debajo
+  // del pliegue; se oculta al llegar a él. Al tocarla, salta al desglose completo.
+  const resultsCard = document.querySelector('.results');
+  function updateSummaryVisibility(){
+    if (!mobileSummary || !resultsCard) return;
+    if (window.innerWidth > 900) { mobileSummary.classList.remove('show'); return; }
+    const rect = resultsCard.getBoundingClientRect();
+    const alcanzado = rect.top <= (window.innerHeight - 40);
+    mobileSummary.classList.toggle('show', !alcanzado);
+  }
+  let summaryTick = false;
+  function onSummaryScroll(){
+    if (summaryTick) return;
+    summaryTick = true;
+    requestAnimationFrame(() => { updateSummaryVisibility(); summaryTick = false; });
+  }
+  if (mobileSummary && resultsCard) {
+    const irAlResultado = () => resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    mobileSummary.addEventListener('click', irAlResultado);
+    mobileSummary.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irAlResultado(); }
+    });
+    window.addEventListener('scroll', onSummaryScroll, { passive: true });
+    window.addEventListener('resize', updateSummaryVisibility);
+    updateSummaryVisibility();
+  }
 
   // Vuelve a pintar las harinas y los textos calculados cuando cambia el idioma
   window.addEventListener('pizzaLangChange', () => {

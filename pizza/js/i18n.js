@@ -122,7 +122,15 @@ window.PizzaI18N = (function(){
       notesLabel: "Notas de la receta",
       notesPlaceholder: "Notas (opcional): horno, hidratación, cómo quedó, ajustes para la próxima…",
       statusSaved: "Guardada",
-      statusUnsaved: "Sin guardar"
+      statusUnsaved: "Sin guardar",
+      readMore: "Leer más",
+      readLess: "Leer menos",
+      summaryFlour: "Harina",
+      summaryWater: "Agua",
+      summarySalt: "Sal",
+      summaryYeast: "Levadura",
+      summaryBlocked: "Corrige el % de harinas",
+      summaryAria: "Ver el resultado completo"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -243,7 +251,15 @@ window.PizzaI18N = (function(){
       notesLabel: "Recipe notes",
       notesPlaceholder: "Notes (optional): oven, hydration, how it turned out, tweaks for next time…",
       statusSaved: "Saved",
-      statusUnsaved: "Unsaved"
+      statusUnsaved: "Unsaved",
+      readMore: "Read more",
+      readLess: "Read less",
+      summaryFlour: "Flour",
+      summaryWater: "Water",
+      summarySalt: "Salt",
+      summaryYeast: "Yeast",
+      summaryBlocked: "Fix the flour %",
+      summaryAria: "See the full result"
     }
   };
 
