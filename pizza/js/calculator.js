@@ -356,6 +356,8 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   const saveRecipeNewBtn = document.getElementById('saveRecipeNewBtn');
   const saveModalSub = document.getElementById('saveModalSub');
   const saveModalError = document.getElementById('saveModalError');
+  const saveRecipeNotesInput = document.getElementById('saveRecipeNotesInput');
+  const recipeNotesDisplay = document.getElementById('recipeNotesDisplay');
   const exportRecipesBtn = document.getElementById('exportRecipesBtn');
   const importRecipesBtn = document.getElementById('importRecipesBtn');
   const importRecipesInput = document.getElementById('importRecipesInput');
@@ -417,6 +419,16 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     loadRecipeBtn.disabled = false;
     deleteRecipeBtn.disabled = false;
     if (exportRecipesBtn) exportRecipesBtn.disabled = false;
+  }
+
+  // Muestra las notas de la receta seleccionada (si tiene) bajo el selector.
+  function updateNotesDisplay() {
+    if (!recipeNotesDisplay) return;
+    const id = savedRecipesSelect.value;
+    const recipe = id ? getSavedRecipes().find(r => String(r.id) === String(id)) : null;
+    const notes = recipe && recipe.notes ? String(recipe.notes).trim() : '';
+    recipeNotesDisplay.textContent = notes;
+    recipeNotesDisplay.style.display = notes ? '' : 'none';
   }
 
   // ---- Modales accesibles: foco atrapado, Escape y devolución de foco al abridor ----
@@ -498,11 +510,13 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
     if (seleccionada) {
       saveRecipeNameInput.value = seleccionada.name;
+      saveRecipeNotesInput.value = seleccionada.notes || '';
       saveModalSub.textContent = I18N.t('saveModalSubEdit').replace('{name}', seleccionada.name);
       saveRecipeConfirmBtn.textContent = I18N.t('modalUpdate');
       saveRecipeNewBtn.style.display = '';
     } else {
       saveRecipeNameInput.value = '';
+      saveRecipeNotesInput.value = '';
       saveModalSub.textContent = I18N.t('saveModalSub');
       saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
       saveRecipeNewBtn.style.display = 'none';
@@ -587,17 +601,19 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       saveRecipeNameInput.focus();
       return;
     }
+    const notes = saveRecipeNotesInput.value.trim().slice(0, 500);
     const list = getSavedRecipes();
     const existente = opts.overwriteId != null ? list.find(r => r.id === opts.overwriteId) : null;
     let targetId;
     if (existente) {
       existente.name = name;
+      existente.notes = notes;
       existente.data = currentData();
       existente.updatedAt = new Date().toISOString();
       targetId = existente.id;
     } else {
       const ids = new Set(list.map(r => String(r.id)));
-      const nueva = { id: nuevoId(ids), name: name, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: currentData() };
+      const nueva = { id: nuevoId(ids), name: name, notes: notes, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: currentData() };
       list.push(nueva);
       targetId = nueva.id;
     }
@@ -607,6 +623,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     closeSaveModal();
     populateSavedRecipesSelect();
     savedRecipesSelect.value = String(targetId);
+    updateNotesDisplay();
     showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
   }
 
@@ -644,8 +661,11 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     list = list.filter(r => String(r.id) !== id);
     setSavedRecipes(list);
     populateSavedRecipesSelect();
+    updateNotesDisplay();
     showToast(I18N.t('recipeDeletedToast'));
   });
+
+  savedRecipesSelect.addEventListener('change', updateNotesDisplay);
 
   // ---- Exportar / Importar recetas (JSON) ----
   function recipesToJSON() {
@@ -685,8 +705,10 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     const name = (typeof raw.name === 'string' && raw.name.trim())
       ? raw.name.trim().slice(0, 40)
       : I18N.t('importedRecipeName');
+    const notes = (typeof raw.notes === 'string') ? raw.notes.slice(0, 500) : '';
     return {
       name: name,
+      notes: notes,
       savedAt: (typeof raw.savedAt === 'string') ? raw.savedAt : new Date().toISOString(),
       updatedAt: (typeof raw.updatedAt === 'string') ? raw.updatedAt : new Date().toISOString(),
       data: {
@@ -701,7 +723,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   }
 
   function recipeSignature(r) {
-    return (r.name || '') + '|' + JSON.stringify(r.data);
+    return (r.name || '') + '|' + (r.notes || '') + '|' + JSON.stringify(r.data);
   }
 
   // Fusiona el JSON importado con las recetas actuales (sin borrar nada),
@@ -734,6 +756,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   exportRecipesBtn.addEventListener('click', exportRecipes);
   importRecipesBtn.addEventListener('click', () => importRecipesInput.click());
+  // (al final del bloque se llama a updateNotesDisplay tras el populate inicial)
   importRecipesInput.addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -746,6 +769,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
         showToast(I18N.t('importNothingNew'));
       } else {
         populateSavedRecipesSelect();
+        updateNotesDisplay();
         showToast(I18N.t('recipesImportedToast').replace('{n}', added));
       }
       importRecipesInput.value = ''; // permite reimportar el mismo archivo
@@ -755,6 +779,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   });
 
   populateSavedRecipesSelect();
+  updateNotesDisplay();
 
   // Lógica Copiar Receta
   document.getElementById('btnCopiarReceta').addEventListener('click', function() {

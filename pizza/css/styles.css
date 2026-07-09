@@ -244,6 +244,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 .saved-recipes-row{ display:flex; gap: 8px; align-items:center; }
 .saved-recipes-row select{ flex:1; min-width: 0; }
 .recipes-io-row{ display:flex; gap: 8px; margin-top: 8px; }
+.recipe-notes-input{ width:100%; margin-top:10px; padding:11px 13px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.4; resize:vertical; min-height:64px; }
+.recipe-notes-input:focus{ outline:none; border-color:var(--pomodoro); box-shadow:0 0 0 3px rgba(193,67,46,0.12); }
+.recipe-notes-display{ margin-top:10px; padding:10px 12px; background:var(--surface-3); border:1px solid var(--border); border-radius:10px; font-size:13px; line-height:1.45; color:var(--text-soft); white-space:pre-wrap; word-break:break-word; }
 .icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
 .icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
 .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }

@@ -117,6 +117,8 @@
           </button>
         </div>
 
+        <div id="recipeNotesDisplay" class="recipe-notes-display" style="display:none;"></div>
+
         <button type="button" id="saveRecipeBtn" class="btn-outline" style="width:100%; margin-top:12px;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
           <span data-i18n="saveRecipeBtn">Guardar receta actual</span>
@@ -355,6 +357,7 @@
       <p class="modal-sub" id="saveModalSub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
       <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
       <p id="saveModalError" class="modal-error" role="alert" style="display:none;"></p>
+      <textarea id="saveRecipeNotesInput" class="recipe-notes-input" rows="3" maxlength="500" data-i18n-aria="notesLabel" data-i18n-placeholder="notesPlaceholder" placeholder="Notas (opcional): horno, hidratación, cómo quedó…"></textarea>
       <div class="modal-actions modal-actions-stack" id="saveModalActions">
         <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
         <button type="button" id="saveRecipeNewBtn" class="btn-outline" data-i18n="modalSaveAsNew" style="display:none;">Guardar como nueva</button>
