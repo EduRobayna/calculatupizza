@@ -120,7 +120,9 @@ window.PizzaI18N = (function(){
       importedRecipeName: "Receta importada",
       duplicateNameError: "Ya existe una receta con ese nombre.",
       notesLabel: "Notas de la receta",
-      notesPlaceholder: "Notas (opcional): horno, hidratación, cómo quedó, ajustes para la próxima…"
+      notesPlaceholder: "Notas (opcional): horno, hidratación, cómo quedó, ajustes para la próxima…",
+      statusSaved: "Guardada",
+      statusUnsaved: "Sin guardar"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -239,7 +241,9 @@ window.PizzaI18N = (function(){
       importedRecipeName: "Imported recipe",
       duplicateNameError: "A recipe with that name already exists.",
       notesLabel: "Recipe notes",
-      notesPlaceholder: "Notes (optional): oven, hydration, how it turned out, tweaks for next time…"
+      notesPlaceholder: "Notes (optional): oven, hydration, how it turned out, tweaks for next time…",
+      statusSaved: "Saved",
+      statusUnsaved: "Unsaved"
     }
   };
 
