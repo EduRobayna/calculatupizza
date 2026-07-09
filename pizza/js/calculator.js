@@ -466,7 +466,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   });
   saveRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, saveRecipeModal, closeSaveModal));
   saveRecipeNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveRecipeConfirmBtn.click();
+    if (e.key === 'Enter') { e.preventDefault(); guardarReceta(); }
   });
 
   // ---- Modal de confirmación genérico (sustituye a window.confirm) ----
@@ -494,7 +494,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     });
   }
 
-  saveRecipeConfirmBtn.addEventListener('click', () => {
+  function guardarReceta() {
     const name = saveRecipeNameInput.value.trim();
     if (!name) {
       showToast(I18N.t('emptyNameAlert'));
@@ -502,7 +502,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       return;
     }
     const list = getSavedRecipes();
-    list.push({
+    const nueva = {
       id: Date.now(),
       name: name,
       savedAt: new Date().toISOString(),
@@ -514,13 +514,18 @@ window.stepValue = function(id, delta, minVal, maxVal) {
         sal: parseFloat(el.sal.value),
         flours: JSON.parse(JSON.stringify(flours))
       }
-    });
+    };
+    list.push(nueva);
     setSavedRecipes(list);
-    populateSavedRecipesSelect();
-    savedRecipesSelect.value = String(list[list.length - 1].id);
+    // Cerramos el modal en cuanto la receta está guardada, antes de repintar el
+    // select, para que el cierre nunca dependa de pasos de UI posteriores.
     closeSaveModal();
+    populateSavedRecipesSelect();
+    savedRecipesSelect.value = String(nueva.id);
     showToast(I18N.t('recipeSavedToast'));
-  });
+  }
+
+  saveRecipeConfirmBtn.addEventListener('click', guardarReceta);
 
   loadRecipeBtn.addEventListener('click', () => {
     const id = savedRecipesSelect.value;
