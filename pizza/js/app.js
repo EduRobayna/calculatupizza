@@ -15,6 +15,21 @@
     I18N.setLang(I18N.getLang() === 'es' ? 'en' : 'es');
   });
 
+  // Intro plegable (móvil): "Leer más / Leer menos"
+  const heroSub = document.getElementById('heroSub');
+  const subToggle = document.getElementById('subToggle');
+  function syncSubToggle(){
+    if (!heroSub || !subToggle) return;
+    const clamped = heroSub.classList.contains('clamped');
+    subToggle.textContent = clamped ? I18N.t('readMore') : I18N.t('readLess');
+    subToggle.setAttribute('aria-expanded', String(!clamped));
+  }
+  if (subToggle && heroSub) {
+    subToggle.addEventListener('click', () => { heroSub.classList.toggle('clamped'); syncSubToggle(); });
+    window.addEventListener('pizzaLangChange', syncSubToggle);
+    syncSubToggle();
+  }
+
   // Modo oscuro / claro
   const themeToggle = document.getElementById('themeToggle');
   const themeColorMeta = document.getElementById('themeColorMeta');
