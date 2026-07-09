@@ -201,7 +201,6 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
 .flour-sub .fname{ color: rgba(243,234,217,0.85); display: flex; align-items: center; gap: 8px; }
 .flour-sub:last-child{ border-bottom:none; }
 .flour-sub .fval{ font-family: var(--font-mono); color: var(--farina); font-weight:600; }
-.yeast-note{ margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; line-height: 1.45; color: rgba(243,234,217,0.55); }
 .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
 .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
 
