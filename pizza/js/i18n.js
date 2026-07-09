@@ -130,7 +130,10 @@ window.PizzaI18N = (function(){
       summarySalt: "Sal",
       summaryYeast: "Levadura",
       summaryBlocked: "Corrige el % de harinas",
-      summaryAria: "Ver el resultado completo"
+      summaryAria: "Ver el resultado completo",
+      lockFlourTitle: "Fijar este porcentaje al auto-balancear",
+      unlockFlourTitle: "Dejar de fijar este porcentaje",
+      deleteFlourAria: "Eliminar esta harina"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -259,7 +262,10 @@ window.PizzaI18N = (function(){
       summarySalt: "Salt",
       summaryYeast: "Yeast",
       summaryBlocked: "Fix the flour %",
-      summaryAria: "See the full result"
+      summaryAria: "See the full result",
+      lockFlourTitle: "Lock this percentage when auto-balancing",
+      unlockFlourTitle: "Unlock this percentage",
+      deleteFlourAria: "Remove this flour"
     }
   };
 
