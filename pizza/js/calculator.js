@@ -367,6 +367,9 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   function showToast(message) {
     const toast = document.createElement('div');
+    // role=status + aria-live para que los lectores de pantalla anuncien el aviso
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
     toast.textContent = message;
     toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(0); background:var(--forno); color:var(--farina); padding:12px 20px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:10001; box-shadow:0 12px 30px -8px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); transition: opacity 0.3s ease, transform 0.3s ease; opacity:1;';
     document.body.appendChild(toast);
@@ -406,13 +409,54 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     deleteRecipeBtn.disabled = false;
   }
 
+  // ---- Modales accesibles: foco atrapado, Escape y devolución de foco al abridor ----
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmModalText = document.getElementById('confirmModalText');
+  const confirmOkBtn = document.getElementById('confirmOkBtn');
+  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+
+  let lastFocusedBeforeModal = null;
+
+  function getFocusables(modal) {
+    return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(el => !el.disabled && el.offsetParent !== null);
+  }
+
+  // Atrapa el Tab dentro del modal y cierra con Escape sea cual sea el foco.
+  function onModalKeydown(e, modal, onEscape) {
+    if (e.key === 'Escape') { e.preventDefault(); onEscape(); return; }
+    if (e.key !== 'Tab') return;
+    const f = getFocusables(modal);
+    if (f.length === 0) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function openModal(modal, focusTarget) {
+    lastFocusedBeforeModal = document.activeElement;
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      const t = focusTarget || getFocusables(modal)[0];
+      if (t) t.focus();
+    }, 50);
+  }
+
+  function closeModal(modal) {
+    modal.style.display = 'none';
+    if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
+      lastFocusedBeforeModal.focus();
+    }
+    lastFocusedBeforeModal = null;
+  }
+
+  // ---- Modal "Guardar receta" ----
   function openSaveModal() {
     saveRecipeNameInput.value = '';
-    saveRecipeModal.style.display = 'flex';
-    setTimeout(() => saveRecipeNameInput.focus(), 50);
+    openModal(saveRecipeModal, saveRecipeNameInput);
   }
   function closeSaveModal() {
-    saveRecipeModal.style.display = 'none';
+    closeModal(saveRecipeModal);
   }
 
   saveRecipeBtn.addEventListener('click', openSaveModal);
@@ -420,15 +464,40 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   saveRecipeModal.addEventListener('click', (e) => {
     if (e.target === saveRecipeModal) closeSaveModal();
   });
+  saveRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, saveRecipeModal, closeSaveModal));
   saveRecipeNameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') saveRecipeConfirmBtn.click();
-    if (e.key === 'Escape') closeSaveModal();
   });
+
+  // ---- Modal de confirmación genérico (sustituye a window.confirm) ----
+  function showConfirm(message, confirmLabel) {
+    confirmModalText.textContent = message;
+    confirmOkBtn.textContent = confirmLabel || I18N.t('modalConfirmDefault');
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        confirmOkBtn.removeEventListener('click', onOk);
+        confirmCancelBtn.removeEventListener('click', onCancel);
+        confirmModal.removeEventListener('click', onBackdrop);
+        confirmModal.removeEventListener('keydown', onKey);
+      };
+      const finish = (val) => { cleanup(); closeModal(confirmModal); resolve(val); };
+      const onOk = () => finish(true);
+      const onCancel = () => finish(false);
+      const onBackdrop = (e) => { if (e.target === confirmModal) finish(false); };
+      const onKey = (e) => onModalKeydown(e, confirmModal, () => finish(false));
+      confirmOkBtn.addEventListener('click', onOk);
+      confirmCancelBtn.addEventListener('click', onCancel);
+      confirmModal.addEventListener('click', onBackdrop);
+      confirmModal.addEventListener('keydown', onKey);
+      // Foco inicial en Cancelar para no destruir con un Enter accidental.
+      openModal(confirmModal, confirmCancelBtn);
+    });
+  }
 
   saveRecipeConfirmBtn.addEventListener('click', () => {
     const name = saveRecipeNameInput.value.trim();
     if (!name) {
-      alert(I18N.t('emptyNameAlert'));
+      showToast(I18N.t('emptyNameAlert'));
       saveRecipeNameInput.focus();
       return;
     }
@@ -475,10 +544,11 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     showToast(I18N.t('recipeLoadedToast'));
   });
 
-  deleteRecipeBtn.addEventListener('click', () => {
+  deleteRecipeBtn.addEventListener('click', async () => {
     const id = savedRecipesSelect.value;
     if (!id) return;
-    if (!confirm(I18N.t('confirmDeleteRecipe'))) return;
+    const confirmado = await showConfirm(I18N.t('confirmDeleteRecipe'), I18N.t('modalDelete'));
+    if (!confirmado) return;
     let list = getSavedRecipes();
     list = list.filter(r => String(r.id) !== id);
     setSavedRecipes(list);
