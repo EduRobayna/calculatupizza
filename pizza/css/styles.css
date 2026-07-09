@@ -243,6 +243,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 /* Recetas guardadas */
 .saved-recipes-row{ display:flex; gap: 8px; align-items:center; }
 .saved-recipes-row select{ flex:1; min-width: 0; }
+.recipes-io-row{ display:flex; gap: 8px; margin-top: 8px; }
 .icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
 .icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
 .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
@@ -256,6 +257,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 .modal-sub{ font-size: 13.5px; color: var(--text-soft); margin: 0 0 14px; }
 .modal-actions{ display:flex; gap: 10px; margin-top: 16px; }
 .modal-actions .btn-outline, .modal-actions .modal-confirm{ flex:1; margin-top:0; }
+/* Variante apilada (modal de guardar: hasta 3 acciones) */
+.modal-actions-stack{ flex-direction: column; }
+.modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
 
 /* Botón de idioma ES/EN */
 .lang-toggle{

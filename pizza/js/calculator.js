@@ -353,6 +353,13 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   const saveRecipeNameInput = document.getElementById('saveRecipeNameInput');
   const saveRecipeCancelBtn = document.getElementById('saveRecipeCancelBtn');
   const saveRecipeConfirmBtn = document.getElementById('saveRecipeConfirmBtn');
+  const saveRecipeNewBtn = document.getElementById('saveRecipeNewBtn');
+  const saveModalSub = document.getElementById('saveModalSub');
+  const exportRecipesBtn = document.getElementById('exportRecipesBtn');
+  const importRecipesBtn = document.getElementById('importRecipesBtn');
+  const importRecipesInput = document.getElementById('importRecipesInput');
+  // id de la receta seleccionada al abrir el modal (para "Actualizar"); null = crear nueva
+  let editingRecipeId = null;
 
   function getSavedRecipes() {
     try {
@@ -392,6 +399,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       savedRecipesSelect.appendChild(opt);
       loadRecipeBtn.disabled = true;
       deleteRecipeBtn.disabled = true;
+      if (exportRecipesBtn) exportRecipesBtn.disabled = true;
       return;
     }
 
@@ -407,6 +415,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     }
     loadRecipeBtn.disabled = false;
     deleteRecipeBtn.disabled = false;
+    if (exportRecipesBtn) exportRecipesBtn.disabled = false;
   }
 
   // ---- Modales accesibles: foco atrapado, Escape y devolución de foco al abridor ----
@@ -450,9 +459,24 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     lastFocusedBeforeModal = null;
   }
 
-  // ---- Modal "Guardar receta" ----
+  // ---- Modal "Guardar receta" (crear nueva o actualizar la seleccionada) ----
   function openSaveModal() {
-    saveRecipeNameInput.value = '';
+    const recipes = getSavedRecipes();
+    const selId = savedRecipesSelect.value;
+    const seleccionada = selId ? recipes.find(r => String(r.id) === String(selId)) : null;
+    editingRecipeId = seleccionada ? seleccionada.id : null;
+
+    if (seleccionada) {
+      saveRecipeNameInput.value = seleccionada.name;
+      saveModalSub.textContent = I18N.t('saveModalSubEdit').replace('{name}', seleccionada.name);
+      saveRecipeConfirmBtn.textContent = I18N.t('modalUpdate');
+      saveRecipeNewBtn.style.display = '';
+    } else {
+      saveRecipeNameInput.value = '';
+      saveModalSub.textContent = I18N.t('saveModalSub');
+      saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
+      saveRecipeNewBtn.style.display = 'none';
+    }
     openModal(saveRecipeModal, saveRecipeNameInput);
   }
   function closeSaveModal() {
@@ -466,7 +490,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   });
   saveRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, saveRecipeModal, closeSaveModal));
   saveRecipeNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); guardarReceta(); }
+    if (e.key === 'Enter') { e.preventDefault(); guardarReceta({ overwriteId: editingRecipeId }); }
   });
 
   // ---- Modal de confirmación genérico (sustituye a window.confirm) ----
@@ -494,7 +518,29 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     });
   }
 
-  function guardarReceta() {
+  // Configuración actual del formulario como objeto "data" de una receta.
+  function currentData() {
+    return {
+      numPaneteos: parseFloat(el.numPaneteos.value),
+      pesoPaneto: parseFloat(el.pesoPaneto.value),
+      temperatura: parseInt(el.temperatura.value, 10),
+      hidratacion: parseFloat(el.hidratacion.value),
+      sal: parseFloat(el.sal.value),
+      flours: JSON.parse(JSON.stringify(flours))
+    };
+  }
+
+  // Genera un id único que no colisione con los presentes en idsSet (Set de strings).
+  function nuevoId(idsSet) {
+    let id = Date.now();
+    while (idsSet.has(String(id))) id++;
+    return id;
+  }
+
+  // Crea una receta nueva o, si opts.overwriteId apunta a una existente, la
+  // sobrescribe con el nombre y la configuración actuales.
+  function guardarReceta(opts) {
+    opts = opts || {};
     const name = saveRecipeNameInput.value.trim();
     if (!name) {
       showToast(I18N.t('emptyNameAlert'));
@@ -502,30 +548,30 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       return;
     }
     const list = getSavedRecipes();
-    const nueva = {
-      id: Date.now(),
-      name: name,
-      savedAt: new Date().toISOString(),
-      data: {
-        numPaneteos: parseFloat(el.numPaneteos.value),
-        pesoPaneto: parseFloat(el.pesoPaneto.value),
-        temperatura: parseInt(el.temperatura.value, 10),
-        hidratacion: parseFloat(el.hidratacion.value),
-        sal: parseFloat(el.sal.value),
-        flours: JSON.parse(JSON.stringify(flours))
-      }
-    };
-    list.push(nueva);
+    const existente = opts.overwriteId != null ? list.find(r => r.id === opts.overwriteId) : null;
+    let targetId;
+    if (existente) {
+      existente.name = name;
+      existente.data = currentData();
+      existente.updatedAt = new Date().toISOString();
+      targetId = existente.id;
+    } else {
+      const ids = new Set(list.map(r => String(r.id)));
+      const nueva = { id: nuevoId(ids), name: name, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: currentData() };
+      list.push(nueva);
+      targetId = nueva.id;
+    }
     setSavedRecipes(list);
     // Cerramos el modal en cuanto la receta está guardada, antes de repintar el
     // select, para que el cierre nunca dependa de pasos de UI posteriores.
     closeSaveModal();
     populateSavedRecipesSelect();
-    savedRecipesSelect.value = String(nueva.id);
-    showToast(I18N.t('recipeSavedToast'));
+    savedRecipesSelect.value = String(targetId);
+    showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
   }
 
-  saveRecipeConfirmBtn.addEventListener('click', guardarReceta);
+  saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId }));
+  saveRecipeNewBtn.addEventListener('click', () => guardarReceta({ overwriteId: null }));
 
   loadRecipeBtn.addEventListener('click', () => {
     const id = savedRecipesSelect.value;
@@ -559,6 +605,113 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     setSavedRecipes(list);
     populateSavedRecipesSelect();
     showToast(I18N.t('recipeDeletedToast'));
+  });
+
+  // ---- Exportar / Importar recetas (JSON) ----
+  function recipesToJSON() {
+    return JSON.stringify({
+      app: 'calculatupizza', type: 'recipes', version: 1,
+      exportedAt: new Date().toISOString(),
+      recipes: getSavedRecipes()
+    }, null, 2);
+  }
+
+  function exportRecipes() {
+    if (getSavedRecipes().length === 0) { showToast(I18N.t('noRecipesToExport')); return; }
+    const blob = new Blob([recipesToJSON()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'recetas-pizza.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(I18N.t('recipesExportedToast'));
+  }
+
+  // Valida y normaliza una receta importada; devuelve null si no es válida.
+  function normalizeRecipe(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const d = (raw.data && typeof raw.data === 'object') ? raw.data : raw;
+    if (!Array.isArray(d.flours) || d.flours.length === 0) return null;
+    const num = (v, def) => { const n = parseFloat(v); return isFinite(n) ? n : def; };
+    const flours = d.flours.map((f, i) => ({
+      id: parseInt(f && f.id, 10) || (i + 1),
+      catalogId: parseInt(f && f.catalogId, 10) || 0,
+      pct: num(f && f.pct, 0),
+      locked: !!(f && f.locked)
+    }));
+    const name = (typeof raw.name === 'string' && raw.name.trim())
+      ? raw.name.trim().slice(0, 40)
+      : I18N.t('importedRecipeName');
+    return {
+      name: name,
+      savedAt: (typeof raw.savedAt === 'string') ? raw.savedAt : new Date().toISOString(),
+      updatedAt: (typeof raw.updatedAt === 'string') ? raw.updatedAt : new Date().toISOString(),
+      data: {
+        numPaneteos: num(d.numPaneteos, 6),
+        pesoPaneto: num(d.pesoPaneto, 280),
+        temperatura: Math.round(num(d.temperatura, 18)),
+        hidratacion: num(d.hidratacion, 63),
+        sal: num(d.sal, 40),
+        flours: flours
+      }
+    };
+  }
+
+  function recipeSignature(r) {
+    return (r.name || '') + '|' + JSON.stringify(r.data);
+  }
+
+  // Fusiona el JSON importado con las recetas actuales (sin borrar nada),
+  // saltando duplicados exactos. Devuelve nº de recetas añadidas, o -1 si el
+  // archivo no es válido.
+  function importFromText(text) {
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (e) { return -1; }
+    const incoming = Array.isArray(parsed) ? parsed
+      : (parsed && Array.isArray(parsed.recipes) ? parsed.recipes : null);
+    if (!incoming) return -1;
+
+    const list = getSavedRecipes();
+    const ids = new Set(list.map(r => String(r.id)));
+    const sigs = new Set(list.map(recipeSignature));
+    let added = 0;
+    incoming.forEach(raw => {
+      const rec = normalizeRecipe(raw);
+      if (!rec) return;
+      if (sigs.has(recipeSignature(rec))) return; // duplicado exacto -> saltar
+      rec.id = nuevoId(ids);
+      ids.add(String(rec.id));
+      sigs.add(recipeSignature(rec));
+      list.push(rec);
+      added++;
+    });
+    if (added > 0) setSavedRecipes(list);
+    return added;
+  }
+
+  exportRecipesBtn.addEventListener('click', exportRecipes);
+  importRecipesBtn.addEventListener('click', () => importRecipesInput.click());
+  importRecipesInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const added = importFromText(String(reader.result));
+      if (added < 0) {
+        showToast(I18N.t('importError'));
+      } else if (added === 0) {
+        showToast(I18N.t('importNothingNew'));
+      } else {
+        populateSavedRecipesSelect();
+        showToast(I18N.t('recipesImportedToast').replace('{n}', added));
+      }
+      importRecipesInput.value = ''; // permite reimportar el mismo archivo
+    };
+    reader.onerror = () => { showToast(I18N.t('importError')); importRecipesInput.value = ''; };
+    reader.readAsText(file);
   });
 
   populateSavedRecipesSelect();
