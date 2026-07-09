@@ -404,6 +404,19 @@
   </footer>
 </div>
 
+<!-- Barra-resumen fija (solo móvil): muestra las cifras que reaccionan a los
+     ajustes cuando el resultado aún no está a la vista. Al tocarla salta al desglose. -->
+<div id="mobileSummary" class="mobile-summary" role="button" tabindex="0" data-i18n-aria="summaryAria" aria-label="Ver el resultado completo">
+  <div class="ms-stats">
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryFlour">Harina</span><span class="ms-val" id="ms-harina">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryWater">Agua</span><span class="ms-val" id="ms-agua">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summarySalt">Sal</span><span class="ms-val" id="ms-sal">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryYeast">Levadura</span><span class="ms-val" id="ms-lev">0 g</span></div>
+  </div>
+  <span class="ms-blocked" data-i18n="summaryBlocked">Corrige el % de harinas</span>
+  <svg class="ms-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+</div>
+
 <!-- Módulos JS. Orden importante: i18n define window.PizzaI18N, del que dependen los demás. -->
 <script src="js/i18n.js"></script>
 <script src="js/calculator.js"></script>

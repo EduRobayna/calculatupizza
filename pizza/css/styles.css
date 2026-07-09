@@ -312,3 +312,28 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
      para no apretarse contra el logo centrado ni salirse por la derecha. */
   .hero-controls{ position: static; width: 100%; justify-content: flex-end; margin-bottom: 2px; }
 }
+
+/* ===== Barra-resumen fija (solo móvil) ===== */
+.mobile-summary{ display: none; }
+@media (max-width: 900px){
+  .mobile-summary{
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--forno); color: var(--farina);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.45);
+    transform: translateY(120%);
+    transition: transform 0.25s ease;
+    cursor: pointer;
+  }
+  .mobile-summary.show{ transform: translateY(0); }
+}
+.ms-stats{ display: flex; flex: 1; gap: 10px; justify-content: space-between; min-width: 0; }
+.ms-stat{ display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.ms-label{ font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.72; }
+.ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.ms-blocked{ display: none; flex: 1; font-size: 13px; font-weight: 600; color: #f0a44e; }
+.ms-chevron{ flex-shrink: 0; opacity: 0.75; }
+.mobile-summary.blocked .ms-stats{ display: none; }
+.mobile-summary.blocked .ms-blocked{ display: block; }
