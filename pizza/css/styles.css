@@ -70,6 +70,9 @@ body{
 .wrap{ max-width: 1180px; margin: 0 auto; padding: 28px 20px 40px; }
 
 header.hero{ display:flex; flex-direction:column; gap:10px; padding: 18px 4px 34px; border-bottom: 1px solid var(--border); margin-bottom: 34px; position: relative; }
+/* Contenedor de los toggles (idioma + tema). En escritorio se ancla arriba a
+   la derecha; en móvil pasa a fila propia (ver media query más abajo). */
+.hero-controls{ position: absolute; top: 18px; right: 4px; display: flex; align-items: center; gap: 8px; }
 .hero-logo { align-self: center; width: 85px; height: auto; object-fit: contain; margin-bottom: 16px; transition: transform 0.3s ease; filter: drop-shadow(0 4px 6px rgba(36,26,21,0.15)); }
 .hero-logo:hover { transform: scale(1.05) rotate(-5deg); }
 
@@ -218,9 +221,6 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
 
 /* Botón de modo oscuro/claro */
 .theme-toggle{
-  position: absolute;
-  top: 18px;
-  right: 4px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -259,9 +259,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 
 /* Botón de idioma ES/EN */
 .lang-toggle{
-  position: absolute;
-  top: 18px;
-  right: 58px;
   height: 44px;
   padding: 0 14px;
   border-radius: 22px;
@@ -285,7 +282,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
 .lang-toggle .lang-opt{ opacity: 0.4; }
 .lang-toggle .lang-opt.active{ opacity: 1; color: var(--pomodoro); }
 .lang-toggle .lang-sep{ opacity: 0.3; }
-@media (max-width: 420px){
-  .lang-toggle{ right: 56px; padding: 0 10px; font-size: 11.5px; }
-  .theme-toggle{ right: 4px; }
+@media (max-width: 480px){
+  /* En móvil los controles pasan a su propia fila alineada a la derecha,
+     para no apretarse contra el logo centrado ni salirse por la derecha. */
+  .hero-controls{ position: static; width: 100%; justify-content: flex-end; margin-bottom: 2px; }
 }
