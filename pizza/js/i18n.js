@@ -118,7 +118,9 @@ window.PizzaI18N = (function(){
       importError: "No se pudo importar. ¿Es un archivo de recetas válido?",
       noRecipesToExport: "No tienes recetas para exportar.",
       importedRecipeName: "Receta importada",
-      duplicateNameError: "Ya existe una receta con ese nombre."
+      duplicateNameError: "Ya existe una receta con ese nombre.",
+      notesLabel: "Notas de la receta",
+      notesPlaceholder: "Notas (opcional): horno, hidratación, cómo quedó, ajustes para la próxima…"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -235,7 +237,9 @@ window.PizzaI18N = (function(){
       importError: "Couldn't import. Is it a valid recipes file?",
       noRecipesToExport: "You have no recipes to export.",
       importedRecipeName: "Imported recipe",
-      duplicateNameError: "A recipe with that name already exists."
+      duplicateNameError: "A recipe with that name already exists.",
+      notesLabel: "Recipe notes",
+      notesPlaceholder: "Notes (optional): oven, hydration, how it turned out, tweaks for next time…"
     }
   };
 
