@@ -162,13 +162,13 @@ window.stepValue = function(id, delta, minVal, maxVal) {
           <span class="unit-tag">%</span>
         </div>
         <div class="flour-actions">
-          <button type="button" class="btn-icon toggle-lock ${flour.locked ? 'active-lock' : ''}" data-id="${flour.id}">
+          <button type="button" class="btn-icon toggle-lock ${flour.locked ? 'active-lock' : ''}" data-id="${flour.id}" title="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}" aria-label="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}">
             ${flour.locked
               ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
               : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
             }
           </button>
-          <button type="button" class="btn-icon delete" data-id="${flour.id}">
+          <button type="button" class="btn-icon delete" data-id="${flour.id}" title="${I18N.t('deleteFlourAria')}" aria-label="${I18N.t('deleteFlourAria')}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
@@ -376,7 +376,8 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     requestAnimationFrame(() => { updateSummaryVisibility(); summaryTick = false; });
   }
   if (mobileSummary && resultsCard) {
-    const irAlResultado = () => resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const sinMovimiento = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const irAlResultado = () => resultsCard.scrollIntoView({ behavior: sinMovimiento() ? 'auto' : 'smooth', block: 'start' });
     mobileSummary.addEventListener('click', irAlResultado);
     mobileSummary.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irAlResultado(); }

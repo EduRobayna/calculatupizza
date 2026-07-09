@@ -16,6 +16,7 @@
   --surface: #fffdf8;
   --surface-2: #fffefb;
   --surface-3: var(--farina-2);
+  --surface-3-hover: #dfd1b3;
   --text: var(--ink);
   --text-soft: var(--ink-soft);
   --border: var(--line);
@@ -31,6 +32,7 @@ html[data-theme="dark"]{
   --surface: #221b15;
   --surface-2: #2a2118;
   --surface-3: #362b20;
+  --surface-3-hover: #43352a;
   --text: #f3ead9;
   --text-soft: #b3a48d;
   --border: rgba(243,234,217,0.14);
@@ -47,9 +49,8 @@ html,body{ margin:0; padding:0; }
 
 /* Evita que un tap rápido o mantenido seleccione texto y saque el menú copiar/pegar,
    en botones, labels y demás elementos puramente de interfaz. Los inputs sí se pueden seleccionar. */
-button, .icon-btn, .btn-icon, .stepper-btn, .btn-outline, .btn-secondary, .add-flour-btn,
-.rebalance-btn, label, .section-title, .flour-index, .w-badge, .unit-tag, .temp-readout,
-.results-title, .results-badge, .headline-label, .stat-label, a.social-link, .theme-toggle{
+button, a.social-link, label, .section-title, .flour-index, .w-badge, .unit-tag, .temp-readout,
+.results-title, .results-badge, .headline-label, .stat-label{
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
@@ -130,7 +131,9 @@ input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 input[type="range"]{ -webkit-appearance:none; appearance:none; flex:1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--basilico), var(--surface-3) 40%, var(--pomodoro)); cursor: pointer; }
 input[type="range"]::-webkit-slider-thumb{ -webkit-appearance:none; width: 26px; height:26px; border-radius:50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor:pointer; transition: transform 0.1s; }
 input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
-.temp-scale{ display:flex; justify-content:space-between; font-family: var(--font-mono); font-size: 11px; color: var(--text-soft); margin-top: 12px; padding: 0 2px; }
+input[type="range"]::-moz-range-track{ height: 8px; border-radius: 4px; background: transparent; }
+input[type="range"]::-moz-range-thumb{ width: 26px; height: 26px; border-radius: 50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor: pointer; }
+input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 
 /* Progress Bar */
 .progress-container { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; transition: background-color 0.25s ease, border-color 0.25s ease; }
@@ -186,7 +189,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
 .btn-outline:hover { border-color: var(--forno); background: var(--tint-a); }
 .btn-outline:active { transform: scale(0.97); }
 .btn-secondary { background: var(--surface-3); border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: background 0.08s, transform 0.08s; }
-.btn-secondary:hover { background: #dfd1b3; }
+.btn-secondary:hover { background: var(--surface-3-hover); }
 .btn-secondary:active { transform: scale(0.96); }
 
 .warning-banner{ display:none; margin-top: 14px; background: rgba(193,67,46,0.09); border: 1.5px solid rgba(193,67,46,0.4); color: var(--pomodoro-dark); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; align-items:flex-start; gap: 8px; }
@@ -207,10 +210,10 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
 .swatch{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
 .stat-value{ font-family: var(--font-mono); font-size: 16px; font-weight:600; }
 .flour-breakdown{ margin-top: 8px; padding-top: 8px; }
-.flour-sub{ display:flex; justify-content:space-between; padding: 8px 0 8px 17px; font-size: 13px; color: rgba(243,234,217,0.6); border-bottom: 1px dashed rgba(255,255,255,0.08); align-items: center; }
-.flour-sub .fname{ color: rgba(243,234,217,0.85); display: flex; align-items: center; gap: 8px; }
+.flour-sub{ display:flex; justify-content:space-between; gap: 10px; padding: 8px 0 8px 17px; font-size: 13px; color: rgba(243,234,217,0.6); border-bottom: 1px dashed rgba(255,255,255,0.08); align-items: center; }
+.flour-sub .fname{ color: rgba(243,234,217,0.85); display: flex; align-items: center; gap: 8px; min-width: 0; }
 .flour-sub:last-child{ border-bottom:none; }
-.flour-sub .fval{ font-family: var(--font-mono); color: var(--farina); font-weight:600; }
+.flour-sub .fval{ font-family: var(--font-mono); color: var(--farina); font-weight:600; white-space: nowrap; flex-shrink: 0; }
 .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
 .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
 
@@ -337,3 +340,20 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .ms-chevron{ flex-shrink: 0; opacity: 0.75; }
 .mobile-summary.blocked .ms-stats{ display: none; }
 .mobile-summary.blocked .ms-blocked{ display: block; }
+
+/* ===== Foco de teclado consistente ===== */
+button:focus-visible, [role="button"]:focus-visible, a.social-link:focus-visible{
+  outline: 2px solid var(--pomodoro);
+  outline-offset: 2px;
+}
+
+/* ===== Respeta la preferencia de movimiento reducido ===== */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-logo:hover{ transform: none; }
+}
