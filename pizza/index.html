@@ -309,14 +309,24 @@
     </div>
   </div>
 
-  <div id="saveRecipeModal" class="modal-overlay" style="display:none;">
+  <div id="saveRecipeModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle" aria-describedby="saveModalSub">
     <div class="modal-card">
-      <h3 class="modal-title" data-i18n="saveModalTitle">Guardar receta</h3>
-      <p class="modal-sub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
+      <h3 class="modal-title" id="saveModalTitle" data-i18n="saveModalTitle">Guardar receta</h3>
+      <p class="modal-sub" id="saveModalSub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
       <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
       <div class="modal-actions">
         <button type="button" id="saveRecipeCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
         <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="confirmModalText">
+    <div class="modal-card">
+      <p class="modal-sub" id="confirmModalText" style="margin-top:0;"></p>
+      <div class="modal-actions">
+        <button type="button" id="confirmCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
+        <button type="button" id="confirmOkBtn" class="btn-secondary modal-confirm">Eliminar</button>
       </div>
     </div>
   </div>
