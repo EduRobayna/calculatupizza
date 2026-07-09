@@ -341,11 +341,14 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .mobile-summary.blocked .ms-stats{ display: none; }
 .mobile-summary.blocked .ms-blocked{ display: block; }
 
-/* ===== Foco de teclado consistente (halo suave, como en los inputs) ===== */
-button:focus-visible, [role="button"]:focus-visible, a.social-link:focus-visible{
-  outline: 2px solid transparent;   /* visible en modo de alto contraste */
+/* ===== Foco de teclado ===== */
+/* El anillo solo aparece al navegar con el teclado (clase .using-keyboard en
+   <html>, que activa/desactiva app.js), nunca con ratón ni táctil. */
+html.using-keyboard button:focus,
+html.using-keyboard [role="button"]:focus,
+html.using-keyboard a.social-link:focus{
+  outline: 2px solid var(--pomodoro);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(193,67,46,0.35);
 }
 
 /* ===== Respeta la preferencia de movimiento reducido ===== */

@@ -8,6 +8,13 @@
   const iosInstallBanner = document.getElementById('iosInstallBanner');
   const I18N = window.PizzaI18N;
 
+  // Modo de entrada: el anillo de foco solo se muestra al navegar con teclado.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') document.documentElement.classList.add('using-keyboard');
+  });
+  document.addEventListener('mousedown', () => document.documentElement.classList.remove('using-keyboard'));
+  document.addEventListener('touchstart', () => document.documentElement.classList.remove('using-keyboard'), { passive: true });
+
   // Idioma ES / EN
   I18N.applyStaticDom();
   const langToggle = document.getElementById('langToggle');
