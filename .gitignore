@@ -1,0 +1,21 @@
+# Dependencias (por si en el futuro se añade tooling)
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Configuración local de herramientas (Claude Code)
+.claude/
+
+# Temporales
+*.tmp

@@ -9,3 +9,15 @@
 
 /manifest.json
   Cache-Control: no-cache, no-store, must-revalidate
+
+/css/styles.css
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/i18n.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/calculator.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/app.js
+  Cache-Control: no-cache, no-store, must-revalidate

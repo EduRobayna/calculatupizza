@@ -1,9 +1,14 @@
 // v3: el usuario decide cuándo actualizar (banner "Actualizar") en vez de recarga forzada.
 // Sigue usando estrategia "red primero" para que el contenido esté siempre al día.
-const CACHE_NAME = 'pizza-calc-v3';
+const CACHE_NAME = 'pizza-calc-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './css/styles.css',
+  './js/i18n.js',
+  './js/calculator.js',
+  './js/app.js',
+  './manifest.json',
   './logo.png',
   './icon-192.png',
   './icon-512.png'
