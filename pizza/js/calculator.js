@@ -17,6 +17,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
 (function(){
   const I18N = window.PizzaI18N;
+  const U = window.PizzaUnits; // formato/conversión de unidades (métrico/imperial)
   const TABLA_LEVADURA = { 17:1.3, 18:1.0, 19:0.9, 20:0.7, 21:0.6, 22:0.5, 23:0.4, 24:0.3, 25:0.2 };
   const COLORES_HARINA = ['var(--color-h1)', 'var(--color-h2)', 'var(--color-h3)', 'var(--color-h4)', 'var(--color-h5)'];
   const STORAGE_KEY = 'edu_pizza_calc_settings_v16';
@@ -43,6 +44,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     pesoPaneto: document.getElementById('pesoPaneto'),
     temperatura: document.getElementById('temperatura'),
     tempValue: document.getElementById('tempValue'),
+    tempUnit: document.getElementById('tempUnit'),
     hidratacion: document.getElementById('hidratacion'),
     sal: document.getElementById('sal'),
     warningBanner: document.getElementById('warningBanner'),
@@ -122,9 +124,6 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   flours.forEach(f => { if(f.id > maxId) maxId = f.id; });
   let flourIdCounter = maxId + 1;
   if(flourIdCounter < 1) flourIdCounter = 4;
-
-  function fmtInt(n) { return Math.round(n).toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES'); }
-  function fmt2(n) { return n.toLocaleString(I18N.getLang() === 'en' ? 'en-US' : 'es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
   // Reparte la masa total exactamente entre sus cuatro componentes.
   // masa = harina·(1 + h) + sal + levadura, con sal = agua·(sal/1000) = harina·h·(sal/1000)
@@ -265,7 +264,8 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     const hidratacionPct = parseFloat(el.hidratacion.value) || 0;
     const salPorKgAgua = parseFloat(el.sal.value) || 0;
 
-    el.tempValue.textContent = temp;
+    el.tempValue.textContent = U.tempValue(temp);
+    if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
     saveSettings();
     if (onConfigChange) onConfigChange();
 
@@ -325,23 +325,23 @@ window.stepValue = function(id, delta, minVal, maxVal) {
       const color = COLORES_HARINA[idx % COLORES_HARINA.length];
       return `<div class="flour-sub">
         <span class="fname"><span class="swatch" style="background:${color}"></span>${flourName(f.catalogId)}</span>
-        <span class="fval">${fmtInt(gramos)} g</span>
+        <span class="fval">${U.formatWeight(gramos)}</span>
       </div>`;
     }).join('');
 
-    el.totalMasa.textContent = fmtInt(pesoTotalMasa);
-    el.totalHarina.textContent = fmtInt(harinaTotal) + ' g';
-    el.totalAgua.textContent = fmtInt(aguaTotal) + ' g';
-    el.totalSal.textContent = fmtInt(salTotal) + ' g';
-    el.totalLevadura.textContent = fmt2(levaduraTotal) + ' g';
-    el.totalLevaduraSeca.textContent = fmt2(levaduraSecaTotal) + ' g';
+    el.totalMasa.textContent = U.formatWeight(pesoTotalMasa);
+    el.totalHarina.textContent = U.formatWeight(harinaTotal);
+    el.totalAgua.textContent = U.formatWeight(aguaTotal);
+    el.totalSal.textContent = U.formatWeight(salTotal);
+    el.totalLevadura.textContent = U.formatWeightPrecise(levaduraTotal);
+    el.totalLevaduraSeca.textContent = U.formatWeightPrecise(levaduraSecaTotal);
 
     if (mobileSummary) {
       mobileSummary.classList.remove('blocked');
-      ms.harina.textContent = fmtInt(harinaTotal) + ' g';
-      ms.agua.textContent = fmtInt(aguaTotal) + ' g';
-      ms.sal.textContent = fmtInt(salTotal) + ' g';
-      ms.lev.textContent = fmt2(levaduraTotal) + ' g';
+      ms.harina.textContent = U.formatWeight(harinaTotal);
+      ms.agua.textContent = U.formatWeight(aguaTotal);
+      ms.sal.textContent = U.formatWeight(salTotal);
+      ms.lev.textContent = U.formatWeightPrecise(levaduraTotal);
     }
   }
 
@@ -392,6 +392,9 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     renderFlours();
     populateSavedRecipesSelect();
   });
+
+  // Recalcula (reformatea pesos y temperatura) al cambiar métrico ↔ imperial.
+  window.addEventListener('pizzaUnitsChange', () => { calcular(); });
 
   // ==================== RECETAS GUARDADAS (con nombre) ====================
   const SAVED_RECIPES_KEY = 'edu_pizza_saved_recipes_v1';
@@ -522,6 +525,12 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   let lastFocusedBeforeModal = null;
 
+  // Bloquea el scroll del fondo mientras haya cualquier modal (.modal-overlay) abierto.
+  function syncScrollLock() {
+    const anyOpen = Array.from(document.querySelectorAll('.modal-overlay')).some(m => m.style.display === 'flex');
+    document.documentElement.classList.toggle('modal-open', anyOpen);
+  }
+
   function getFocusables(modal) {
     return Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
       .filter(el => !el.disabled && el.offsetParent !== null);
@@ -541,6 +550,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   function openModal(modal, focusTarget) {
     lastFocusedBeforeModal = document.activeElement;
     modal.style.display = 'flex';
+    syncScrollLock();
     setTimeout(() => {
       const t = focusTarget || getFocusables(modal)[0];
       if (t) t.focus();
@@ -549,6 +559,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   function closeModal(modal) {
     modal.style.display = 'none';
+    syncScrollLock();
     if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
       lastFocusedBeforeModal.focus();
     }
@@ -916,7 +927,7 @@ ${I18N.t('recipeTotals')}
 - (${I18N.t('recipeDryYeast')}: ${el.totalLevaduraSeca.textContent})
 
 ${I18N.t('recipeFlourMix')}
-${flours.map(f => `- ${flourName(f.catalogId)}: ${Math.round(harinaT * (f.pct/100))}g (${f.pct}%)`).join('\n')}`;
+${flours.map(f => `- ${flourName(f.catalogId)}: ${U.formatWeight(harinaT * (f.pct/100))} (${f.pct}%)`).join('\n')}`;
 
     const btn = this;
     const showCopied = () => {

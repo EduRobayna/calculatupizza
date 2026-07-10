@@ -44,7 +44,7 @@ window.PizzaI18N = (function(){
       resultsTitle: "Resultado",
       resultsBadgeReady: "Listo",
       resultsBadgeBlocked: "Bloqueado",
-      headlineLabel: "g de masa total",
+      headlineLabel: "de masa total",
       statHarinaTotal: "Harina total",
       statAgua: "Agua",
       statSal: "Sal",
@@ -133,7 +133,17 @@ window.PizzaI18N = (function(){
       summaryAria: "Ver el resultado completo",
       lockFlourTitle: "Fijar este porcentaje al auto-balancear",
       unlockFlourTitle: "Dejar de fijar este porcentaje",
-      deleteFlourAria: "Eliminar esta harina"
+      deleteFlourAria: "Eliminar esta harina",
+      settingsTitle: "Configuración",
+      settingsToggleAria: "Abrir configuración",
+      settingsLanguage: "Idioma",
+      settingsTheme: "Tema",
+      settingsUnits: "Sistema de unidades",
+      unitsMetric: "Métrico (g, °C)",
+      unitsImperial: "Imperial (oz, °F)",
+      settingsRecipes: "Recetas",
+      settingsClose: "Cerrar",
+      settingsDone: "Hecho"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator · Edu Robayna",
@@ -176,7 +186,7 @@ window.PizzaI18N = (function(){
       resultsTitle: "Result",
       resultsBadgeReady: "Ready",
       resultsBadgeBlocked: "Blocked",
-      headlineLabel: "g total dough",
+      headlineLabel: "total dough",
       statHarinaTotal: "Total flour",
       statAgua: "Water",
       statSal: "Salt",
@@ -265,7 +275,17 @@ window.PizzaI18N = (function(){
       summaryAria: "See the full result",
       lockFlourTitle: "Lock this percentage when auto-balancing",
       unlockFlourTitle: "Unlock this percentage",
-      deleteFlourAria: "Remove this flour"
+      deleteFlourAria: "Remove this flour",
+      settingsTitle: "Settings",
+      settingsToggleAria: "Open settings",
+      settingsLanguage: "Language",
+      settingsTheme: "Theme",
+      settingsUnits: "Unit system",
+      unitsMetric: "Metric (g, °C)",
+      unitsImperial: "Imperial (oz, °F)",
+      settingsRecipes: "Recipes",
+      settingsClose: "Close",
+      settingsDone: "Done"
     }
   };
 

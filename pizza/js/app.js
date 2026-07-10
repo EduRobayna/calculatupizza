@@ -81,6 +81,69 @@
     else if (mq.addListener) mq.addListener(onSchemeChange);
   }
 
+  // ==================== PANEL DE CONFIGURACIÓN ====================
+  const U = window.PizzaUnits;
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsModal = document.getElementById('settingsModal');
+  const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+  const settingsDoneBtn = document.getElementById('settingsDoneBtn');
+  let lastFocusBeforeSettings = null;
+
+  function settingsFocusables(){
+    return Array.from(settingsModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(el => !el.disabled && el.offsetParent !== null);
+  }
+  // Bloquea el scroll del fondo mientras haya cualquier modal (.modal-overlay) abierto.
+  function syncScrollLock(){
+    const anyOpen = Array.from(document.querySelectorAll('.modal-overlay')).some(m => m.style.display === 'flex');
+    document.documentElement.classList.toggle('modal-open', anyOpen);
+  }
+  function openSettings(){
+    lastFocusBeforeSettings = document.activeElement;
+    settingsModal.style.display = 'flex';
+    syncScrollLock();
+    setTimeout(() => { const f = settingsFocusables()[0]; if (f) f.focus(); }, 50);
+  }
+  function closeSettings(){
+    settingsModal.style.display = 'none';
+    syncScrollLock();
+    if (lastFocusBeforeSettings && typeof lastFocusBeforeSettings.focus === 'function') lastFocusBeforeSettings.focus();
+    lastFocusBeforeSettings = null;
+  }
+  if (settingsToggle && settingsModal) {
+    settingsToggle.addEventListener('click', openSettings);
+    if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', closeSettings);
+    if (settingsDoneBtn) settingsDoneBtn.addEventListener('click', closeSettings);
+    settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+    settingsModal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeSettings(); return; }
+      if (e.key !== 'Tab') return;
+      const f = settingsFocusables(); if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  }
+
+  // Control segmentado de unidades (métrico / imperial)
+  const unitsToggle = document.getElementById('unitsToggle');
+  function syncUnitsUI(){
+    if (!unitsToggle || !U) return;
+    const cur = U.get();
+    unitsToggle.querySelectorAll('.seg-opt').forEach(b => {
+      const on = b.getAttribute('data-units') === cur;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  if (unitsToggle && U) {
+    unitsToggle.querySelectorAll('.seg-opt').forEach(b => {
+      b.addEventListener('click', () => U.set(b.getAttribute('data-units')));
+    });
+    window.addEventListener('pizzaUnitsChange', syncUnitsUI);
+    syncUnitsUI();
+  }
+
   const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
