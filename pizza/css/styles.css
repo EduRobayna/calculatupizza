@@ -107,7 +107,10 @@ label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02e
 html.using-keyboard .stepper:focus-within { border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
 .stepper-btn { background: var(--tint-a); border: none; padding: 0 16px; height: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
 .stepper-btn:hover { background: var(--tint-b); }
-.stepper-btn:active { background: var(--tint-c); transform: scale(0.92); }
+/* Sin scale aquí: los +/− no tienen esquinas redondeadas y al encogerse
+   asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
+   da feedback de pulsación. */
+.stepper-btn:active { background: var(--tint-c); }
 .stepper input[type="number"] { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
 .stepper input[type="number"]:focus { box-shadow: none; outline: none; }
 
