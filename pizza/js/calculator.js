@@ -426,10 +426,19 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     try { localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list)); } catch (e) {}
   }
 
-  // ¿La configuración actual coincide exactamente con alguna receta guardada?
+  // Clave de contenido de una receta, ignorando el id interno de cada harina
+  // (ese id no define la receta; dos recetas con el mismo contenido deben
+  // considerarse iguales aunque sus harinas tengan ids distintos).
+  function dataKey(d) {
+    d = d || {};
+    const flours = (d.flours || []).map(f => f.catalogId + ':' + f.pct + ':' + (f.locked ? 1 : 0)).join(',');
+    return [d.numPaneteos, d.pesoPaneto, d.temperatura, d.hidratacion, d.sal, flours].join('|');
+  }
+
+  // ¿La configuración actual coincide con alguna receta guardada?
   function findMatchingRecipe() {
-    const cur = JSON.stringify(currentData());
-    return getSavedRecipes().find(r => r.data && JSON.stringify(r.data) === cur) || null;
+    const cur = dataKey(currentData());
+    return getSavedRecipes().find(r => r.data && dataKey(r.data) === cur) || null;
   }
 
   // Indica si lo que hay en pantalla está guardado como receta o no.
@@ -798,8 +807,24 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     };
   }
 
+  // Firma de "misma receta" para deduplicar al importar (nombre + notas +
+  // contenido, ignorando el id interno de las harinas vía dataKey).
   function recipeSignature(r) {
-    return (r.name || '') + '|' + (r.notes || '') + '|' + JSON.stringify(r.data);
+    return (r.name || '').trim().toLowerCase() + '|' + (r.notes || '').trim() + '|' + dataKey(r.data);
+  }
+
+  // Devuelve un nombre único (sin distinguir mayúsculas) añadiendo " (2)", " (3)"…
+  // namesLower es un Set de nombres ya usados en minúsculas.
+  function uniqueName(base, namesLower) {
+    const MAX = 40;
+    let n = 2, candidate;
+    do {
+      const suffix = ' (' + n + ')';
+      const room = MAX - suffix.length;
+      candidate = (base.length > room ? base.slice(0, room) : base) + suffix;
+      n++;
+    } while (namesLower.has(candidate.trim().toLowerCase()));
+    return candidate;
   }
 
   // Fusiona el JSON importado con las recetas actuales (sin borrar nada),
@@ -815,14 +840,25 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     const list = getSavedRecipes();
     const ids = new Set(list.map(r => String(r.id)));
     const sigs = new Set(list.map(recipeSignature));
+    const names = new Set(list.map(r => (r.name || '').trim().toLowerCase()));
+    const contentKeys = new Set(list.map(r => dataKey(r.data)));
     let added = 0;
     incoming.forEach(raw => {
       const rec = normalizeRecipe(raw);
       if (!rec) return;
-      if (sigs.has(recipeSignature(rec))) return; // duplicado exacto -> saltar
+      if (sigs.has(recipeSignature(rec))) return; // misma receta (nombre+contenido) -> saltar
+      // No permitir nombres duplicados: si el nombre ya existe...
+      if (names.has(rec.name.trim().toLowerCase())) {
+        // ...y ya tienes ese contenido (bajo cualquier nombre), no acumules copias;
+        if (contentKeys.has(dataKey(rec.data))) return;
+        // ...si el contenido es distinto, renómbrala con sufijo " (2)", " (3)"…
+        rec.name = uniqueName(rec.name, names);
+      }
       rec.id = nuevoId(ids);
       ids.add(String(rec.id));
       sigs.add(recipeSignature(rec));
+      names.add(rec.name.trim().toLowerCase());
+      contentKeys.add(dataKey(rec.data));
       list.push(rec);
       added++;
     });
