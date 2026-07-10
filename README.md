@@ -16,14 +16,21 @@ el móvil o el escritorio.
 ```
 calculatupizza/
 ├── README.md
+├── package.json            # Solo scripts (tests). Sin dependencias.
+├── tests/                  # Banco de pruebas (Node, sin dependencias)
+│   ├── dough.test.js
+│   ├── units.test.js
+│   └── recipe-both-systems.test.js
 └── pizza/                  # Raíz del sitio publicado
     ├── index.html          # Solo marcado + script anti-parpadeo del tema
     ├── css/
     │   └── styles.css      # Todos los estilos (incluye modo claro/oscuro)
     ├── js/
     │   ├── i18n.js         # Textos ES/EN y API de traducción (window.PizzaI18N)
-    │   ├── calculator.js   # Lógica de cálculo, harinas, recetas guardadas, copiar
-    │   └── app.js          # Idioma, tema, instalación PWA y service worker
+    │   ├── units.js        # Sistema de unidades métrico/imperial (window.PizzaUnits)
+    │   ├── dough.js        # Fórmula de la masa, PURA y sin DOM (window.PizzaDough)
+    │   ├── calculator.js   # Glue con el DOM: harinas, recetas guardadas, copiar
+    │   └── app.js          # Panel de ajustes, tema, idioma, instalación PWA y SW
     ├── sw.js               # Service worker (cache "red primero")
     ├── manifest.json       # Manifiesto de la PWA
     ├── _headers            # Cabeceras de caché (Cloudflare/Netlify)
@@ -35,15 +42,36 @@ calculatupizza/
 ### Orden de carga de los scripts
 
 `index.html` carga los módulos al final del `<body>` en este orden, que es
-importante porque cada uno depende del anterior:
+importante porque cada uno depende de los anteriores:
 
 1. `js/i18n.js` — define `window.PizzaI18N`.
-2. `js/calculator.js` — usa `PizzaI18N`, monta la calculadora y las recetas.
-3. `js/app.js` — usa `PizzaI18N`, conecta los toggles de idioma/tema y la PWA.
+2. `js/units.js` — define `window.PizzaUnits` (conversión y formato de unidades).
+3. `js/dough.js` — define `window.PizzaDough` (la fórmula; módulo puro).
+4. `js/calculator.js` — usa los anteriores; monta la calculadora y las recetas.
+5. `js/app.js` — conecta el panel de ajustes, idioma/tema y la PWA.
 
 El pequeño script que fija el tema guardado sigue **inline en el `<head>`** de
 forma intencionada: debe ejecutarse antes de pintar para evitar el parpadeo
 (FOUC) al entrar en modo oscuro.
+
+## Pruebas
+
+La fórmula de la masa vive en `pizza/js/dough.js` (módulo puro, sin DOM) y las
+conversiones de unidades en `pizza/js/units.js`. Ambos se usan tanto en la app
+como en el banco de pruebas, así que los tests validan **el mismo código** que
+corre en producción. Se ejecutan con el runner integrado de Node (sin instalar
+nada):
+
+```bash
+npm test          # equivale a: node --test "tests/**/*.test.js"
+```
+
+Cubre: la fórmula (`computeRecipe`, conservación de masa, tabla de levadura,
+casos límite), las conversiones (g↔oz, °C↔°F, %↔g/l) y que **el cálculo es
+idéntico en métrico e imperial** (solo cambia la presentación).
+
+> Ejecuta `npm test` antes de publicar, sobre todo si tocas `dough.js`,
+> `units.js` o cualquier cosa relacionada con las fórmulas o las unidades.
 
 ## Cómo ejecutar en local
 

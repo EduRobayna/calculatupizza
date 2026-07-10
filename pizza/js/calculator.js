@@ -15,10 +15,34 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   input.dispatchEvent(new Event('input'));
 };
 
+// Stepper del peso por pizza: el paso depende de la unidad activa (10 g / 0,5 oz).
+window.stepPeso = function(dir) {
+  const input = document.getElementById('pesoPaneto');
+  const imperial = window.PizzaUnits && window.PizzaUnits.isImperial();
+  const step = imperial ? 0.5 : 10;
+  const min = imperial ? 3.5 : 100;
+  let v = (parseFloat(input.value) || 0) + dir * step;
+  v = imperial ? Math.round(v * 10) / 10 : Math.round(v);
+  if (v < min) v = min;
+  input.value = v;
+  input.dispatchEvent(new Event('input'));
+};
+
+// Stepper de la sal: siempre en % del agua (paso 0,1 %). Es unit-neutral.
+window.stepSal = function(dir) {
+  const input = document.getElementById('sal');
+  let v = (parseFloat(input.value) || 0) + dir * 0.1;
+  v = Math.round(v * 10) / 10;
+  if (v < 0) v = 0;
+  if (v > 10) v = 10;
+  input.value = v;
+  input.dispatchEvent(new Event('input'));
+};
+
 (function(){
   const I18N = window.PizzaI18N;
   const U = window.PizzaUnits; // formato/conversión de unidades (métrico/imperial)
-  const TABLA_LEVADURA = { 17:1.3, 18:1.0, 19:0.9, 20:0.7, 21:0.6, 22:0.5, 23:0.4, 24:0.3, 25:0.2 };
+  const D = window.PizzaDough; // fórmula de la masa (núcleo de cálculo, js/dough.js)
   const COLORES_HARINA = ['var(--color-h1)', 'var(--color-h2)', 'var(--color-h3)', 'var(--color-h4)', 'var(--color-h5)'];
   const STORAGE_KEY = 'edu_pizza_calc_settings_v16';
 
@@ -101,10 +125,10 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   function saveSettings() {
     const settingsToSave = {
       numPaneteos: parseFloat(el.numPaneteos.value),
-      pesoPaneto: parseFloat(el.pesoPaneto.value),
+      pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
       hidratacion: parseFloat(el.hidratacion.value),
-      sal: parseFloat(el.sal.value),
+      sal: salGL,
       flours: flours
     };
     try {
@@ -114,26 +138,48 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   const initData = loadSettings();
   el.numPaneteos.value = initData.numPaneteos !== undefined ? initData.numPaneteos : defaultSettings.numPaneteos;
-  el.pesoPaneto.value = initData.pesoPaneto !== undefined ? initData.pesoPaneto : defaultSettings.pesoPaneto;
   el.temperatura.value = initData.temperatura !== undefined ? initData.temperatura : defaultSettings.temperatura;
   el.hidratacion.value = initData.hidratacion !== undefined ? initData.hidratacion : defaultSettings.hidratacion;
-  el.sal.value = initData.sal !== undefined ? initData.sal : defaultSettings.sal;
+  // Peso por pizza y sal: valores canónicos SIEMPRE en métrico (gramos y g/L).
+  // El peso se muestra en g u oz según el sistema; la sal siempre como % del agua.
+  let pesoG = initData.pesoPaneto !== undefined ? initData.pesoPaneto : defaultSettings.pesoPaneto;
+  let salGL = initData.sal !== undefined ? initData.sal : defaultSettings.sal;
+
+  // Lee un campo (en su unidad visible) y lo devuelve en la unidad canónica.
+  function readPesoField(){
+    const v = parseFloat(el.pesoPaneto.value) || 0;
+    return U.isImperial() ? U.ozToG(v) : v;    // -> gramos
+  }
+  function readSalField(){
+    // El campo es % del agua; el canónico es g/L (definición en dough.js).
+    return D.saltPctToGL(parseFloat(el.sal.value) || 0);
+  }
+  // Refresca los campos con unidad (peso por pizza y sal) para el sistema activo.
+  function renderInputUnits(){
+    const imperial = U.isImperial();
+    const pesoUnitEl = document.getElementById('pesoUnit');
+    const salUnitEl = document.getElementById('salUnitTag');
+    // Peso por pizza: g (métrico) u oz (imperial).
+    if (imperial){
+      el.pesoPaneto.value = Math.round(U.gToOz(pesoG) * 10) / 10;
+      el.pesoPaneto.step = '0.5'; el.pesoPaneto.min = '3.5';
+    } else {
+      el.pesoPaneto.value = Math.round(pesoG);
+      el.pesoPaneto.step = '10'; el.pesoPaneto.min = '100';
+    }
+    if (pesoUnitEl) pesoUnitEl.textContent = U.weightUnit();
+    // Sal: siempre como % del agua (unit-neutral, como la hidratación).
+    el.sal.value = Math.round(D.saltGLToPct(salGL) * 10) / 10;
+    el.sal.step = '0.1'; el.sal.min = '0'; el.sal.max = '10';
+    if (salUnitEl) salUnitEl.textContent = I18N.t('salUnit');
+  }
+  renderInputUnits();
 
   let flours = initData.flours || defaultSettings.flours;
   let maxId = 0;
   flours.forEach(f => { if(f.id > maxId) maxId = f.id; });
   let flourIdCounter = maxId + 1;
   if(flourIdCounter < 1) flourIdCounter = 4;
-
-  // Reparte la masa total exactamente entre sus cuatro componentes.
-  // masa = harina·(1 + h) + sal + levadura, con sal = agua·(sal/1000) = harina·h·(sal/1000)
-  // y levadura = harina·(lev/1000). Despejando la harina:
-  //   harina = masa / (1 + h + h·sal/1000 + lev/1000)
-  // Antes se dividía solo por (1 + h), lo que dejaba cada bola ~1,6% pasada de peso.
-  function harinaDesdeMasa(masaTotal, h, salPorKgAgua, levPorKgHarina) {
-    const divisor = 1 + h + h * (salPorKgAgua / 1000) + (levPorKgHarina / 1000);
-    return masaTotal / divisor;
-  }
 
   function renderFlours() {
     el.flourRowsContainer.innerHTML = '';
@@ -243,7 +289,8 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   el.resetBtn.addEventListener('click', () => {
     el.temperatura.value = defaultSettings.temperatura;
     el.hidratacion.value = defaultSettings.hidratacion;
-    el.sal.value = defaultSettings.sal;
+    salGL = defaultSettings.sal;
+    renderInputUnits();
 
     flours = JSON.parse(JSON.stringify(defaultSettings.flours));
 
@@ -259,10 +306,10 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   function calcular(){
     const numPaneteos = parseFloat(el.numPaneteos.value) || 0;
-    const pesoPaneto = parseFloat(el.pesoPaneto.value) || 0;
+    const pesoPaneto = pesoG;
     const temp = parseInt(el.temperatura.value, 10);
     const hidratacionPct = parseFloat(el.hidratacion.value) || 0;
-    const salPorKgAgua = parseFloat(el.sal.value) || 0;
+    const salPorKgAgua = salGL; // canónico en g/L
 
     el.tempValue.textContent = U.tempValue(temp);
     if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
@@ -311,14 +358,16 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     el.resultsBadge.style.background = 'rgba(255,255,255,0.08)';
     el.resultsBadge.style.borderColor = 'rgba(255,255,255,0.14)';
 
-    const pesoTotalMasa = numPaneteos * pesoPaneto;
-    const levaduraPorKgHarina = TABLA_LEVADURA[temp] || 1.0;
-    const h = hidratacionPct / 100;
-    const harinaTotal = harinaDesdeMasa(pesoTotalMasa, h, salPorKgAgua, levaduraPorKgHarina);
-    const aguaTotal = harinaTotal * h;
-    const salTotal = aguaTotal * (salPorKgAgua / 1000);
-    const levaduraTotal = harinaTotal * (levaduraPorKgHarina / 1000);
-    const levaduraSecaTotal = levaduraTotal / 3;
+    const r = D.computeRecipe({
+      numPizzas: numPaneteos, pesoG: pesoPaneto, tempC: temp,
+      hidPct: hidratacionPct, salGL: salPorKgAgua, flours: flours
+    });
+    const pesoTotalMasa = r.masaTotal;
+    const harinaTotal = r.harinaTotal;
+    const aguaTotal = r.aguaTotal;
+    const salTotal = r.salTotal;
+    const levaduraTotal = r.levaduraFresca;
+    const levaduraSecaTotal = r.levaduraSeca;
 
     el.flourBreakdown.innerHTML = flours.map((f, idx) => {
       const gramos = harinaTotal * (f.pct / 100);
@@ -345,9 +394,12 @@ window.stepValue = function(id, delta, minVal, maxVal) {
     }
   }
 
-  [el.numPaneteos, el.pesoPaneto, el.temperatura, el.hidratacion, el.sal].forEach(input => {
+  [el.numPaneteos, el.temperatura, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
   });
+  // Peso por pizza y sal actualizan primero su valor canónico (métrico) y luego recalculan.
+  el.pesoPaneto.addEventListener('input', () => { pesoG = readPesoField(); calcular(); });
+  el.sal.addEventListener('input', () => { salGL = readSalField(); calcular(); });
 
   renderFlours();
 
@@ -389,12 +441,13 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   // Vuelve a pintar las harinas y los textos calculados cuando cambia el idioma
   window.addEventListener('pizzaLangChange', () => {
+    renderInputUnits();
     renderFlours();
     populateSavedRecipesSelect();
   });
 
   // Recalcula (reformatea pesos y temperatura) al cambiar métrico ↔ imperial.
-  window.addEventListener('pizzaUnitsChange', () => { calcular(); });
+  window.addEventListener('pizzaUnitsChange', () => { renderInputUnits(); calcular(); });
 
   // ==================== RECETAS GUARDADAS (con nombre) ====================
   const SAVED_RECIPES_KEY = 'edu_pizza_saved_recipes_v1';
@@ -662,10 +715,10 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   function currentData() {
     return {
       numPaneteos: parseFloat(el.numPaneteos.value),
-      pesoPaneto: parseFloat(el.pesoPaneto.value),
+      pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
       hidratacion: parseFloat(el.hidratacion.value),
-      sal: parseFloat(el.sal.value),
+      sal: salGL,
       flours: JSON.parse(JSON.stringify(flours))
     };
   }
@@ -734,10 +787,11 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
     const d = recipe.data;
     el.numPaneteos.value = d.numPaneteos;
-    el.pesoPaneto.value = d.pesoPaneto;
+    pesoG = d.pesoPaneto;
     el.temperatura.value = d.temperatura;
     el.hidratacion.value = d.hidratacion;
-    el.sal.value = d.sal;
+    salGL = d.sal;
+    renderInputUnits();
     flours = JSON.parse(JSON.stringify(d.flours));
     let maxIdLoaded = 0;
     flours.forEach(f => { if (f.id > maxIdLoaded) maxIdLoaded = f.id; });
@@ -909,15 +963,15 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
   // Lógica Copiar Receta
   document.getElementById('btnCopiarReceta').addEventListener('click', function() {
-    const masaT = parseFloat(el.numPaneteos.value) * parseFloat(el.pesoPaneto.value);
-    const hyd = parseFloat(el.hidratacion.value) / 100;
-    const salT = parseFloat(el.sal.value) || 0;
-    const levT = TABLA_LEVADURA[parseInt(el.temperatura.value, 10)] || 1.0;
-    const harinaT = harinaDesdeMasa(masaT, hyd, salT, levT);
+    const harinaT = D.computeRecipe({
+      numPizzas: parseFloat(el.numPaneteos.value) || 0, pesoG: pesoG,
+      tempC: parseInt(el.temperatura.value, 10), hidPct: parseFloat(el.hidratacion.value),
+      salGL: salGL, flours: flours
+    }).harinaTotal;
 
     const text = `${I18N.t('recipeHeader')}
-${I18N.t('recipePizzas')}: ${el.numPaneteos.value} ${I18N.t('recipeOf')} ${el.pesoPaneto.value}g
-${I18N.t('recipeHydration')}: ${el.hidratacion.value}% | ${I18N.t('recipeSalt')}: ${el.sal.value}g/L
+${I18N.t('recipePizzas')}: ${el.numPaneteos.value} ${I18N.t('recipeOf')} ${el.pesoPaneto.value} ${U.weightUnit()}
+${I18N.t('recipeHydration')}: ${el.hidratacion.value}% | ${I18N.t('recipeSalt')}: ${el.sal.value}%
 
 ${I18N.t('recipeTotals')}
 - ${I18N.t('recipeTotalFlour')}: ${el.totalHarina.textContent}

@@ -140,12 +140,12 @@
           <div>
             <label for="pesoPaneto" data-i18n="pesoPizzaLabel">Peso por pizza</label>
             <div class="stepper">
-              <button type="button" class="stepper-btn" onclick="stepValue('pesoPaneto', -10, 10)" aria-label="Restar 10 gramos" data-i18n-aria="restar10g">−</button>
+              <button type="button" class="stepper-btn" onclick="stepPeso(-1)" aria-label="Reducir peso por pizza" data-i18n-aria="restar10g">−</button>
               <div class="stepper-unit-wrap">
-                <input type="number" id="pesoPaneto" value="280" min="100" inputmode="numeric" aria-label="Peso por pizza en gramos" data-i18n-aria="pesoPizzaAria">
-                <span class="unit-tag">g</span>
+                <input type="number" id="pesoPaneto" value="280" min="100" step="10" inputmode="numeric" aria-label="Peso por pizza" data-i18n-aria="pesoPizzaAria">
+                <span class="unit-tag" id="pesoUnit">g</span>
               </div>
-              <button type="button" class="stepper-btn" onclick="stepValue('pesoPaneto', 10, 10)" aria-label="Añadir 10 gramos" data-i18n-aria="sumar10g">+</button>
+              <button type="button" class="stepper-btn" onclick="stepPeso(1)" aria-label="Aumentar peso por pizza" data-i18n-aria="sumar10g">+</button>
             </div>
           </div>
         </div>
@@ -183,12 +183,12 @@
           <div>
             <label for="sal" data-i18n="salLabel">Sal</label>
             <div class="stepper">
-              <button type="button" class="stepper-btn" onclick="stepValue('sal', -1, 0, 100)" aria-label="Restar 1 gramo de sal por kilo de agua" data-i18n-aria="restarSal">−</button>
+              <button type="button" class="stepper-btn" onclick="stepSal(-1)" aria-label="Reducir sal" data-i18n-aria="restarSal">−</button>
               <div class="stepper-unit-wrap">
-                <input type="number" id="sal" value="40" min="0" max="100" step="1" inputmode="decimal" aria-label="Sal en gramos por litro de agua" data-i18n-aria="salAria">
-                <span class="unit-tag" style="right: 12px;" data-i18n="salUnit">g/l agua</span>
+                <input type="number" id="sal" value="4" min="0" max="10" step="0.1" inputmode="decimal" aria-label="Sal en porcentaje del agua" data-i18n-aria="salAria">
+                <span class="unit-tag" style="right: 12px;" id="salUnitTag">% agua</span>
               </div>
-              <button type="button" class="stepper-btn" onclick="stepValue('sal', 1, 0, 100)" aria-label="Añadir 1 gramo de sal por kilo de agua" data-i18n-aria="sumarSal">+</button>
+              <button type="button" class="stepper-btn" onclick="stepSal(1)" aria-label="Añadir sal" data-i18n-aria="sumarSal">+</button>
             </div>
           </div>
         </div>
@@ -458,6 +458,7 @@
      window.PizzaUnits; de ambos dependen calculator y app. -->
 <script src="js/i18n.js"></script>
 <script src="js/units.js"></script>
+<script src="js/dough.js"></script>
 <script src="js/calculator.js"></script>
 <script src="js/app.js"></script>
 
