@@ -3,10 +3,18 @@
 // ingredientes, persistencia en localStorage, recetas guardadas y copiar receta.
 // Depende de window.PizzaI18N (js/i18n.js), que debe cargarse antes.
 
+// Lee un valor decimal de un campo de texto tolerando la coma como separador
+// decimal (es-ES): "63,5" -> 63.5. Devuelve NaN si no hay número. Todos los
+// campos numéricos decimales leen a través de aquí para aceptar coma o punto.
+function parseDecimal(v){
+  const n = parseFloat(String(v == null ? '' : v).replace(/,/g, '.'));
+  return isFinite(n) ? n : NaN;
+}
+
 // stepValue es global porque lo usan los onclick="..." de los botones +/− del HTML.
 window.stepValue = function(id, delta, minVal, maxVal) {
   const input = document.getElementById(id);
-  let val = parseFloat(input.value) || 0;
+  let val = parseDecimal(input.value) || 0;
   val += delta;
   val = Math.round(val * 10) / 10;
   if(minVal !== undefined && val < minVal) val = minVal;
@@ -21,7 +29,7 @@ window.stepPeso = function(dir) {
   const imperial = window.PizzaUnits && window.PizzaUnits.isImperial();
   const step = imperial ? 0.5 : 10;
   const min = imperial ? 3.5 : 100;
-  let v = (parseFloat(input.value) || 0) + dir * step;
+  let v = (parseDecimal(input.value) || 0) + dir * step;
   v = imperial ? Math.round(v * 10) / 10 : Math.round(v);
   if (v < min) v = min;
   input.value = v;
@@ -31,10 +39,21 @@ window.stepPeso = function(dir) {
 // Stepper de la sal: siempre en % del agua (paso 0,1 %). Es unit-neutral.
 window.stepSal = function(dir) {
   const input = document.getElementById('sal');
-  let v = (parseFloat(input.value) || 0) + dir * 0.1;
+  let v = (parseDecimal(input.value) || 0) + dir * 0.1;
   v = Math.round(v * 10) / 10;
   if (v < 0) v = 0;
   if (v > 10) v = 10;
+  input.value = v;
+  input.dispatchEvent(new Event('input'));
+};
+
+// Stepper de la levadura fresca (% del peso de la harina), paso 0,01. Solo en Manual.
+window.stepYeast = function(dir) {
+  const input = document.getElementById('levadura');
+  let v = (parseDecimal(input.value) || 0) + dir * 0.01;
+  v = Math.round(v * 100) / 100;
+  if (v < 0) v = 0;
+  if (v > 1) v = 1;
   input.value = v;
   input.dispatchEvent(new Event('input'));
 };
@@ -71,6 +90,13 @@ window.stepSal = function(dir) {
     tempUnit: document.getElementById('tempUnit'),
     hidratacion: document.getElementById('hidratacion'),
     sal: document.getElementById('sal'),
+    levadura: document.getElementById('levadura'),
+    salStepper: document.getElementById('salStepper'),
+    yeastStepper: document.getElementById('yeastStepper'),
+    salModeToggle: document.getElementById('salModeToggle'),
+    yeastModeToggle: document.getElementById('yeastModeToggle'),
+    salHint: document.getElementById('salHint'),
+    yeastHint: document.getElementById('yeastHint'),
     warningBanner: document.getElementById('warningBanner'),
     resultsBody: document.getElementById('resultsBody'),
     disabledOverlay: document.getElementById('disabledOverlay'),
@@ -105,6 +131,9 @@ window.stepSal = function(dir) {
     temperatura: 18,
     hidratacion: 63,
     sal: 40,
+    salMode: 'auto',        // 'auto' = bloqueada en 4% | 'manual' = editable
+    yeastMode: 'auto',      // 'auto' = según temperatura | 'manual' = valor fijo
+    manualYeastPerKg: 1.0,  // g de levadura fresca por kg de harina (modo Manual)
     flours: [
       { id: 1, catalogId: 1, pct: 75, locked: false },
       { id: 2, catalogId: 4, pct: 15, locked: false },
@@ -124,11 +153,14 @@ window.stepSal = function(dir) {
 
   function saveSettings() {
     const settingsToSave = {
-      numPaneteos: parseFloat(el.numPaneteos.value),
+      numPaneteos: parseDecimal(el.numPaneteos.value),
       pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
-      hidratacion: parseFloat(el.hidratacion.value),
+      hidratacion: parseDecimal(el.hidratacion.value),
       sal: salGL,
+      salMode: salMode,
+      yeastMode: yeastMode,
+      manualYeastPerKg: manualYeastPerKg,
       flours: flours
     };
     try {
@@ -144,15 +176,23 @@ window.stepSal = function(dir) {
   // El peso se muestra en g u oz según el sistema; la sal siempre como % del agua.
   let pesoG = initData.pesoPaneto !== undefined ? initData.pesoPaneto : defaultSettings.pesoPaneto;
   let salGL = initData.sal !== undefined ? initData.sal : defaultSettings.sal;
+  // Modos Auto/Manual de sal y levadura. Migración: si un usuario ya tenía una
+  // sal distinta de 4% (40 g/L), se respeta arrancando en Manual.
+  let salMode = initData.salMode || (salGL === 40 ? 'auto' : 'manual');
+  let yeastMode = initData.yeastMode || 'auto';
+  let manualYeastPerKg = (initData.manualYeastPerKg != null)
+    ? initData.manualYeastPerKg
+    : D.yeastPerKgFlour(parseInt(el.temperatura.value, 10) || 18);
+  if (salMode === 'auto') salGL = 40; // en Auto, la sal queda fijada en 4%
 
   // Lee un campo (en su unidad visible) y lo devuelve en la unidad canónica.
   function readPesoField(){
-    const v = parseFloat(el.pesoPaneto.value) || 0;
+    const v = parseDecimal(el.pesoPaneto.value) || 0;
     return U.isImperial() ? U.ozToG(v) : v;    // -> gramos
   }
   function readSalField(){
     // El campo es % del agua; el canónico es g/L (definición en dough.js).
-    return D.saltPctToGL(parseFloat(el.sal.value) || 0);
+    return D.saltPctToGL(parseDecimal(el.sal.value) || 0);
   }
   // Refresca los campos con unidad (peso por pizza y sal) para el sistema activo.
   function renderInputUnits(){
@@ -174,6 +214,43 @@ window.stepSal = function(dir) {
     if (salUnitEl) salUnitEl.textContent = I18N.t('salUnit');
   }
   renderInputUnits();
+
+  // Marca la opción activa (Auto/Manual) en el toggle segmentado.
+  function syncModeToggle(toggle, mode){
+    if (!toggle) return;
+    toggle.querySelectorAll('.seg').forEach(b => {
+      const on = b.getAttribute('data-mode') === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  // Bloquea o desbloquea un stepper (botones + input) según el modo Auto.
+  function lockStepper(stepper, input, locked){
+    if (!stepper) return;
+    stepper.classList.toggle('is-locked', locked);
+    if (input) input.disabled = locked;
+    stepper.querySelectorAll('.stepper-btn').forEach(b => { b.disabled = locked; });
+  }
+  // Aplica los modos Auto/Manual de sal y levadura a la interfaz (valores visibles,
+  // bloqueo de steppers, toggles y pista). No recalcula; el llamador hace calcular().
+  function renderParamModes(){
+    const temp = parseInt(el.temperatura.value, 10) || 18;
+    // Sal: en Auto queda fijada en 4% del agua (40 g/L).
+    const salAuto = salMode === 'auto';
+    if (salAuto) { salGL = 40; el.sal.value = 4; }
+    lockStepper(el.salStepper, el.sal, salAuto);
+    syncModeToggle(el.salModeToggle, salMode);
+    if (el.salHint) el.salHint.textContent = I18N.t(salAuto ? 'salAutoHint' : 'salManualHint');
+    // Levadura: en Auto sigue la temperatura; en Manual, valor fijo.
+    const yeastAuto = yeastMode === 'auto';
+    // Canónico en g/kg; se MUESTRA como % del peso de la harina (1 g/kg = 0,1 %).
+    const shownGkg = yeastAuto ? D.yeastPerKgFlour(temp) : manualYeastPerKg;
+    el.levadura.value = round2(shownGkg / 10);
+    lockStepper(el.yeastStepper, el.levadura, yeastAuto);
+    syncModeToggle(el.yeastModeToggle, yeastMode);
+    if (el.yeastHint) el.yeastHint.textContent = I18N.t(yeastAuto ? 'yeastAutoHint' : 'yeastManualHint');
+  }
+  renderParamModes();
 
   let flours = initData.flours || defaultSettings.flours;
   let maxId = 0;
@@ -198,30 +275,84 @@ window.stepSal = function(dir) {
 
       row.innerHTML = `
         <div class="flour-index" style="color: ${color};">[${index + 1}]</div>
-        <div class="field flour-select-wrap">
+        <div class="flour-id-wrap">
           <select class="flour-type-select" data-id="${flour.id}" aria-label="${flourName(flour.catalogId)} ${index + 1}">${optionsHtml}</select>
           ${badgeHtml}
         </div>
-        <div class="field unit-field">
-          <input type="number" class="flour-pct-input plain-input" data-id="${flour.id}" value="${flour.pct}" min="0" max="100" step="0.5" inputmode="decimal" aria-label="%${index + 1}" ${flour.locked ? 'disabled' : ''}>
-          <span class="unit-tag">%</span>
-        </div>
-        <div class="flour-actions">
-          <button type="button" class="btn-icon toggle-lock ${flour.locked ? 'active-lock' : ''}" data-id="${flour.id}" title="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}" aria-label="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}">
-            ${flour.locked
-              ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
-              : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
-            }
-          </button>
-          <button type="button" class="btn-icon delete" data-id="${flour.id}" title="${I18N.t('deleteFlourAria')}" aria-label="${I18N.t('deleteFlourAria')}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
+        <div class="flour-bottom">
+          <div class="flour-pct-field">
+            <input type="text" class="flour-pct-input" data-id="${flour.id}" value="${flour.pct}" size="${Math.max(2, String(flour.pct).length)}" inputmode="decimal" aria-label="%${index + 1}" ${flour.locked ? 'disabled' : ''}>
+            <span class="unit-tag">%</span>
+          </div>
+          <div class="flour-actions">
+            <button type="button" class="btn-icon toggle-lock ${flour.locked ? 'active-lock' : ''}" data-id="${flour.id}" title="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}" aria-label="${I18N.t(flour.locked ? 'unlockFlourTitle' : 'lockFlourTitle')}">
+              ${flour.locked
+                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>`
+              }
+            </button>
+            <button type="button" class="btn-icon delete" data-id="${flour.id}" title="${I18N.t('deleteFlourAria')}" aria-label="${I18N.t('deleteFlourAria')}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
         </div>
       `;
       el.flourRowsContainer.appendChild(row);
     });
 
     attachFlourEvents();
+    calcular();
+  }
+
+  // Redondeo a 2 decimales (evita "8.3300000001" al repartir proporciones).
+  function round2(x){ return Math.round(x * 100) / 100; }
+
+  // Refleja el array `flours` en los sliders/números ya montados, sin reconstruir
+  // el DOM (para no interrumpir un arrastre). Salta el control de origen y el
+  // campo que el usuario esté editando.
+  // Ajusta el ancho del campo % a la longitud de su valor (para que "valor %"
+  // quede compacto y centrado sea cual sea el número de dígitos).
+  function fitPctSize(input){ input.size = Math.max(2, String(input.value).length || 1); }
+
+  function syncFlourInputs(skipEl){
+    flours.forEach(f => {
+      const num = el.flourRowsContainer.querySelector('.flour-pct-input[data-id="' + f.id + '"]');
+      if (num && num !== skipEl && document.activeElement !== num) { num.value = f.pct; fitPctSize(num); }
+    });
+  }
+
+  // Reparto en vivo (D4/Q2): al fijar el % de una harina, el resto (100 menos las
+  // fijadas con candado y menos la que se cambia) se reparte proporcionalmente
+  // entre las demás harinas no fijadas, manteniendo el total en 100%.
+  function distributeRemainder(changedId){
+    const changed = flours.find(f => f.id === changedId);
+    if (!changed) return;
+    const lockedSum = flours.filter(f => f.locked && f.id !== changedId).reduce((s, f) => s + f.pct, 0);
+    const others = flours.filter(f => !f.locked && f.id !== changedId);
+    const maxForChanged = Math.max(0, 100 - lockedSum);
+    changed.pct = round2(Math.min(Math.max(0, changed.pct), maxForChanged));
+    if (others.length === 0) return; // nada donde repartir: la validación mostrará el desajuste
+    let remaining = Math.max(0, 100 - lockedSum - changed.pct);
+    const othersSum = others.reduce((s, f) => s + f.pct, 0);
+    if (othersSum > 0) {
+      others.forEach(f => { f.pct = round2(remaining * (f.pct / othersSum)); });
+    } else {
+      const each = round2(remaining / others.length);
+      others.forEach(f => { f.pct = each; });
+    }
+    // Corrige el arrastre de redondeo en la última no fijada para sumar 100 exacto.
+    const last = others[others.length - 1];
+    const total = flours.reduce((s, f) => s + f.pct, 0);
+    last.pct = Math.max(0, round2(last.pct + (100 - total)));
+  }
+
+  // Handler común de cambio de proporción (slider o campo numérico).
+  function onPctChanged(id, rawValue, sourceEl){
+    const f = flours.find(x => x.id === id);
+    if (!f) return;
+    f.pct = Math.max(0, parseDecimal(rawValue) || 0);
+    distributeRemainder(id);
+    syncFlourInputs(sourceEl);
     calcular();
   }
 
@@ -236,10 +367,11 @@ window.stepSal = function(dir) {
 
     document.querySelectorAll('.flour-pct-input').forEach(input => {
       input.addEventListener('input', (e) => {
-        const id = parseInt(e.target.dataset.id);
-        flours.find(f => f.id === id).pct = parseFloat(e.target.value) || 0;
-        calcular();
+        fitPctSize(e.target);
+        onPctChanged(parseInt(e.target.dataset.id), e.target.value, e.target);
       });
+      // Al salir del campo, repinta para normalizar los decimales mostrados.
+      input.addEventListener('change', () => renderFlours());
     });
 
     document.querySelectorAll('.toggle-lock').forEach(btn => {
@@ -290,7 +422,11 @@ window.stepSal = function(dir) {
     el.temperatura.value = defaultSettings.temperatura;
     el.hidratacion.value = defaultSettings.hidratacion;
     salGL = defaultSettings.sal;
+    salMode = defaultSettings.salMode;
+    yeastMode = defaultSettings.yeastMode;
+    manualYeastPerKg = D.yeastPerKgFlour(defaultSettings.temperatura);
     renderInputUnits();
+    renderParamModes();
 
     flours = JSON.parse(JSON.stringify(defaultSettings.flours));
 
@@ -305,11 +441,14 @@ window.stepSal = function(dir) {
   let onConfigChange = null;
 
   function calcular(){
-    const numPaneteos = parseFloat(el.numPaneteos.value) || 0;
+    const numPaneteos = Math.max(1, parseDecimal(el.numPaneteos.value) || 0); // mínimo 1 pizza (E2)
     const pesoPaneto = pesoG;
     const temp = parseInt(el.temperatura.value, 10);
-    const hidratacionPct = parseFloat(el.hidratacion.value) || 0;
+    const hidratacionPct = parseDecimal(el.hidratacion.value) || 0;
     const salPorKgAgua = salGL; // canónico en g/L
+    // Levadura: en Manual usa el valor fijo; en Auto, la tabla de temperatura.
+    const levPorKg = (yeastMode === 'manual') ? manualYeastPerKg : D.yeastPerKgFlour(temp);
+    if (yeastMode === 'auto') el.levadura.value = round2(levPorKg / 10); // muestra % en Auto
 
     el.tempValue.textContent = U.tempValue(temp);
     if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
@@ -360,7 +499,7 @@ window.stepSal = function(dir) {
 
     const r = D.computeRecipe({
       numPizzas: numPaneteos, pesoG: pesoPaneto, tempC: temp,
-      hidPct: hidratacionPct, salGL: salPorKgAgua, flours: flours
+      hidPct: hidratacionPct, salGL: salPorKgAgua, levPorKgHarina: levPorKg, flours: flours
     });
     const pesoTotalMasa = r.masaTotal;
     const harinaTotal = r.harinaTotal;
@@ -397,16 +536,77 @@ window.stepSal = function(dir) {
   [el.numPaneteos, el.temperatura, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
   });
+  // Nº de pizzas: al salir del campo, normaliza a entero ≥ 1 (E2).
+  el.numPaneteos.addEventListener('change', () => {
+    let v = Math.round(parseDecimal(el.numPaneteos.value) || 0);
+    if (v < 1) v = 1;
+    el.numPaneteos.value = v;
+    calcular();
+  });
+
+  // ---- A4: pulsación mantenida en los +/− (auto-repetición con aceleración) ----
+  // Reutilizamos el onclick inline de cada botón como "acción" y desactivamos el
+  // click nativo para no duplicar el paso. El teclado (Enter/Espacio) se atiende
+  // aparte, así que los botones siguen siendo accesibles.
+  function bindHoldRepeat(btn){
+    const orig = btn.onclick;
+    if (typeof orig !== 'function') return;
+    btn.onclick = null;
+    const action = () => orig.call(btn);
+    let startTimer = null, repeatTimer = null;
+    function stop(){ clearTimeout(startTimer); clearTimeout(repeatTimer); startTimer = repeatTimer = null; }
+    function start(){
+      if (btn.disabled) return;  // en modo Auto los +/- están bloqueados
+      action();                 // primer paso inmediato
+      let delay = 130;
+      startTimer = setTimeout(function rep(){
+        action();
+        delay = Math.max(45, delay - 12);   // acelera al mantener pulsado
+        repeatTimer = setTimeout(rep, delay);
+      }, 420);
+    }
+    btn.addEventListener('pointerdown', (e) => { if (e.button && e.button !== 0) return; e.preventDefault(); start(); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !btn.disabled) { e.preventDefault(); action(); } });
+  }
+  document.querySelectorAll('.stepper-btn').forEach(bindHoldRepeat);
   // Peso por pizza y sal actualizan primero su valor canónico (métrico) y luego recalculan.
   el.pesoPaneto.addEventListener('input', () => { pesoG = readPesoField(); calcular(); });
-  el.sal.addEventListener('input', () => { salGL = readSalField(); calcular(); });
+  el.sal.addEventListener('input', () => { if (salMode === 'manual') { salGL = readSalField(); } calcular(); });
+  // Levadura (solo editable en Manual): guarda el valor fijo y recalcula.
+  el.levadura.addEventListener('input', () => {
+    // El campo está en % de la harina; el canónico es g/kg (% × 10).
+    if (yeastMode === 'manual') manualYeastPerKg = (parseDecimal(el.levadura.value) || 0) * 10;
+    calcular();
+  });
+
+  // ---- Toggles Auto/Manual (sal y levadura) ----
+  function setSalMode(mode){
+    salMode = (mode === 'manual') ? 'manual' : 'auto';
+    if (salMode === 'auto') salGL = 40;          // Auto = 4% del agua
+    renderParamModes();
+    calcular();
+  }
+  function setYeastMode(mode){
+    yeastMode = (mode === 'manual') ? 'manual' : 'auto';
+    // Al pasar a Manual, arranca desde el valor Auto actual (según la temperatura).
+    if (yeastMode === 'manual') manualYeastPerKg = D.yeastPerKgFlour(parseInt(el.temperatura.value, 10) || 18);
+    renderParamModes();
+    calcular();
+  }
+  if (el.salModeToggle) el.salModeToggle.querySelectorAll('.seg').forEach(b => {
+    b.addEventListener('click', () => setSalMode(b.getAttribute('data-mode')));
+  });
+  if (el.yeastModeToggle) el.yeastModeToggle.querySelectorAll('.seg').forEach(b => {
+    b.addEventListener('click', () => setYeastMode(b.getAttribute('data-mode')));
+  });
 
   renderFlours();
 
   // Al hacer foco/tap en cualquier input numérico, selecciona su contenido
   // para que el usuario pueda escribir encima sin tener que borrar antes.
   document.addEventListener('focus', (e) => {
-    if (e.target.matches('input[type="number"]')) {
+    if (e.target.matches('input[type="number"], input[inputmode="decimal"]')) {
       e.target.select();
     }
   }, true);
@@ -442,17 +642,24 @@ window.stepSal = function(dir) {
   // Vuelve a pintar las harinas y los textos calculados cuando cambia el idioma
   window.addEventListener('pizzaLangChange', () => {
     renderInputUnits();
+    renderParamModes(); // reajusta la pista de la levadura al idioma según el modo
     renderFlours();
-    populateSavedRecipesSelect();
+    refreshRecipesUI();
+    if (loadRecipeModal.style.display === 'flex') renderRecipeList();
   });
 
   // Recalcula (reformatea pesos y temperatura) al cambiar métrico ↔ imperial.
-  window.addEventListener('pizzaUnitsChange', () => { renderInputUnits(); calcular(); });
+  window.addEventListener('pizzaUnitsChange', () => { renderInputUnits(); renderParamModes(); calcular(); });
 
   // ==================== RECETAS GUARDADAS (con nombre) ====================
   const SAVED_RECIPES_KEY = 'edu_pizza_saved_recipes_v1';
-  const savedRecipesSelect = document.getElementById('savedRecipesSelect');
   const loadRecipeBtn = document.getElementById('loadRecipeBtn');
+  const loadRecipeModal = document.getElementById('loadRecipeModal');
+  const loadRecipeCloseBtn = document.getElementById('loadRecipeCloseBtn');
+  const recipeListContainer = document.getElementById('recipeListContainer');
+  const recipeListEmpty = document.getElementById('recipeListEmpty');
+  const activeRecipeLine = document.getElementById('activeRecipeLine');
+  const activeRecipeNameEl = document.getElementById('activeRecipeName');
   const deleteRecipeBtn = document.getElementById('deleteRecipeBtn');
   const saveRecipeBtn = document.getElementById('saveRecipeBtn');
   const saveRecipeModal = document.getElementById('saveRecipeModal');
@@ -470,6 +677,9 @@ window.stepSal = function(dir) {
   const importRecipesInput = document.getElementById('importRecipesInput');
   // id de la receta seleccionada al abrir el modal (para "Actualizar"); null = crear nueva
   let editingRecipeId = null;
+  // id de la receta actualmente cargada en la calculadora (la "receta activa");
+  // null = ninguna receta cargada (config nueva o importada sin cargar).
+  let activeRecipeId = null;
 
   function getSavedRecipes() {
     try {
@@ -488,7 +698,10 @@ window.stepSal = function(dir) {
   function dataKey(d) {
     d = d || {};
     const flours = (d.flours || []).map(f => f.catalogId + ':' + f.pct + ':' + (f.locked ? 1 : 0)).join(',');
-    return [d.numPaneteos, d.pesoPaneto, d.temperatura, d.hidratacion, d.sal, flours].join('|');
+    const sm = d.salMode || 'auto';
+    const ym = d.yeastMode || 'auto';
+    const my = (ym === 'manual') ? (d.manualYeastPerKg != null ? d.manualYeastPerKg : '') : '';
+    return [d.numPaneteos, d.pesoPaneto, d.temperatura, d.hidratacion, d.sal, sm, ym, my, flours].join('|');
   }
 
   // ¿La configuración actual coincide con alguna receta guardada?
@@ -529,46 +742,99 @@ window.stepSal = function(dir) {
     }, 1800);
   }
 
-  function populateSavedRecipesSelect() {
-    const list = getSavedRecipes();
-    const previousValue = savedRecipesSelect.value;
-    savedRecipesSelect.innerHTML = '';
-
-    if (list.length === 0) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = I18N.t('savedRecipesEmpty');
-      savedRecipesSelect.appendChild(opt);
-      loadRecipeBtn.disabled = true;
-      deleteRecipeBtn.disabled = true;
-      if (exportRecipesBtn) exportRecipesBtn.disabled = true;
-      return;
-    }
-
-    list.slice().reverse().forEach(recipe => {
-      const opt = document.createElement('option');
-      opt.value = recipe.id;
-      opt.textContent = recipe.name;
-      savedRecipesSelect.appendChild(opt);
-    });
-
-    if (list.some(r => String(r.id) === previousValue)) {
-      savedRecipesSelect.value = previousValue;
-    }
-    loadRecipeBtn.disabled = false;
-    deleteRecipeBtn.disabled = false;
-    if (exportRecipesBtn) exportRecipesBtn.disabled = false;
+  // Devuelve la receta activa (la cargada en la calculadora) o null.
+  function getActiveRecipe() {
+    if (activeRecipeId == null) return null;
+    return getSavedRecipes().find(r => String(r.id) === String(activeRecipeId)) || null;
   }
 
-  // Muestra las notas de la receta seleccionada (si tiene) bajo el selector.
+  // Refresca toda la UI de recetas: línea de "receta activa", estado guardada/sin
+  // guardar, notas y disponibilidad de los botones. Sustituye al antiguo <select>.
+  function refreshRecipesUI() {
+    const list = getSavedRecipes();
+    const active = getActiveRecipe();
+    if (!active) activeRecipeId = null;
+
+    if (activeRecipeNameEl && activeRecipeLine) {
+      if (active) {
+        activeRecipeNameEl.textContent = active.name;
+        activeRecipeLine.classList.remove('none');
+      } else {
+        activeRecipeNameEl.textContent = I18N.t('noActiveRecipe');
+        activeRecipeLine.classList.add('none');
+      }
+    }
+
+    loadRecipeBtn.disabled = list.length === 0;   // "Cargar" abre la lista de recetas
+    deleteRecipeBtn.disabled = !active;            // "Borrar" actúa sobre la receta activa
+    if (exportRecipesBtn) exportRecipesBtn.disabled = list.length === 0;
+
+    updateNotesDisplay();
+    updateRecipeStatus();
+  }
+
+  // Muestra las notas de la receta activa (si tiene) bajo la fila de acciones.
   function updateNotesDisplay() {
     if (!recipeNotesDisplay) return;
-    const id = savedRecipesSelect.value;
-    const recipe = id ? getSavedRecipes().find(r => String(r.id) === String(id)) : null;
+    const recipe = getActiveRecipe();
     const notes = recipe && recipe.notes ? String(recipe.notes).trim() : '';
     recipeNotesDisplay.textContent = notes;
     recipeNotesDisplay.style.display = notes ? '' : 'none';
   }
+
+  // Pinta la lista de recetas dentro del modal "Cargar receta".
+  function renderRecipeList() {
+    if (!recipeListContainer) return;
+    const list = getSavedRecipes();
+    recipeListContainer.innerHTML = '';
+    if (list.length === 0) {
+      recipeListEmpty.style.display = '';
+      return;
+    }
+    recipeListEmpty.style.display = 'none';
+    list.slice().reverse().forEach(recipe => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'recipe-item' + (String(recipe.id) === String(activeRecipeId) ? ' active' : '');
+      item.dataset.id = recipe.id;
+
+      const nameRow = document.createElement('span');
+      nameRow.className = 'recipe-item-name';
+      const nameText = document.createElement('span');
+      nameText.textContent = recipe.name;            // textContent -> a prueba de XSS
+      nameRow.appendChild(nameText);
+      if (String(recipe.id) === String(activeRecipeId)) {
+        const badge = document.createElement('span');
+        badge.className = 'recipe-item-badge';
+        badge.textContent = I18N.t('statusActive');
+        nameRow.appendChild(badge);
+      }
+      item.appendChild(nameRow);
+
+      const d = recipe.data || {};
+      const meta = document.createElement('span');
+      meta.className = 'recipe-item-meta';
+      meta.textContent = d.hidratacion + '% · ' + (d.numPaneteos || '?') + ' × ' + U.formatWeight(d.pesoPaneto || 0);
+      item.appendChild(meta);
+
+      if (recipe.notes && String(recipe.notes).trim()) {
+        const notes = document.createElement('span');
+        notes.className = 'recipe-item-notes';
+        notes.textContent = String(recipe.notes).trim();
+        item.appendChild(notes);
+      }
+
+      item.addEventListener('click', () => attemptLoad(recipe.id));
+      recipeListContainer.appendChild(item);
+    });
+  }
+
+  function openLoadModal() {
+    if (getSavedRecipes().length === 0) return;
+    renderRecipeList();
+    openModal(loadRecipeModal, loadRecipeCloseBtn);
+  }
+  function closeLoadModal() { closeModal(loadRecipeModal); }
 
   // ---- Modales accesibles: foco atrapado, Escape y devolución de foco al abridor ----
   const confirmModal = document.getElementById('confirmModal');
@@ -650,9 +916,9 @@ window.stepSal = function(dir) {
 
   // ---- Modal "Guardar receta" (crear nueva o actualizar la seleccionada) ----
   function openSaveModal() {
-    const recipes = getSavedRecipes();
-    const selId = savedRecipesSelect.value;
-    const seleccionada = selId ? recipes.find(r => String(r.id) === String(selId)) : null;
+    // La receta activa es la candidata a "Actualizar"; si no hay ninguna cargada,
+    // se guarda como nueva.
+    const seleccionada = getActiveRecipe();
     editingRecipeId = seleccionada ? seleccionada.id : null;
 
     if (seleccionada) {
@@ -714,11 +980,14 @@ window.stepSal = function(dir) {
   // Configuración actual del formulario como objeto "data" de una receta.
   function currentData() {
     return {
-      numPaneteos: parseFloat(el.numPaneteos.value),
+      numPaneteos: parseDecimal(el.numPaneteos.value),
       pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
-      hidratacion: parseFloat(el.hidratacion.value),
+      hidratacion: parseDecimal(el.hidratacion.value),
       sal: salGL,
+      salMode: salMode,
+      yeastMode: yeastMode,
+      manualYeastPerKg: manualYeastPerKg,
       flours: JSON.parse(JSON.stringify(flours))
     };
   }
@@ -765,57 +1034,70 @@ window.stepSal = function(dir) {
       targetId = nueva.id;
     }
     setSavedRecipes(list);
-    // Cerramos el modal en cuanto la receta está guardada, antes de repintar el
-    // select, para que el cierre nunca dependa de pasos de UI posteriores.
+    // La receta guardada pasa a ser la activa. Cerramos el modal antes de repintar
+    // para que el cierre nunca dependa de pasos de UI posteriores.
+    activeRecipeId = targetId;
     closeSaveModal();
-    populateSavedRecipesSelect();
-    savedRecipesSelect.value = String(targetId);
-    updateNotesDisplay();
-    updateRecipeStatus();
+    refreshRecipesUI();
     showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
   }
 
   saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId }));
   saveRecipeNewBtn.addEventListener('click', () => guardarReceta({ overwriteId: null }));
 
-  loadRecipeBtn.addEventListener('click', () => {
-    const id = savedRecipesSelect.value;
-    if (!id) return;
-    const list = getSavedRecipes();
-    const recipe = list.find(r => String(r.id) === id);
+  // Carga una receta por id en la calculadora y la marca como activa.
+  function loadRecipe(id) {
+    const recipe = getSavedRecipes().find(r => String(r.id) === String(id));
     if (!recipe) return;
-
     const d = recipe.data;
     el.numPaneteos.value = d.numPaneteos;
     pesoG = d.pesoPaneto;
     el.temperatura.value = d.temperatura;
     el.hidratacion.value = d.hidratacion;
     salGL = d.sal;
+    salMode = d.salMode || (d.sal === 40 ? 'auto' : 'manual');
+    yeastMode = d.yeastMode || 'auto';
+    manualYeastPerKg = (d.manualYeastPerKg != null) ? d.manualYeastPerKg : D.yeastPerKgFlour(d.temperatura || 18);
     renderInputUnits();
+    renderParamModes();
     flours = JSON.parse(JSON.stringify(d.flours));
     let maxIdLoaded = 0;
     flours.forEach(f => { if (f.id > maxIdLoaded) maxIdLoaded = f.id; });
     flourIdCounter = maxIdLoaded + 1;
-
-    renderFlours();
+    activeRecipeId = recipe.id;
+    renderFlours();       // recalcula y dispara onConfigChange -> updateRecipeStatus
+    refreshRecipesUI();
     showToast(I18N.t('recipeLoadedToast'));
-  });
+  }
 
+  // Intenta cargar una receta desde la lista. Si la config actual tiene cambios
+  // sin guardar (no coincide con ninguna receta), avisa antes de descartarlos.
+  async function attemptLoad(id) {
+    closeLoadModal();
+    if (!findMatchingRecipe()) {
+      const ok = await showConfirm(I18N.t('unsavedLoadWarning'), I18N.t('discardAndLoad'));
+      if (!ok) return; // el usuario cancela; puede guardar y reabrir la lista
+    }
+    loadRecipe(id);
+  }
+
+  loadRecipeBtn.addEventListener('click', openLoadModal);
+  if (loadRecipeCloseBtn) loadRecipeCloseBtn.addEventListener('click', closeLoadModal);
+  loadRecipeModal.addEventListener('click', (e) => { if (e.target === loadRecipeModal) closeLoadModal(); });
+  loadRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, loadRecipeModal, closeLoadModal));
+
+  // "Borrar" elimina la receta activa (la cargada), tras confirmar.
   deleteRecipeBtn.addEventListener('click', async () => {
-    const id = savedRecipesSelect.value;
-    if (!id) return;
+    const active = getActiveRecipe();
+    if (!active) return;
     const confirmado = await showConfirm(I18N.t('confirmDeleteRecipe'), I18N.t('modalDelete'));
     if (!confirmado) return;
-    let list = getSavedRecipes();
-    list = list.filter(r => String(r.id) !== id);
+    const list = getSavedRecipes().filter(r => String(r.id) !== String(active.id));
     setSavedRecipes(list);
-    populateSavedRecipesSelect();
-    updateNotesDisplay();
-    updateRecipeStatus();
+    activeRecipeId = null;
+    refreshRecipesUI();
     showToast(I18N.t('recipeDeletedToast'));
   });
-
-  savedRecipesSelect.addEventListener('change', updateNotesDisplay);
 
   // ---- Exportar / Importar recetas (JSON) ----
   function recipesToJSON() {
@@ -867,6 +1149,9 @@ window.stepSal = function(dir) {
         temperatura: Math.round(num(d.temperatura, 18)),
         hidratacion: num(d.hidratacion, 63),
         sal: num(d.sal, 40),
+        salMode: (d.salMode === 'manual' || d.salMode === 'auto') ? d.salMode : (num(d.sal, 40) === 40 ? 'auto' : 'manual'),
+        yeastMode: (d.yeastMode === 'manual') ? 'manual' : 'auto',
+        manualYeastPerKg: num(d.manualYeastPerKg, 1.0),
         flours: flours
       }
     };
@@ -945,9 +1230,8 @@ window.stepSal = function(dir) {
       } else if (added === 0) {
         showToast(I18N.t('importNothingNew'));
       } else {
-        populateSavedRecipesSelect();
-        updateNotesDisplay();
-        updateRecipeStatus();
+        refreshRecipesUI();
+        if (loadRecipeModal.style.display === 'flex') renderRecipeList();
         showToast(I18N.t('recipesImportedToast').replace('{n}', added));
       }
       importRecipesInput.value = ''; // permite reimportar el mismo archivo
@@ -956,20 +1240,25 @@ window.stepSal = function(dir) {
     reader.readAsText(file);
   });
 
-  populateSavedRecipesSelect();
-  updateNotesDisplay();
+  // Al arrancar, si la config actual coincide con una receta guardada, la marca
+  // como activa (p. ej. tras recargar la página con una receta cargada).
+  (function detectActiveOnLoad(){
+    const match = findMatchingRecipe();
+    if (match) activeRecipeId = match.id;
+  })();
+  refreshRecipesUI();
   onConfigChange = updateRecipeStatus; // a partir de aquí, cada recálculo refresca el estado
   updateRecipeStatus();
 
-  // Lógica Copiar Receta
-  document.getElementById('btnCopiarReceta').addEventListener('click', function() {
+  // Genera el texto de la receta (compartido por Copiar y Compartir).
+  function buildRecipeText() {
     const harinaT = D.computeRecipe({
-      numPizzas: parseFloat(el.numPaneteos.value) || 0, pesoG: pesoG,
-      tempC: parseInt(el.temperatura.value, 10), hidPct: parseFloat(el.hidratacion.value),
+      numPizzas: parseDecimal(el.numPaneteos.value) || 0, pesoG: pesoG,
+      tempC: parseInt(el.temperatura.value, 10), hidPct: parseDecimal(el.hidratacion.value),
       salGL: salGL, flours: flours
     }).harinaTotal;
 
-    const text = `${I18N.t('recipeHeader')}
+    return `${I18N.t('recipeHeader')}
 ${I18N.t('recipePizzas')}: ${el.numPaneteos.value} ${I18N.t('recipeOf')} ${el.pesoPaneto.value} ${U.weightUnit()}
 ${I18N.t('recipeHydration')}: ${el.hidratacion.value}% | ${I18N.t('recipeSalt')}: ${el.sal.value}%
 
@@ -982,47 +1271,56 @@ ${I18N.t('recipeTotals')}
 
 ${I18N.t('recipeFlourMix')}
 ${flours.map(f => `- ${flourName(f.catalogId)}: ${U.formatWeight(harinaT * (f.pct/100))} (${f.pct}%)`).join('\n')}`;
+  }
 
+  // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.
+  function fallbackCopy(str) {
+    const ta = document.createElement('textarea');
+    ta.value = str;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed; top:-9999px; left:-9999px;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  function copyText(str, onOk) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(str).then(onOk).catch(() => {
+        if (fallbackCopy(str)) onOk(); else showToast(I18N.t('copyError'));
+      });
+    } else if (fallbackCopy(str)) { onOk(); }
+    else { showToast(I18N.t('copyError')); }
+  }
+
+  // Copiar receta
+  document.getElementById('btnCopiarReceta').addEventListener('click', function() {
     const btn = this;
     const showCopied = () => {
       const originalHtml = btn.innerHTML;
       btn.innerHTML = I18N.t('copiado');
-      btn.style.background = 'var(--basilico)';
-      btn.style.color = 'white';
-      setTimeout(() => {
-        btn.innerHTML = originalHtml;
-        btn.style.background = 'rgba(255,255,255,0.06)';
-        btn.style.color = 'var(--farina)';
-      }, 2500);
+      btn.classList.add('btn-on-dark-ok');
+      setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.remove('btn-on-dark-ok'); }, 2500);
     };
-
-    // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.
-    function fallbackCopy(str) {
-      const ta = document.createElement('textarea');
-      ta.value = str;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed; top:-9999px; left:-9999px;';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      let ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-      ta.remove();
-      return ok;
-    }
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(showCopied)
-        .catch(() => {
-          if (fallbackCopy(text)) showCopied();
-          else showToast(I18N.t('copyError'));
-        });
-    } else if (fallbackCopy(text)) {
-      showCopied();
-    } else {
-      showToast(I18N.t('copyError'));
-    }
+    copyText(buildRecipeText(), showCopied);
   });
+
+  // Compartir receta (Web Share API con fallback a copiar) — D2
+  const btnCompartir = document.getElementById('btnCompartir');
+  if (btnCompartir) {
+    btnCompartir.addEventListener('click', async () => {
+      const text = buildRecipeText();
+      if (navigator.share) {
+        try { await navigator.share({ title: I18N.t('recipeHeader'), text: text }); }
+        catch (e) { /* el usuario canceló el diálogo de compartir */ }
+      } else {
+        copyText(text, () => showToast(I18N.t('shareFallbackToast')));
+      }
+    });
+  }
 
 })();

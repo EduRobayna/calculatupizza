@@ -57,6 +57,29 @@ test('computeRecipe: receta por defecto (6×280 g, 18°C, 63%, 4% sal)', () => {
   closeTo(r.flours[2], r.harinaTotal * 0.10, 1e-9);
 });
 
+test('computeRecipe: levPorKgHarina manual sobreescribe la tabla de temperatura', () => {
+  const base = { numPizzas: 6, pesoG: 280, tempC: 18, hidPct: 63, salGL: 40,
+                 flours: [{ pct: 100 }] };
+  // Sin override: usa la tabla (18°C -> 1.0 g/kg)
+  const auto = D.computeRecipe(base);
+  closeTo(auto.levaduraPorKgHarina, 1.0, 1e-9);
+
+  // Con override manual: usa 0.4 g/kg aunque la temperatura sea 18°C
+  const manual = D.computeRecipe(Object.assign({}, base, { levPorKgHarina: 0.4 }));
+  closeTo(manual.levaduraPorKgHarina, 0.4, 1e-9);
+  closeTo(manual.levaduraFresca, manual.harinaTotal * (0.4 / 1000), 1e-9);
+  closeTo(manual.levaduraSeca, manual.levaduraFresca / 3, 1e-12);
+
+  // override 0 es válido (sin levadura); valores inválidos caen a la tabla
+  closeTo(D.computeRecipe(Object.assign({}, base, { levPorKgHarina: 0 })).levaduraPorKgHarina, 0, 1e-9);
+  closeTo(D.computeRecipe(Object.assign({}, base, { levPorKgHarina: -5 })).levaduraPorKgHarina, 1.0, 1e-9);
+  closeTo(D.computeRecipe(Object.assign({}, base, { levPorKgHarina: NaN })).levaduraPorKgHarina, 1.0, 1e-9);
+
+  // conservación de masa también con override
+  const suma = manual.harinaTotal + manual.aguaTotal + manual.salTotal + manual.levaduraFresca;
+  closeTo(suma, manual.masaTotal, 1e-6);
+});
+
 test('computeRecipe: conservación de masa (harina+agua+sal+levadura = masa)', () => {
   const casos = [
     { numPizzas: 6, pesoG: 280, tempC: 18, hidPct: 63, salGL: 40 },

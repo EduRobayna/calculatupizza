@@ -50,7 +50,12 @@
     const flours = Array.isArray(input.flours) ? input.flours : [];
 
     const masaTotal = numPizzas * pesoG;
-    const levPorKg = yeastPerKgFlour(tempC);
+    // Levadura: por defecto según la tabla de temperatura (modo Auto). Si se pasa
+    // input.levPorKgHarina (g de levadura fresca por kg de harina, modo Manual),
+    // se usa ese valor y la temperatura deja de influir en la levadura.
+    const levPorKg = (input.levPorKgHarina != null && isFinite(input.levPorKgHarina) && toNum(input.levPorKgHarina) >= 0)
+      ? toNum(input.levPorKgHarina)
+      : yeastPerKgFlour(tempC);
     const harinaTotal = harinaDesdeMasa(masaTotal, h, salGL, levPorKg);
     const aguaTotal = harinaTotal * h;
     const salTotal = aguaTotal * (salGL / 1000);

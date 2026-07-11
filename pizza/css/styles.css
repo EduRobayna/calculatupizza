@@ -9,7 +9,13 @@
   --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-  --color-h1: #4f46e5; --color-h2: #16a34a; --color-h3: #d97706; --color-h4: #9333ea; --color-h5: #db2777;
+  /* Paleta categórica de harinas: tonos tierra armonizados con la marca
+     (mostaza · oliva · terracota · teal/pino · ciruela). Distinguibles entre sí
+     y legibles con texto blanco sobre los segmentos de la barra. */
+  --color-h1: #b57e1e; --color-h2: #61823f; --color-h3: #b0512f; --color-h4: #2f6f6d; --color-h5: #7d4f68;
+  /* Colores de los ingredientes del resultado (swatches). Van sobre la tarjeta
+     oscura de resultado, por eso no dependen del tema claro/oscuro. */
+  --c-harina: #e2c790; --c-agua: #7fb0d9; --c-sal: #c7c2b6; --c-levadura: var(--pomodoro);
 
   /* Variables de superficie/texto: se invierten en modo oscuro */
   --page-bg: var(--farina);
@@ -104,29 +110,31 @@ label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02e
 
 /* Stepper & Inputs */
 .stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
-html.using-keyboard .stepper:focus-within { border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
-.stepper-btn { background: var(--tint-a); border: none; padding: 0 16px; height: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
+.stepper:has(input:focus-visible) { border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
+.stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
 .stepper-btn:hover { background: var(--tint-b); }
 /* Sin scale aquí: los +/− no tienen esquinas redondeadas y al encogerse
    asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
    da feedback de pulsación. */
 .stepper-btn:active { background: var(--tint-c); }
-.stepper input[type="number"] { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
-.stepper input[type="number"]:focus { box-shadow: none; outline: none; }
+.stepper input { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+.stepper input:focus { box-shadow: none; outline: none; }
 
 select, input[type="number"].plain-input, input[type="text"].plain-input { width:100%; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-2); font-family: var(--font-mono); font-size: 16px; color: var(--text); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
 select{ font-family: var(--font-body); font-weight: 500; cursor: pointer; }
 select:focus, input[type="number"].plain-input:focus, input[type="text"].plain-input:focus{ outline: none; border-color: var(--pomodoro); box-shadow: 0 0 0 4px rgba(193,67,46,0.12); }
-input[type="number"]:disabled{ background: var(--surface-3); color: var(--text); font-weight: 600; cursor: not-allowed; }
+input[type="number"]:disabled, input[type="text"].plain-input:disabled{ background: var(--surface-3); color: var(--text); font-weight: 600; cursor: not-allowed; }
 
 /* Ocultar spinners nativos de los inputs numéricos (Chrome, Safari, Edge, Firefox) */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
 input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 
-.stepper-unit-wrap, .unit-field { display: flex; align-items: center; flex: 1; position: relative; }
-.stepper-unit-wrap input { text-align: left; padding-left: 12px; }
-.unit-tag { position: absolute; right: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-soft); pointer-events: none; }
+.unit-tag { font-family: var(--font-mono); font-size: 12px; color: var(--text-soft); pointer-events: none; white-space: nowrap; }
+/* Valor + unidad como pareja centrada dentro del stepper (peso, hidratación, sal):
+   el número se ajusta a su contenido y la unidad va justo al lado, no flotando. */
+.stepper-unit-wrap { display: flex; align-items: baseline; justify-content: center; gap: 4px; flex: 1; min-width: 0; }
+.stepper-unit-wrap input { flex: 0 1 auto; width: 4.5ch; text-align: right; }
 
 /* Temp slider */
 .temp-row{ display:flex; align-items:center; gap: 16px; }
@@ -140,6 +148,23 @@ input[type="range"]::-moz-range-track{ height: 8px; border-radius: 4px; backgrou
 input[type="range"]::-moz-range-thumb{ width: 26px; height: 26px; border-radius: 50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor: pointer; }
 input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 
+/* ===== Parámetros de la masa: bloque apilado + Auto/Manual ===== */
+.param + .param { margin-top: 18px; }
+.param-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 8px; }
+.param-head label { margin-bottom: 0; }
+.param-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 8px 2px 0; }
+
+/* Toggle segmentado Auto / Manual (claro, buen tamaño táctil) */
+.mode-seg { display: inline-flex; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 9px; padding: 3px; gap: 3px; flex-shrink: 0; }
+.mode-seg .seg { border: none; background: transparent; color: var(--text-soft); font-family: var(--font-body); font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; padding: 7px 15px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; }
+.mode-seg .seg:hover { color: var(--text); }
+.mode-seg .seg.active { background: var(--pomodoro); color: #fff; box-shadow: 0 1px 3px rgba(193,67,46,0.35); }
+
+/* Stepper bloqueado (modo Auto): apagado y SIN interacción (ni tap ni foco) */
+.stepper.is-locked { background: var(--surface-3); pointer-events: none; }
+.stepper.is-locked .stepper-btn { opacity: 0.35; }
+.stepper input:disabled { color: var(--text-soft); -webkit-text-fill-color: var(--text-soft); cursor: default; }
+
 /* Progress Bar */
 .progress-container { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; transition: background-color 0.25s ease, border-color 0.25s ease; }
 .progress-header { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 12px; display: flex; justify-content: space-between; }
@@ -152,35 +177,42 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 @container (min-width: 28px) { .segment-index { display: block; opacity: 0.85; font-weight: 500; } }
 @container (min-width: 60px) { .segment-pct { display: block; } }
 
-/* Flour Rows - Desktop */
+/* ===== Filas de harina (identidad + slider de proporción + acciones) ===== */
+.flour-row select { width: 100%; padding: 10px 30px 10px 10px; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
+.flour-id-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.flour-id-wrap select { flex: 1; min-width: 0; }
+.w-badge { flex-shrink: 0; background: var(--surface-3); color: var(--text-soft); font-size: 11px; padding: 3px 7px; border-radius: 5px; font-family: var(--font-mono); white-space: nowrap; }
+.flour-bottom { display: flex; align-items: center; gap: 8px; }
+.flour-pct-field { display: flex; align-items: baseline; justify-content: center; gap: 3px; min-width: 64px; flex-shrink: 0; padding: 9px 8px; border: 1.5px solid var(--border); background: var(--surface-2); border-radius: 8px; }
+.flour-pct-field:focus-within { border-color: var(--pomodoro); box-shadow: 0 0 0 3px rgba(193,67,46,0.12); }
+.flour-pct-input { flex: 0 1 auto; width: auto; text-align: center; border: none; background: transparent; padding: 0; font-size: 15px; color: var(--text); font-family: var(--font-mono); }
+.flour-pct-input:focus { outline: none; }
+.flour-pct-input:disabled { color: var(--text-soft); cursor: not-allowed; }
+.flour-pct-field:has(.flour-pct-input:disabled) { background: var(--surface-3); }
+.flour-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+/* Pista sobre el candado / auto-balancear (C2) */
+.flour-hint { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 2px 2px 0; }
+.flour-hint svg { flex-shrink: 0; margin-top: 1px; opacity: 0.7; }
+
+/* Flour Rows - Desktop (una línea) */
 @media (min-width: 560px) {
-  .flour-header-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 90px 96px; gap: 12px; padding: 8px 0; margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--text-soft); }
-  .flour-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 90px 96px; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .flour-header-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 12px; padding: 6px 0; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--text-soft); }
+  .flour-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-bottom: 12px; }
   .flour-index { font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-align: center; }
-  .flour-select-wrap { position: relative; flex: 1; }
-  .flour-row select { width: 100%; padding: 10px 85px 10px 8px; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
-  .w-badge { position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: var(--surface-3); color: var(--text); font-size: 10px; padding: 3px 6px; border-radius: 4px; font-family: var(--font-mono); pointer-events: none; }
-  .flour-row .unit-field input { width: 100%; padding: 10px 18px 10px 4px; font-size: 16px; text-align: center; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); font-family: var(--font-mono); }
-  .flour-row .unit-field .unit-tag { right: 6px; }
-  .flour-actions { display: flex; gap: 4px; justify-content: flex-end; }
 }
 
-/* Flour Rows - Mobile Optimized */
+/* Flour Rows - Móvil (tarjeta: identidad arriba, control abajo) */
 @media (max-width: 559px) {
   .flour-header-row { display: none; }
   .flour-row {
-    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    display: flex; flex-wrap: wrap; gap: 12px 10px; align-items: center;
     background: var(--tint-a); border: 1px solid var(--border);
-    padding: 14px 12px; border-radius: 12px; margin-bottom: 16px;
+    padding: 14px 12px; border-radius: 12px; margin-bottom: 14px;
   }
-  .flour-index { width: 24px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; text-align: left; }
-  .flour-select-wrap { position: relative; width: calc(100% - 36px); }
-  .flour-row select { width: 100%; padding: 10px 75px 10px 8px; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); }
-  .w-badge { position: absolute; right: 35px; top: 50%; transform: translateY(-50%); background: var(--surface-3); color: var(--text); font-size: 10px; padding: 3px 6px; border-radius: 4px; font-family: var(--font-mono); pointer-events: none; }
-  .flour-row .unit-field { margin-left: 36px; width: 110px; position: relative; }
-  .flour-row .unit-field input { width: 100%; padding: 10px 18px 10px 4px; font-size: 16px; text-align: center; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text); font-family: var(--font-mono); }
-  .flour-row .unit-field .unit-tag { right: 6px; }
-  .flour-actions { flex: 1; display: flex; justify-content: flex-end; gap: 4px; }
+  .flour-index { width: 18px; flex-shrink: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+  .flour-id-wrap { flex: 1 1 auto; }
+  .flour-bottom { flex-basis: 100%; gap: 10px; }
 }
 
 .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; width: 44px; height: 44px; min-width: 44px; color: var(--text-soft); border-radius: 10px; transition: background 0.08s, color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; }
@@ -213,12 +245,19 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 .stat-row:last-of-type{ border-bottom:none; }
 .stat-label{ font-size: 13.5px; color: rgba(243,234,217,0.72); display:flex; align-items:center; gap:8px; }
 .swatch{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
+.swatch-harina{ background: var(--c-harina); }
+.swatch-agua{ background: var(--c-agua); }
+.swatch-sal{ background: var(--c-sal); }
+.swatch-levadura{ background: var(--c-levadura); }
 .stat-value{ font-family: var(--font-mono); font-size: 16px; font-weight:600; }
 .flour-breakdown{ margin-top: 8px; padding-top: 8px; }
 .flour-sub{ display:flex; justify-content:space-between; gap: 10px; padding: 8px 0 8px 17px; font-size: 13px; color: rgba(243,234,217,0.6); border-bottom: 1px dashed rgba(255,255,255,0.08); align-items: center; }
 .flour-sub .fname{ color: rgba(243,234,217,0.85); display: flex; align-items: center; gap: 8px; min-width: 0; }
 .flour-sub:last-child{ border-bottom:none; }
 .flour-sub .fval{ font-family: var(--font-mono); color: var(--farina); font-weight:600; white-space: nowrap; flex-shrink: 0; }
+/* Nota subordinada: la levadura seca es alternativa a la fresca, no un ingrediente aparte */
+.yeast-alt{ margin: 2px 0 0 17px; font-size: 12.5px; color: rgba(243,234,217,0.5); }
+.yeast-alt #totalLevaduraSeca{ font-family: var(--font-mono); }
 .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
 .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
 
@@ -232,7 +271,17 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
 .social-link:hover { color: white; background: var(--pomodoro); border-color: var(--pomodoro); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(193,67,46,0.25); }
 .social-link:active { transform: scale(0.9); }
 .social-link svg { width: 20px; height: 20px; fill: currentColor; }
-#btnCopiarReceta:hover{ background: rgba(255,255,255,0.12) !important; border-color: rgba(255,255,255,0.4) !important; }
+/* Botones sobre la tarjeta oscura de resultado (Copiar / Compartir) */
+.recipe-share-row{ display: flex; gap: 10px; margin-top: 16px; }
+.recipe-share-row .btn-on-dark{ flex: 1; margin-top: 0; }
+.btn-on-dark{ color: var(--farina); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.08s; }
+.btn-on-dark:hover{ background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); }
+.btn-on-dark-ok{ background: var(--basilico) !important; border-color: var(--basilico) !important; color: #fff !important; }
+
+/* Chips de multiplicador de levadura ("¿Tienes prisa?") */
+.rush-list{ margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.rush-row{ display: flex; align-items: center; justify-content: space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px; }
+.rush-mult{ font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--pomodoro); }
 
 /* Botón de modo oscuro/claro */
 .theme-toggle{
@@ -274,6 +323,28 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
 .icon-btn-square:disabled{ opacity: 0.4; cursor: not-allowed; }
 .icon-btn-square.delete:hover:not(:disabled){ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+
+/* ===== Sistema «Mis recetas» (receta activa + acciones + lista) ===== */
+.active-recipe-line{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-soft); margin-bottom:12px; min-width:0; }
+.active-recipe-ico{ flex-shrink:0; color:var(--basilico); }
+.active-recipe-line.none .active-recipe-ico{ color:var(--text-soft); opacity:0.6; }
+.active-recipe-label{ flex-shrink:0; }
+.active-recipe-name{ color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.recipe-actions-row{ display:flex; gap:8px; align-items:stretch; }
+.recipe-load-btn{ flex:1; margin-top:0; }
+.recipe-actions-row .icon-btn-square{ height:auto; align-self:stretch; }
+
+/* Lista de recetas del modal Cargar */
+.recipe-list{ display:flex; flex-direction:column; gap:8px; margin-top:12px; max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
+.recipe-item{ width:100%; text-align:left; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; cursor:pointer; transition:border-color .1s, background .1s, transform .08s; display:flex; flex-direction:column; gap:3px; font-family:var(--font-body); color:var(--text); }
+.recipe-item:hover{ border-color:var(--pomodoro); background:var(--tint-a); }
+.recipe-item:active{ transform:scale(0.99); }
+.recipe-item.active{ border-color:var(--basilico); box-shadow:0 0 0 3px rgba(92,125,79,0.14); }
+.recipe-item-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; }
+.recipe-item-badge{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--basilico); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); border-radius:999px; padding:2px 8px; }
+.recipe-item-meta{ font-family:var(--font-mono); font-size:12px; color:var(--text-soft); }
+.recipe-item-notes{ font-size:12.5px; color:var(--text-soft); line-height:1.4; white-space:pre-wrap; word-break:break-word; }
+.recipe-list-empty{ text-align:center; padding:20px 4px; }
 
 /* Modal guardar receta */
 .modal-overlay{ position:fixed; inset:0; background: rgba(23,18,14,0.55); z-index: 10000; display:flex; align-items:center; justify-content:center; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
@@ -368,7 +439,7 @@ html.modal-open, html.modal-open body{ overflow: hidden; }
 }
 .ms-stats{ display: flex; flex: 1; gap: 10px; justify-content: space-between; min-width: 0; }
 .ms-stat{ display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.ms-label{ font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.72; }
+.ms-label{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
 .ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; }
 .ms-blocked{ display: none; flex: 1; font-size: 13px; font-weight: 600; color: #f0a44e; }
 .ms-chevron{ flex-shrink: 0; opacity: 0.75; }
@@ -376,11 +447,14 @@ html.modal-open, html.modal-open body{ overflow: hidden; }
 .mobile-summary.blocked .ms-blocked{ display: block; }
 
 /* ===== Foco de teclado ===== */
-/* El anillo solo aparece al navegar con el teclado (clase .using-keyboard en
-   <html>, que activa/desactiva app.js), nunca con ratón ni táctil. */
-html.using-keyboard button:focus,
-html.using-keyboard [role="button"]:focus,
-html.using-keyboard a.social-link:focus{
+/* :focus-visible nativo: el anillo solo aparece al navegar con teclado, nunca
+   con ratón ni táctil. Sustituye a la antigua clase manual .using-keyboard. */
+button:focus-visible,
+[role="button"]:focus-visible,
+a.social-link:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible{
   outline: 2px solid var(--pomodoro);
   outline-offset: 2px;
 }
