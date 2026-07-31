@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Masa de Pizza Napolitana · Edu Robayna</title>
+
+<!-- theme-color por tema; el script de abajo fija el color exacto antes de pintar -->
+<meta name="theme-color" id="themeColorMeta" content="#f3ead9">
+
+<!-- Aplica el tema guardado antes de pintar, para evitar parpadeos -->
+<script>
+  (function(){
+    try{
+      const saved = localStorage.getItem('pizza-calc-theme');
+      const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const tema = saved || (prefiereOscuro ? 'dark' : 'light');
+      if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      var tcMeta = document.getElementById('themeColorMeta');
+      if (tcMeta) tcMeta.setAttribute('content', tema === 'dark' ? '#17120e' : '#f3ead9');
+    } catch(e){}
+  })();
+</script>
+
+<!-- Meta Etiquetas SEO y Open Graph -->
+<meta name="description" content="Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.">
+<link rel="canonical" href="https://calculatupizza.com/">
+<meta property="og:site_name" content="CalculaTuPizza">
+<meta property="og:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
+<meta property="og:description" content="Calcula levadura, hidratación y harinas al instante para hacer la auténtica masa de pizza napolitana en casa.">
+<meta property="og:image" content="https://calculatupizza.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Calculadora de masa de pizza napolitana de Edu Robayna">
+<meta property="og:url" content="https://calculatupizza.com/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
+<meta name="twitter:description" content="Calcula levadura, hidratación y harinas al instante para la auténtica masa napolitana.">
+<meta name="twitter:image" content="https://calculatupizza.com/og-image.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+
+<!-- Datos estructurados (JSON-LD) para enriquecer el resultado en buscadores -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de Masa de Pizza Napolitana",
+  "url": "https://calculatupizza.com/",
+  "description": "Calculadora exacta para masa de pizza napolitana: hidratación, sal, mezcla de harinas y levadura según la temperatura ambiente.",
+  "applicationCategory": "LifestyleApplication",
+  "operatingSystem": "Any",
+  "inLanguage": ["es", "en"],
+  "image": "https://calculatupizza.com/og-image.png",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "author": { "@type": "Person", "name": "Edu Robayna" }
+}
+</script>
+
+<!-- El control de caché real vive en _headers (cabeceras HTTP). Los navegadores
+     ignoran http-equiv="Cache-Control" para el propio documento, así que no se ponen aquí. -->
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hero-controls">
+    <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+    </div>
+    <img src="logo-hero.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
+    <h1 data-i18n-html="h1">Calculadora de <em>masa</em> de pizza napolitana</h1>
+    <p id="heroSub" class="sub clamped" data-i18n="sub">Para hacer la auténtica pizza napolitana solo necesitas cuatro ingredientes: harina, agua, sal y levadura. Si eres principiante, la calculadora te ayudará a conseguir tu propia receta siguiendo solo cuatro pasos. Si tienes más experiencia, introduce tus propios parámetros. Por defecto, está puesta una receta propia para 22-24 horas de fermentación a temperatura ambiente. ¡Manos a la masa!</p>
+    <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false">Leer más</button>
+  </header>
+
+  <div class="layout">
+
+    <div class="panel">
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num section-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </span>
+          <h2 class="section-title" data-i18n="myRecipesTitle">Mis recetas</h2>
+          <span id="recipeStatus" class="recipe-status"></span>
+        </div>
+
+        <div class="active-recipe-line" id="activeRecipeLine">
+          <svg class="active-recipe-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+          <span class="active-recipe-label" data-i18n="activeRecipeLabel">Receta activa:</span>
+          <strong id="activeRecipeName" class="active-recipe-name"></strong>
+        </div>
+
+        <div class="recipe-actions-row">
+          <button type="button" id="loadRecipeBtn" class="btn-outline recipe-load-btn" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span data-i18n="loadRecipeBtnText">Cargar receta</span>
+          </button>
+          <button type="button" id="saveRecipeBtn" class="icon-btn-square" data-i18n-title="saveRecipeBtn" data-i18n-aria="saveRecipeBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          </button>
+          <button type="button" id="deleteRecipeBtn" class="icon-btn-square delete" data-i18n-title="deleteBtn" data-i18n-aria="deleteBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
+
+        <div id="recipeNotesDisplay" class="recipe-notes-display" style="display:none;"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">01</span>
+          <h2 class="section-title" data-i18n="section1Title">Tamaño de la tanda</h2>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="numPaneteos" data-i18n="numPizzasLabel">Número de pizzas</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('numPaneteos', -1, 1)" aria-label="Restar una pizza" data-i18n-aria="restarPizza">−</button>
+              <input type="number" id="numPaneteos" value="6" min="1" inputmode="numeric" aria-label="Número de pizzas" data-i18n-aria="numPizzasLabel">
+              <button type="button" class="stepper-btn" onclick="stepValue('numPaneteos', 1, 1)" aria-label="Añadir una pizza" data-i18n-aria="sumarPizza">+</button>
+            </div>
+          </div>
+          <div>
+            <label for="pesoPaneto" data-i18n="pesoPizzaLabel">Peso por pizza</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepPeso(-1)" aria-label="Reducir peso por pizza" data-i18n-aria="restar10g">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="pesoPaneto" value="280" min="100" step="10" inputmode="decimal" aria-label="Peso por pizza" data-i18n-aria="pesoPizzaAria">
+                <span class="unit-tag" id="pesoUnit">g</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepPeso(1)" aria-label="Aumentar peso por pizza" data-i18n-aria="sumar10g">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <h2 class="section-title" data-i18n="section2Title">Entorno</h2>
+        </div>
+        <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
+        <div class="temp-row">
+          <div class="temp-readout"><span id="tempValue">18</span><span id="tempUnit">°C</span></div>
+          <input type="range" id="temperatura" min="17" max="25" step="1" value="18" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <h2 class="section-title" data-i18n="section3Title">Parámetros de la masa</h2>
+        </div>
+        <div class="param">
+          <div class="param-head">
+            <label for="hidratacion" data-i18n="hidratacionLabel">Hidratación</label>
+          </div>
+          <div class="hyd-group">
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', -0.5, 55, 100)" aria-label="Restar 0,5% de hidratación" data-i18n-aria="restarHidra">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="hidratacion" value="63" min="55" max="100" step="0.5" inputmode="decimal" aria-label="Hidratación en porcentaje" data-i18n-aria="hidratacionAria">
+                <span class="unit-tag">%</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', 0.5, 55, 100)" aria-label="Añadir 0,5% de hidratación" data-i18n-aria="sumarHidra">+</button>
+            </div>
+            <div class="hyd-scale" aria-hidden="true">
+              <div class="hyd-scale-track"><span class="hyd-scale-marker" id="hydMarker"></span></div>
+              <div class="hyd-scale-ends"><span>55%</span><span>85%+</span></div>
+            </div>
+            <div class="hyd-info" id="hydrationInfo" role="status" aria-live="polite">
+              <span class="hyd-info-head" id="hydrationInfoHead"></span>
+              <span class="hyd-info-body" id="hydrationInfoText"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="param">
+          <div class="param-head">
+            <label for="sal" data-i18n="salLabel">Sal</label>
+            <div class="mode-seg" id="salModeToggle" role="group" data-i18n-aria="salModeAria" aria-label="Modo de la sal">
+              <button type="button" class="seg" data-mode="auto" data-i18n="modeAuto">Auto</button>
+              <button type="button" class="seg" data-mode="manual" data-i18n="modeManual">Manual</button>
+            </div>
+          </div>
+          <div class="stepper" id="salStepper">
+            <button type="button" class="stepper-btn" onclick="stepSal(-1)" aria-label="Reducir sal" data-i18n-aria="restarSal">−</button>
+            <div class="stepper-unit-wrap">
+              <input type="text" id="sal" value="4" min="0" max="10" step="0.1" inputmode="decimal" aria-label="Sal en porcentaje del agua" data-i18n-aria="salAria">
+              <span class="unit-tag" id="salUnitTag">% agua</span>
+            </div>
+            <button type="button" class="stepper-btn" onclick="stepSal(1)" aria-label="Añadir sal" data-i18n-aria="sumarSal">+</button>
+          </div>
+          <!-- La pista la gestiona renderParamModes() según base (g/L o % harina) y
+               modo (Auto/Manual); sin data-i18n para que applyStaticDom no la pise. -->
+          <p class="param-hint" id="salHint">4 % del peso del agua (cantidad recomendada).</p>
+        </div>
+
+        <div class="param param-yeast">
+          <div class="param-head">
+            <label for="levadura" data-i18n="levaduraLabel">Levadura fresca</label>
+            <div class="mode-seg" id="yeastModeToggle" role="group" data-i18n-aria="yeastModeAria" aria-label="Modo de la levadura">
+              <button type="button" class="seg" data-mode="auto" data-i18n="modeAuto">Auto</button>
+              <button type="button" class="seg" data-mode="manual" data-i18n="modeManual">Manual</button>
+            </div>
+          </div>
+          <div class="stepper" id="yeastStepper">
+            <button type="button" class="stepper-btn" onclick="stepYeast(-1)" aria-label="Reducir levadura" data-i18n-aria="restarLevadura">−</button>
+            <div class="stepper-unit-wrap">
+              <input type="text" id="levadura" value="0.1" min="0" max="1" step="0.01" inputmode="decimal" aria-label="Levadura en porcentaje de la harina" data-i18n-aria="levaduraAria">
+              <span class="unit-tag" data-i18n="yeastUnit">% harina</span>
+            </div>
+            <button type="button" class="stepper-btn" onclick="stepYeast(1)" aria-label="Añadir levadura" data-i18n-aria="sumarLevadura">+</button>
+          </div>
+          <p class="param-hint" id="yeastHint" data-i18n="yeastAutoHint">Se ajusta según la temperatura ambiente.</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">04</span>
+          <h2 class="section-title" data-i18n="section4Title">Mezcla de harinas</h2>
+        </div>
+
+        <!-- Aviso de novedad (una sola vez): base de datos de harinas ampliada +
+             buscador/filtros. Lo muestra/oculta calculator.js según localStorage. -->
+        <div id="flourNewsBanner" class="flour-news" style="display:none;" role="status">
+          <svg class="flour-news-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.8L18.7 9l-4.8 1.9L12 15.7l-1.9-4.8L5.3 9l4.8-1.2L12 3z"></path><path d="M19 14l.7 1.8L21.5 16l-1.8.7L19 18.5l-.7-1.8L16.5 16l1.8-.2L19 14z"></path></svg>
+          <span class="flour-news-text" data-i18n="flourNewsText">Novedad: hemos añadido muchas más harinas. Toca cualquier harina para buscarlas y filtrarlas por marca, tipo y fuerza.</span>
+          <button type="button" id="flourNewsClose" class="flour-news-close" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar" role="img" aria-label="Proporción de la mezcla de harinas" data-i18n-aria="mixBarAria"></div>
+          <p id="progressStatus" class="progress-status" role="status"></p>
+        </div>
+
+        <div id="flourRowsContainer"></div>
+
+        <p class="flour-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span data-i18n="flourLockHint">Fija una harina con el candado para que su porcentaje no cambie al ajustar las demás.</span>
+        </p>
+
+        <div class="flour-buttons">
+          <button type="button" id="addFlourBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span data-i18n="addFlourBtn">Añadir otra harina</span>
+          </button>
+        </div>
+
+        <div class="warning-banner" id="warningBanner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L15 14H1L8 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6V9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.3" r="0.9" fill="currentColor"/></svg>
+          <span data-i18n="warningText">La suma de los porcentajes de harina debe ser exactamente 100%.</span>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <button type="button" id="resetBtn" class="btn-reset">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          <span data-i18n="resetBtn">Restablecer receta original</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="results">
+      <div class="results-head">
+        <h3 class="results-title" data-i18n="resultsTitle">Resultado</h3>
+        <span class="results-badge" id="resultsBadge" data-i18n="resultsBadgeReady">Listo</span>
+      </div>
+
+      <div id="resultsBody">
+        <div class="headline-stat">
+          <span class="headline-number" id="totalMasa">0</span>
+          <span class="headline-label" data-i18n="headlineLabel">de masa total</span>
+        </div>
+        <p class="headline-context" id="batchContext"></p>
+
+        <div class="ingredient-bar" id="ingredientBar" role="img" aria-label="Proporción de ingredientes" data-i18n-aria="ingredientBarAria"></div>
+
+        <div class="ing-row">
+          <span class="ing-lead">
+            <span class="ing-ico ing-ico-harina" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"></path><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"></path></svg></span>
+            <span class="ing-name" data-i18n="statHarinaTotal">Harina total</span>
+          </span>
+          <span class="ing-pct">100%</span>
+          <span class="ing-value" id="totalHarina">0 g</span>
+        </div>
+
+        <div class="flour-breakdown" id="flourBreakdown"></div>
+
+        <div class="ing-row">
+          <span class="ing-lead">
+            <span class="ing-ico ing-ico-agua" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"></path></svg></span>
+            <span class="ing-name" data-i18n="statAgua">Agua</span>
+          </span>
+          <span class="ing-pct" id="aguaPct"></span>
+          <span class="ing-value" id="totalAgua">0 g</span>
+        </div>
+        <div class="ing-row">
+          <span class="ing-lead">
+            <span class="ing-ico ing-ico-sal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8a1 1 0 0 0 1-1.08L16.3 9H7.7l-.7 10.92A1 1 0 0 0 8 21Z"></path><path d="M8.5 9V6a3.5 3.5 0 0 1 7 0v3"></path><path d="M10.5 13h.01"></path><path d="M13.5 13h.01"></path><path d="M12 16h.01"></path></svg></span>
+            <span class="ing-name" data-i18n="statSal">Sal</span>
+          </span>
+          <span class="ing-pct" id="salPct"></span>
+          <span class="ing-value" id="totalSal">0 g</span>
+        </div>
+        <div class="ing-row ing-row-last">
+          <span class="ing-lead">
+            <span class="ing-ico ing-ico-levadura" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14" r="4"></circle><circle cx="16.5" cy="8.5" r="2.5"></circle><circle cx="17" cy="16" r="1.5"></circle></svg></span>
+            <span class="ing-name" data-i18n="statLevaduraFresca">Levadura fresca</span>
+          </span>
+          <span class="ing-pct" id="levaduraPct"></span>
+          <span class="ing-value" id="totalLevadura">0 g</span>
+        </div>
+        <p class="yeast-alt">
+          <span data-i18n="yeastAltPre">o</span> <span id="totalLevaduraSeca">0 g</span> <span data-i18n="yeastAltSuf">de levadura seca</span>
+        </p>
+      </div>
+
+      <div class="disabled-overlay" id="disabledOverlay" style="display:none;">
+        <strong data-i18n="disabledTitle">Cálculo deshabilitado</strong>
+        <span data-i18n="disabledText">Corrige el porcentaje de harinas para ver el desglose.</span>
+      </div>
+
+      <!-- Copiar / Compartir receta -->
+      <div class="recipe-share-row">
+        <button type="button" id="btnCopiarReceta" class="btn-outline btn-on-dark">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span data-i18n="copiarReceta">Copiar receta</span>
+        </button>
+        <button type="button" id="btnCompartir" class="btn-outline btn-on-dark">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          <span data-i18n="compartirReceta">Compartir</span>
+        </button>
+      </div>
+
+      <div id="iosInstallBanner" style="display:none; margin-top:20px; padding:15px; background:rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius:10px; font-size:13.5px; color: var(--farina); line-height: 1.4;">
+        <strong style="display:block; margin-bottom:8px; color: white;" data-i18n="iosInstallTitle">Instalar en iPhone / iPad</strong>
+        <span data-i18n="iosInstallStep1">Para instalar la app, abre esta web en</span> <strong>Safari</strong>, <span data-i18n="iosInstallStep2">pulsa el botón Compartir</span> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> <span data-i18n="iosInstallStep3">en el menú inferior y selecciona</span> <strong data-i18n="iosInstallStep4">"Añadir a la pantalla de inicio"</strong> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>.
+      </div>
+
+      <button id="btnInstalar" style="display:none; width:100%; margin-top:20px; padding:15px; background:var(--pomodoro); color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; transition: background 0.15s;" data-i18n="instalarBtn">
+        Instalar Calculadora
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="panel" style="margin-top: 20px;">
+    <details class="accordion">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+        </span>
+        <h2 class="section-title" data-i18n="kneadTitle">Consejos sobre el amasado</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua frotándola con los dedos. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos gramos más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda algo de masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, al final.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-24 ºC.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una bola y déjala reposar media hora cubierta con un paño húmedo.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi7"><b>A fermentar.</b> Después de este reposo, arranca la fermentación. Ve a la sección «Consejos sobre la fermentación» para más ideas.</li>
+      </ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel" style="margin-top: 20px;">
+    <details class="accordion">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </span>
+        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos formados.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2">Si sigues mi receta, la fermentación se hace a <b>temperatura ambiente</b>. Si lo prefieres, puedes meter la masa en bloque en la nevera (4 °C) o vinoteca (15-18 °C).</li>
+        <li style="margin-bottom: 10px;"><b data-i18n="fermentLi3Head">Tiempos orientativos:</b>
+          <ul style="margin-top: 5px;">
+            <li data-i18n="fermentLi3a">En bloque: 14-18 h (invierno/nevera: 14 h | verano: 18 h).</li>
+            <li data-i18n="fermentLi3b">En bollos: 6-10 h (invierno/nevera: 10 h | verano: 6 h).</li>
+          </ul>
+        </li>
+        <li style="margin-bottom: 10px;" data-i18n="fermentLiNevera">Antes de meter la masa en la nevera, déjala fermentar al menos una hora a temperatura ambiente para que la levadura se active.</li>
+        <li style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+          <span data-i18n-html="fermentLi4"><b>¿Tienes prisa?</b> Si necesitas acortar el tiempo de fermentación (aunque no lo recomiendo, merece la pena esperar), aumenta la levadura multiplicando el resultado de la calculadora según las horas:</span>
+          <div class="rush-list">
+            <div class="rush-row"><span>8-10 h</span><span class="rush-mult">x3</span></div>
+            <div class="rush-row"><span>6 h</span><span class="rush-mult">x5</span></div>
+            <div class="rush-row"><span>4 h</span><span class="rush-mult">x8</span></div>
+          </div>
+        </li>
+      </ul>
+      </div>
+    </details>
+  </div>
+
+  <div id="settingsModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-card settings-card">
+      <div class="settings-head">
+        <h3 class="modal-title" id="settingsModalTitle" data-i18n="settingsTitle">Configuración</h3>
+        <button type="button" id="settingsCloseBtn" class="icon-btn-square" aria-label="Cerrar" data-i18n-aria="settingsClose" title="Cerrar" data-i18n-title="settingsClose">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row-label" data-i18n="settingsLanguage">Idioma</span>
+        <button type="button" id="langToggle" class="lang-toggle" aria-label="Cambiar idioma" title="Cambiar idioma">
+          <span class="lang-opt" data-lang-opt="es">ES</span><span class="lang-sep">/</span><span class="lang-opt" data-lang-opt="en">EN</span>
+        </button>
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row-label" data-i18n="settingsTheme">Tema</span>
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Cambiar a modo oscuro" title="Cambiar tema">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+      </div>
+
+      <div class="settings-row stacked">
+        <span class="settings-row-label" data-i18n="settingsUnits">Peso</span>
+        <div class="segmented" id="unitsToggle" role="group" aria-label="Peso" data-i18n-aria="settingsUnits">
+          <button type="button" class="seg-opt" data-units="metric" data-i18n="unitsMetric">g</button>
+          <button type="button" class="seg-opt" data-units="imperial" data-i18n="unitsImperial">oz</button>
+        </div>
+      </div>
+
+      <div class="settings-row stacked">
+        <span class="settings-row-label" data-i18n="settingsTempUnit">Temperatura</span>
+        <div class="segmented" id="tempUnitToggle" role="group" aria-label="Unidad de temperatura" data-i18n-aria="settingsTempUnit">
+          <button type="button" class="seg-opt" data-temp="c">°C</button>
+          <button type="button" class="seg-opt" data-temp="f">°F</button>
+        </div>
+      </div>
+
+      <div class="settings-row stacked">
+        <span class="settings-row-label" data-i18n="settingsSalt">Sal</span>
+        <div class="segmented" id="saltUnitToggle" role="group" aria-label="Unidad de la sal" data-i18n-aria="settingsSalt">
+          <button type="button" class="seg-opt" data-salt="gl" data-i18n="salUnitGL">g/L agua</button>
+          <button type="button" class="seg-opt" data-salt="harina" data-i18n="salUnitFlour">% harina</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <span class="settings-row-label" data-i18n="settingsRecipes">Recetas</span>
+        <div class="recipes-io-row">
+          <button type="button" id="exportRecipesBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span data-i18n="exportBtn">Exportar</span>
+          </button>
+          <button type="button" id="importRecipesBtn" class="btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span data-i18n="importBtn">Importar</span>
+          </button>
+        </div>
+        <input type="file" id="importRecipesInput" accept="application/json,.json" hidden>
+      </div>
+
+      <div class="modal-actions" style="margin-top:20px;">
+        <button type="button" id="settingsDoneBtn" class="btn-secondary modal-confirm" data-i18n="settingsDone">Hecho</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="saveRecipeModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle" aria-describedby="saveModalSub">
+    <div class="modal-card" tabindex="-1">
+      <h3 class="modal-title" id="saveModalTitle" data-i18n="saveModalTitle">Guardar receta</h3>
+      <p class="modal-sub" id="saveModalSub" data-i18n="saveModalSub">Ponle un nombre para encontrarla luego.</p>
+      <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
+      <p id="saveModalError" class="modal-error" role="alert" style="display:none;"></p>
+      <textarea id="saveRecipeNotesInput" class="recipe-notes-input" rows="3" maxlength="500" data-i18n-aria="notesLabel" data-i18n-placeholder="notesPlaceholder" placeholder="Notas (opcional): horno, hidratación, cómo quedó…"></textarea>
+      <div class="modal-actions modal-actions-stack" id="saveModalActions">
+        <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
+        <button type="button" id="saveRecipeNewBtn" class="btn-outline" data-i18n="modalSaveAsNew" style="display:none;">Guardar como nueva</button>
+        <button type="button" id="saveRecipeCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="confirmModalText">
+    <div class="modal-card">
+      <p class="modal-sub" id="confirmModalText" style="margin-top:0;"></p>
+      <div class="modal-actions">
+        <button type="button" id="confirmCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
+        <button type="button" id="confirmOkBtn" class="btn-secondary modal-confirm">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadRecipeModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="loadModalTitle">
+    <div class="modal-card">
+      <div class="settings-head">
+        <h3 class="modal-title" id="loadModalTitle" data-i18n="loadModalTitle">Cargar receta</h3>
+        <button type="button" id="loadRecipeCloseBtn" class="icon-btn-square" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <p class="modal-sub" data-i18n="loadModalSub">Toca una receta para cargarla en la calculadora.</p>
+      <div id="recipeListContainer" class="recipe-list"></div>
+      <p id="recipeListEmpty" class="modal-sub recipe-list-empty" data-i18n="noRecipesYet" style="display:none;">Aún no tienes recetas guardadas.</p>
+    </div>
+  </div>
+
+  <!-- Selector de harina (buscador + filtros). En móvil se muestra como hoja
+       inferior (bottom-sheet); en escritorio como diálogo centrado. Reutiliza la
+       infraestructura de modales (.modal-overlay, focus-trap, bloqueo de scroll). -->
+  <div id="flourPickerModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="flourPickerTitle">
+    <div class="modal-card flour-picker-card" tabindex="-1">
+      <div class="settings-head">
+        <h3 class="modal-title" id="flourPickerTitle" data-i18n="flourPickerTitle">Elegir harina</h3>
+        <button type="button" id="flourPickerCloseBtn" class="icon-btn-square" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="flour-picker-search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="flourSearch" autocomplete="off" spellcheck="false" data-i18n-placeholder="flourSearchPlaceholder" data-i18n-aria="flourSearchPlaceholder" placeholder="Buscar por marca, tipo o fuerza…" aria-label="Buscar por marca, tipo o fuerza">
+      </div>
+      <button type="button" id="flourFiltersToggle" class="flour-filters-toggle" aria-expanded="false" aria-controls="flourFilters">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"></path></svg>
+        <span data-i18n="flourFiltersToggle">Filtros</span>
+        <span class="fp-active-count" id="flourFiltersCount" aria-hidden="true"></span>
+        <svg class="fp-toggle-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="flour-picker-filters" id="flourFilters"></div>
+      <div class="flour-picker-countrow">
+        <p class="flour-picker-count" id="flourPickerCount" role="status" aria-live="polite"></p>
+        <button type="button" id="flourClearFilters" class="flour-clear-filters" data-i18n="flourClearFilters" style="display:none;">Limpiar filtros</button>
+      </div>
+      <div class="flour-picker-list" id="flourPickerList" role="listbox" aria-labelledby="flourPickerTitle"></div>
+      <p class="flour-picker-empty" id="flourPickerEmpty" style="display:none;" data-i18n="flourPickerEmpty">No hay harinas que coincidan. Prueba a quitar filtros.</p>
+    </div>
+  </div>
+
+  <div id="update-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--forno); color:var(--farina); padding:16px 20px; border-radius:14px; z-index:9999; box-shadow:0 12px 30px -8px rgba(36,26,21,0.5); border:1px solid rgba(255,255,255,0.12); font-family:var(--font-body); font-size:13.5px; text-align:center; width:calc(100% - 40px); max-width:340px;">
+    <span data-i18n="updateBannerText">Hay una nueva versión de la calculadora disponible.</span>
+    <button id="update-btn" style="margin-top:10px; padding:9px 16px; background:var(--pomodoro); color:white; border:none; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; width:100%;" data-i18n="updateBtn">
+      Actualizar ahora
+    </button>
+  </div>
+
+  <footer class="note">
+    <div class="social-block">
+      <span data-i18n="footerCredit">CALCULADORA CREADA POR EDU ROBAYNA</span>
+      <div class="social-links">
+        <a href="https://x.com/EduRobayna" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter">
+          <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://www.instagram.com/edurobayna/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@edu.pizza" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="TikTok">
+          <svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="credits" data-i18n="logoCredit">Logo: Mónica Pozo</div>
+  </footer>
+</div>
+
+<!-- Barra-resumen fija (solo móvil): muestra las cifras que reaccionan a los
+     ajustes cuando el resultado aún no está a la vista. Al tocarla salta al desglose. -->
+<div id="mobileSummary" class="mobile-summary" role="button" tabindex="0" data-i18n-aria="summaryAria" aria-label="Ver el resultado completo">
+  <div class="ms-stats">
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryFlour">Harina</span><span class="ms-val" id="ms-harina">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryWater">Agua</span><span class="ms-val" id="ms-agua">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summarySalt">Sal</span><span class="ms-val" id="ms-sal">0 g</span></div>
+    <div class="ms-stat"><span class="ms-label" data-i18n="summaryYeast">Levadura</span><span class="ms-val" id="ms-lev">0 g</span></div>
+  </div>
+  <span class="ms-blocked" data-i18n="summaryBlocked">Corrige el % de harinas</span>
+  <svg class="ms-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+</div>
+
+<!-- Módulos JS. Orden importante: i18n define window.PizzaI18N y units define
+     window.PizzaUnits; de ambos dependen calculator y app. -->
+<script src="js/i18n.js"></script>
+<script src="js/units.js"></script>
+<script src="js/dough.js"></script>
+<script src="js/flours.js"></script>
+<script src="js/calculator.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

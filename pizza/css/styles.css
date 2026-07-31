@@ -1,0 +1,777 @@
+:root{
+  --forno:#241a15; --forno-2:#332419; --farina:#f3ead9; --farina-2:#e8dcc4;
+  --pomodoro:#c1432e; --pomodoro-dark:#9c3423; --basilico:#5c7d4f;
+  --ink:#2a2018; --ink-soft:#6b5d4f; --line: rgba(42,32,24,0.14);
+  --card-shadow: 0 20px 50px -20px rgba(36,26,21,0.35);
+  --radius: 18px;
+  /* Fuentes del sistema (0 peticiones externas): serif para titulares,
+     la sans del SO para el texto y la monoespaciada del SO para las cifras. */
+  --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  /* Paleta categórica de harinas: tonos tierra armonizados con la marca
+     (mostaza · oliva · terracota · teal/pino · ciruela). Distinguibles entre sí
+     y legibles con texto blanco sobre los segmentos de la barra. */
+  --color-h1: #b57e1e; --color-h2: #61823f; --color-h3: #b0512f; --color-h4: #2f6f6d; --color-h5: #7d4f68;
+  /* Colores de los ingredientes del resultado (swatches). Van sobre la tarjeta
+     oscura de resultado, por eso no dependen del tema claro/oscuro. */
+  --c-harina: #e2c790; --c-agua: #7fb0d9; --c-sal: #c7c2b6; --c-levadura: var(--pomodoro);
+
+  /* Variables de superficie/texto: se invierten en modo oscuro */
+  --page-bg: var(--farina);
+  --surface: #fffdf8;
+  --surface-2: #fffefb;
+  --surface-3: var(--farina-2);
+  --surface-3-hover: #dfd1b3;
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --text-mid: #54473a; /* texto secundario con más contraste que --text-soft */
+  --border: var(--line);
+  --tint-a: rgba(42,32,24,0.03);
+  --tint-b: rgba(42,32,24,0.08);
+  --tint-c: rgba(42,32,24,0.12);
+  --scroll-thumb: rgba(42,32,24,0.28);
+  --scroll-thumb-hover: rgba(42,32,24,0.45);
+  --chip-ink: var(--forno);
+  --heading: var(--forno);
+  /* Indicador de foco: verde oliva (basilico), distinto del rojo de error/aviso. */
+  --focus: var(--basilico);
+  --focus-ring: rgba(92,125,79,0.20);
+}
+
+html[data-theme="dark"]{
+  --page-bg: #17120e;
+  --surface: #221b15;
+  --surface-2: #2a2118;
+  --surface-3: #362b20;
+  --surface-3-hover: #43352a;
+  --text: #f3ead9;
+  --text-soft: #b3a48d;
+  --text-mid: #c8bba4; /* texto secundario con más contraste que --text-soft */
+  --border: rgba(243,234,217,0.14);
+  --tint-a: rgba(243,234,217,0.04);
+  --tint-b: rgba(243,234,217,0.09);
+  --tint-c: rgba(243,234,217,0.14);
+  --scroll-thumb: rgba(243,234,217,0.26);
+  --scroll-thumb-hover: rgba(243,234,217,0.42);
+  --chip-ink: var(--farina);
+  --card-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+  --heading: var(--farina);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+html,body{ margin:0; padding:0; }
+
+/* Evita que un tap rápido o mantenido seleccione texto y saque el menú copiar/pegar,
+   en botones, labels y demás elementos puramente de interfaz. Los inputs sí se pueden seleccionar. */
+button, a.social-link, label, .section-title, .flour-index, .w-badge, .unit-tag, .temp-readout,
+.results-title, .results-badge, .headline-label, .stat-label{
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+input, select, textarea{
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+body{
+  background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(193,67,46,0.14), transparent 60%),
+              radial-gradient(ellipse 700px 600px at 100% 0%, rgba(92,125,79,0.10), transparent 55%),
+              var(--page-bg);
+  color: var(--text); font-family: var(--font-body); line-height: 1.5;
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.wrap{ max-width: 1180px; margin: 0 auto; padding: 28px 20px 40px; }
+
+header.hero{ display:flex; flex-direction:column; gap:10px; padding: 18px 4px 34px; border-bottom: 1px solid var(--border); margin-bottom: 34px; position: relative; }
+/* Contenedor de los toggles (idioma + tema). En escritorio se ancla arriba a
+   la derecha; en móvil pasa a fila propia (ver media query más abajo). */
+.hero-controls{ position: absolute; top: 18px; right: 4px; display: flex; align-items: center; gap: 8px; }
+.hero-logo { align-self: center; width: 85px; height: auto; object-fit: contain; margin-bottom: 16px; transition: transform 0.3s ease; filter: drop-shadow(0 4px 6px rgba(36,26,21,0.15)); }
+.hero-logo:hover { transform: scale(1.05) rotate(-5deg); }
+
+h1{ font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 48px); letter-spacing: -0.01em; margin: 0; color: var(--heading); text-align: center; }
+h1 em{ font-style: italic; color: var(--pomodoro); }
+.sub{ max-width: 720px; margin: 16px auto 0; color: var(--text-soft); font-size: 15px; line-height: 1.6; text-align: center; }
+/* En móvil el intro se recoge a 3 líneas con "Leer más" para no empujar la
+   herramienta hacia abajo; en escritorio se muestra completo. */
+.sub-toggle{ display: none; align-self: center; margin-top: 8px; background: none; border: none; padding: 4px 8px; color: var(--pomodoro); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; }
+@media (max-width: 900px){
+  .sub.clamped{ display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .sub-toggle{ display: inline-block; }
+}
+
+/* Layout y Paneles */
+.layout{ display:grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
+.panel{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; transition: background-color 0.25s ease, border-color 0.25s ease; }
+.section{ padding: 34px 28px; border-bottom: 1px solid var(--border); }
+.section:last-child{ border-bottom:none; }
+.section-head{ display:flex; align-items:baseline; gap: 12px; margin-bottom: 18px; }
+.section-num{ font-family: var(--font-mono); font-size: 12px; color: var(--pomodoro); background: rgba(193,67,46,0.08); border: 1px solid rgba(193,67,46,0.25); border-radius: 999px; padding: 3px 9px; letter-spacing: 0.06em; }
+.section-num.section-icon{ display:inline-flex; align-items:center; justify-content:center; width: 26px; height: 26px; padding: 0; }
+.section-title{ font-family: var(--font-display); font-size: 19px; font-weight: 600; color: var(--heading); margin:0; }
+.grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width:520px){ .grid-2{ grid-template-columns: 1fr; } }
+label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-soft); margin-bottom: 7px; text-transform: uppercase; }
+
+/* Stepper & Inputs */
+.stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+.stepper:has(input:focus-visible) { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
+.stepper-btn:hover { background: var(--tint-b); }
+/* Sin scale aquí: los +/− no tienen esquinas redondeadas y al encogerse
+   asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
+   da feedback de pulsación. */
+.stepper-btn:active { background: var(--tint-c); }
+.stepper input { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+.stepper input:focus { box-shadow: none; outline: none; }
+
+select, input[type="number"].plain-input, input[type="text"].plain-input { width:100%; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-2); font-family: var(--font-mono); font-size: 16px; color: var(--text); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+select{ font-family: var(--font-body); font-weight: 500; cursor: pointer; }
+select:focus, input[type="number"].plain-input:focus, input[type="text"].plain-input:focus{ outline: none; border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+input[type="number"]:disabled, input[type="text"].plain-input:disabled{ background: var(--surface-3); color: var(--text); font-weight: 600; cursor: not-allowed; }
+
+/* Ocultar spinners nativos de los inputs numéricos (Chrome, Safari, Edge, Firefox) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
+
+.unit-tag { font-family: var(--font-mono); font-size: 12px; color: var(--text-soft); pointer-events: none; white-space: nowrap; }
+/* Valor + unidad como pareja centrada dentro del stepper (peso, hidratación, sal):
+   el número se ajusta a su contenido y la unidad va justo al lado, no flotando. */
+.stepper-unit-wrap { display: flex; align-items: baseline; justify-content: center; gap: 4px; flex: 1; min-width: 0; }
+.stepper-unit-wrap input { flex: 0 1 auto; width: 4.5ch; text-align: right; }
+
+/* Temp slider */
+.temp-row{ display:flex; align-items:center; gap: 16px; }
+.temp-readout{ font-family: var(--font-mono); font-size: 28px; font-weight: 600; color: var(--pomodoro-dark); min-width: 78px; text-align:center; background: var(--surface-3); border-radius: 12px; padding: 8px 6px; border: 1.5px solid var(--border); }
+/* Gradiente frío → calor acorde a la temperatura (17 °C frío → 25 °C calor):
+   azul → teal → ámbar → rojo de marca.
+   El input es ALTO (28px) para que toda la zona sea agarrable —antes medía 8px
+   y en Firefox/Linux solo se podía arrastrar esa franja, así que no "funcionaba"—
+   y el degradado se pinta en el TRACK (8px), no en el input, para que se vea fino
+   e igual en Chrome y Firefox. */
+input[type="range"]{ -webkit-appearance:none; appearance:none; flex:1; height: 28px; background: transparent; cursor: pointer; margin: 0; }
+/* WebKit / Blink */
+input[type="range"]::-webkit-slider-runnable-track{ height: 8px; border-radius: 4px; background: linear-gradient(90deg, #4a90d9 0%, #7bb8b0 33%, #e6b24d 66%, var(--pomodoro) 100%); }
+input[type="range"]::-webkit-slider-thumb{ -webkit-appearance:none; width: 26px; height:26px; border-radius:50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor:pointer; transition: transform 0.1s; margin-top: -9px; }
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
+/* Firefox */
+input[type="range"]::-moz-range-track{ height: 8px; border-radius: 4px; background: linear-gradient(90deg, #4a90d9 0%, #7bb8b0 33%, #e6b24d 66%, var(--pomodoro) 100%); }
+input[type="range"]::-moz-range-thumb{ width: 26px; height: 26px; border-radius: 50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor: pointer; }
+input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
+
+/* ===== Parámetros de la masa: bloque apilado + Auto/Manual ===== */
+.param + .param { margin-top: 18px; }
+.param-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 8px; }
+.param-head label { margin-bottom: 0; }
+.param-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 8px 2px 0; }
+
+/* Hidratación: escala de color con marcador (bajo el stepper) + categoría y
+   descripción. La barra muestra el espectro 55→85% en cuatro bandas
+   (verde/ámbar/naranja/rojo) y el marcador indica dónde cae el valor actual. */
+.hyd-scale { margin-top: 12px; }
+.hyd-scale-track { position: relative; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, #5c7d4f 0 26.7%, #c69214 26.7% 50%, #c2622e 50% 83.3%, #c1432e 83.3% 100%); }
+.hyd-scale-marker { position: absolute; top: 50%; left: 0; width: 3px; height: 16px; border-radius: 2px;
+  background: var(--heading); box-shadow: 0 0 0 1.5px var(--surface); transform: translate(-50%, -50%); transition: left .2s ease; }
+.hyd-scale-ends { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-soft); }
+.hyd-info { margin-top: 10px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; line-height: 1.4; }
+.hyd-info-head { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12.5px; }
+.hyd-info-head::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.hyd-info-body { color: var(--text-soft); }
+.hyd-info--green  .hyd-info-head { color: #5c7d4f; }
+.hyd-info--yellow .hyd-info-head { color: #9c7208; }
+.hyd-info--orange .hyd-info-head { color: #b0512f; }
+.hyd-info--red    .hyd-info-head { color: var(--pomodoro-dark); }
+html[data-theme="dark"] .hyd-info--green  .hyd-info-head { color: #90b384; }
+html[data-theme="dark"] .hyd-info--yellow .hyd-info-head { color: #d8a63c; }
+html[data-theme="dark"] .hyd-info--orange .hyd-info-head { color: #e18a5a; }
+html[data-theme="dark"] .hyd-info--red    .hyd-info-head { color: #e2846a; }
+
+/* Toggle segmentado Auto / Manual (claro, buen tamaño táctil) */
+.mode-seg { display: inline-flex; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 9px; padding: 3px; gap: 3px; flex-shrink: 0; }
+.mode-seg .seg { border: none; background: transparent; color: var(--text-soft); font-family: var(--font-body); font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; padding: 7px 15px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; }
+.mode-seg .seg:hover { color: var(--text); }
+.mode-seg .seg.active { background: var(--pomodoro); color: #fff; box-shadow: 0 1px 3px rgba(193,67,46,0.35); }
+
+/* Stepper bloqueado (modo Auto): apagado y SIN interacción (ni tap ni foco) */
+.stepper.is-locked { background: var(--surface-3); pointer-events: none; }
+.stepper.is-locked .stepper-btn { opacity: 0.35; }
+.stepper input:disabled { color: var(--text-soft); -webkit-text-fill-color: var(--text-soft); cursor: default; }
+
+/* Barra de proporción de la mezcla: píldora segmentada y fina (moderna). La app
+   fuerza el 100%, así que no hay etiqueta "equilibrado"; el hueco al final (track
+   visible) indica visualmente si alguna vez no llega a 100. */
+.progress-container { margin-bottom: 22px; }
+.progress-bar { height: 14px; background: var(--surface-3); border-radius: 999px; display: flex; gap: 2px; padding: 2px; overflow: hidden; }
+.progress-segment { height: 100%; min-width: 3px; border-radius: 999px; transition: width 0.3s ease; }
+.progress-status { margin: 10px 0 0; font-size: 12.5px; font-weight: 700; font-family: var(--font-mono); color: var(--pomodoro); }
+.progress-status:empty { display: none; }
+
+/* ===== Filas de harina (selector de dos niveles + stepper de % + acciones) ===== */
+
+/* Botón-selector: nombre completo (línea principal) + fuerza (línea técnica). */
+.flour-select { position: relative; min-width: 0; }
+.flour-select-trigger {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 10px 12px; border: 1.5px solid var(--border); background: var(--surface-2);
+  border-radius: 10px; cursor: pointer; color: var(--text); font-family: var(--font-body);
+  transition: border-color .12s, box-shadow .12s, background-color .12s;
+}
+.flour-select-trigger:hover { border-color: var(--surface-3-hover); }
+.flour-select-trigger:focus-visible { outline: none; border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.flour-select-labels { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+/* El nombre se ajusta por palabras (se ven completos, en 2 líneas si hace falta).
+   overflow-wrap: break-word solo parte una palabra como último recurso, nunca letra
+   a letra (además el flex-wrap de la fila garantiza una columna ancha para el nombre). */
+.flour-select-main { font-size: 14.5px; font-weight: 600; color: var(--text); line-height: 1.25; overflow-wrap: break-word; }
+
+/* Pills de tipo + fuerza W (bajo el nombre, en fila y en el selector). Dan énfasis
+   y permiten escanear de un vistazo. */
+.flour-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.flour-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; line-height: 1.4; }
+.flour-tag-type { background: var(--tint-b); color: var(--text-mid); }
+.flour-tag-w { font-family: var(--font-mono); letter-spacing: .02em; } /* color de fondo/texto vía .fp-band--* */
+/* Chevron hacia la derecha (›): señala que abre un selector aparte, no un
+   desplegable en línea (que sería un chevron hacia abajo, como un <select>). */
+.flour-select-chevron { flex-shrink: 0; color: var(--text-soft); }
+
+/* Opciones del selector de harina (lista del modal). */
+.flour-option {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 14px 12px; border: none; border-bottom: 1px solid var(--border); background: transparent; border-radius: 0;
+  cursor: pointer; color: var(--text); font-family: var(--font-body); transition: background-color .1s;
+}
+.flour-option:last-child { border-bottom: none; }
+/* Estado seleccionado: fondo translúcido del acento + borde interior sutil en el
+   mismo tono tierra/rojizo (box-shadow inset, no desplaza) → destaca de un vistazo. */
+.flour-option.is-selected { background: rgba(193,67,46,0.07); box-shadow: inset 0 0 0 1.5px rgba(193,67,46,0.45); }
+html[data-theme="dark"] .flour-option.is-selected { background: rgba(193,67,46,0.16); }
+.flour-option:hover, .flour-option:focus-visible { background: var(--tint-b); outline: none; }
+.flour-option.is-selected:hover, .flour-option.is-selected:focus-visible { background: rgba(193,67,46,0.12); }
+html[data-theme="dark"] .flour-option.is-selected:hover { background: rgba(193,67,46,0.22); }
+.flour-option-labels { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.flour-option-main { font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+.flour-option-check { flex-shrink: 0; color: var(--pomodoro); opacity: 0; }
+.flour-option.is-selected .flour-option-check { opacity: 1; }
+
+/* Aviso de novedad (una sola vez) en la sección de harinas. */
+.flour-news{ display: flex; align-items: flex-start; gap: 10px; background: rgba(92,125,79,0.10); border: 1px solid rgba(92,125,79,0.28); border-radius: 12px; padding: 11px 12px 11px 14px; margin-bottom: 14px; }
+.flour-news-icon{ flex-shrink: 0; color: var(--basilico); margin-top: 1px; }
+.flour-news-text{ flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; color: var(--text); }
+.flour-news-close{ flex-shrink: 0; background: transparent; border: none; cursor: pointer; color: var(--text-soft); padding: 3px; border-radius: 6px; line-height: 0; transition: background-color .12s, color .12s; }
+.flour-news-close:hover{ background: var(--tint-b); color: var(--text); }
+.flour-news-close:focus-visible{ outline: 2px solid var(--focus); outline-offset: 1px; }
+html[data-theme="dark"] .flour-news{ background: rgba(92,125,79,0.16); border-color: rgba(92,125,79,0.38); }
+
+/* ---- Selector de harina (modal buscador + filtros) ---- */
+/* Se escopa bajo #flourPickerModal (id) para ganar en especificidad a las reglas
+   base .modal-card, que están más abajo en el archivo (si no, el orden de fuente
+   las haría prevalecer y el ancho/bordes del selector serían los del modal base). */
+#flourPickerModal .flour-picker-card{ max-width: 480px; display: flex; flex-direction: column; max-height: min(86vh, 780px); }
+/* La tarjeta se enfoca al abrir (para meter el foco en el diálogo sin abrir el
+   teclado); es foco programático, sin anillo visible. */
+.flour-picker-card:focus{ outline: none; }
+.flour-picker-search{ position: relative; margin-top: 14px; flex-shrink: 0; }
+.flour-picker-search svg{ position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-soft); pointer-events: none; }
+.flour-picker-search input{ width: 100%; box-sizing: border-box; padding: 11px 12px 11px 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2, var(--surface)); color: var(--text); font-family: var(--font-body); font-size: 15px; }
+.flour-picker-search input::placeholder{ color: var(--text-soft); }
+.flour-picker-search input:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; border-color: var(--pomodoro); }
+.flour-picker-search input::-webkit-search-cancel-button{ -webkit-appearance: none; }
+
+.flour-picker-filters{ display: flex; flex-direction: column; gap: 9px; margin-top: 12px; flex-shrink: 0; }
+/* Móvil (hoja, alto limitado): los chips van en una fila con scroll horizontal
+   —compacto, se desplaza con el dedo—. Sin degradado, así el último chip
+   (Común/Supermercado/Sin dato) nunca queda cortado; el recorte por overflow ya
+   insinúa que hay más. La etiqueta queda a la izquierda. */
+.fp-filter-row{ display: flex; align-items: center; gap: 8px; }
+/* Ancho fijo dimensionado para la etiqueta más larga en cualquier idioma
+   ("STRENGTH" ≈ 58px), para que no se recorte y las columnas queden alineadas. */
+.fp-filter-label{ font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-soft); flex-shrink: 0; width: 64px; white-space: nowrap; }
+.fp-filter-chips{ display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; scrollbar-width: none; }
+.fp-filter-chips::-webkit-scrollbar{ display: none; }
+.fp-chip{ flex-shrink: 0; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--font-body); font-size: 13.5px; cursor: pointer; white-space: nowrap; transition: background-color .12s, border-color .12s, color .12s; }
+/* Escritorio (diálogo, hay alto de sobra): los chips HACEN WRAP —se ven todos, sin
+   scroll horizontal (que en ordenador no había forma de accionar)—. */
+@media (min-width: 560px){
+  .fp-filter-row{ align-items: flex-start; }
+  .fp-filter-label{ padding-top: 9px; }
+  .fp-filter-chips{ flex-wrap: wrap; overflow-x: visible; }
+}
+.fp-chip:hover{ background: var(--tint-b); }
+.fp-chip.is-active{ background: var(--pomodoro); border-color: var(--pomodoro); color: #fff; font-weight: 600; }
+/* "Todas" (sin filtro) activo por defecto: estilo NEUTRO, para reservar el acento
+   rojizo a los filtros específicos que elige el usuario y que el ojo vaya a la lista. */
+.fp-chip-all.is-active{ background: var(--surface-3); border-color: var(--surface-3-hover); color: var(--text); font-weight: 600; }
+.fp-chip:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+
+/* Botón para plegar/desplegar los filtros (da más espacio a la lista). */
+.flour-filters-toggle{ display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; margin-top: 12px; flex-shrink: 0; background: transparent; border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .12s, border-color .12s; }
+.flour-filters-toggle:hover{ background: var(--tint-b); }
+.flour-filters-toggle:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+.fp-toggle-chevron{ color: var(--text-soft); transition: transform .2s ease; }
+.flour-filters-toggle[aria-expanded="true"] .fp-toggle-chevron{ transform: rotate(180deg); }
+/* Contador de filtros activos (visible solo cuando hay alguno). */
+.fp-active-count{ display: none; }
+.fp-active-count.show{ display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pomodoro); color: #fff; font-size: 11px; font-weight: 700; }
+.flour-picker-filters.is-collapsed{ display: none; }
+
+.flour-picker-countrow{ display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 12px 2px 6px; flex-shrink: 0; }
+.flour-picker-count{ font-size: 12px; color: var(--text-mid); }
+/* Botón "Limpiar filtros": texto sutil en color acento; solo visible con filtros activos. */
+.flour-clear-filters{ flex-shrink: 0; background: transparent; border: none; padding: 2px 2px; color: var(--pomodoro); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; cursor: pointer; border-radius: 6px; }
+.flour-clear-filters:hover{ text-decoration: underline; }
+.flour-clear-filters:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+.flour-picker-list{ display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 120px; }
+.flour-picker-empty{ text-align: center; color: var(--text-soft); padding: 22px 8px; }
+
+/* Color de la pill de fuerza W (.flour-tag-w) según su banda. Texto oscurecido
+   para cumplir contraste WCAG AA (≥4.5:1) sobre el tinte claro. */
+.fp-band--baja{ background: rgba(90,125,175,0.18); color: #34567c; }
+.fp-band--media{ background: rgba(74,124,89,0.18); color: #2d6a44; }
+.fp-band--alta{ background: rgba(214,132,52,0.20); color: #855111; }
+.fp-band--muyalta{ background: rgba(193,67,46,0.20); color: #9e3320; }
+html[data-theme="dark"] .fp-band--baja{ background: rgba(120,155,205,0.28); color: #9db8dd; }
+html[data-theme="dark"] .fp-band--media{ background: rgba(74,124,89,0.28); color: #8fce9f; }
+html[data-theme="dark"] .fp-band--alta{ background: rgba(214,132,52,0.28); color: #e6a860; }
+html[data-theme="dark"] .fp-band--muyalta{ background: rgba(193,67,46,0.30); color: #f0937f; }
+
+/* Móvil: hoja inferior (bottom-sheet) a lo ancho. */
+@media (max-width: 560px){
+  #flourPickerModal{ align-items: flex-end; padding: 0; }
+  #flourPickerModal .flour-picker-card{ max-width: none; width: 100%; max-height: 90vh; border-radius: 18px 18px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); animation: fpSheetUp .22s ease; }
+}
+@keyframes fpSheetUp{ from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce){ .flour-picker-card{ animation: none; } }
+
+/* Controles a la derecha: bloque unificado [− % + │ candado] y borrar aparte. */
+.flour-controls { display: flex; align-items: center; flex-shrink: 0; }
+
+/* Bloque-píldora que une el ajuste del % con su candado. */
+.flour-pct-group {
+  display: flex; align-items: stretch; height: 46px; flex-shrink: 0;
+  border: 1.5px solid var(--border); background: var(--surface-2);
+  border-radius: 13px; overflow: hidden;
+  transition: border-color .15s, box-shadow .15s, background-color .2s;
+}
+.flour-pct-group:focus-within { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.pct-btn {
+  border: none; background: transparent; color: var(--text); width: 40px;
+  font-size: 20px; font-weight: 600; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: center; transition: background-color .1s;
+}
+.pct-btn:hover { background: var(--tint-b); }
+.pct-btn:active { background: var(--tint-c); }
+.pct-value { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 10px; }
+.flour-pct-group .flour-pct-input {
+  /* 4.5ch para que no se corten los % con decimales (p. ej. "62.5" de recetas
+     importadas o mientras se escribe), además de enteros como "100". */
+  width: 4.5ch; text-align: center; border: none; background: transparent; padding: 0;
+  font-family: var(--font-mono); font-size: 16px; color: var(--text);
+}
+.flour-pct-group .flour-pct-input:focus { outline: none; }
+.pct-divider { width: 1.5px; background: var(--border); margin: 9px 0; flex-shrink: 0; }
+.pct-lock {
+  border: none; background: transparent; color: var(--text-soft); cursor: pointer; width: 46px;
+  display: flex; align-items: center; justify-content: center; transition: background-color .1s, color .1s;
+}
+.pct-lock:hover { background: var(--tint-b); color: var(--text); }
+.pct-lock.active-lock { color: var(--chip-ink); background: var(--surface-3); }
+/* Estado bloqueado (candado) o auto (única libre, % determinado): el bloque se
+   atenúa y los +/− quedan inertes; el candado sigue activo en ambos. */
+.flour-pct-group.is-locked, .flour-pct-group.is-auto { background: var(--surface-3); }
+.flour-pct-group.is-locked .pct-btn, .flour-pct-group.is-auto .pct-btn { opacity: 0.3; pointer-events: none; }
+.flour-pct-group.is-locked .flour-pct-input, .flour-pct-group.is-auto .flour-pct-input { color: var(--text-soft); -webkit-text-fill-color: var(--text-soft); }
+/* Borrar: mismo lenguaje que el bloque del % (caja con borde, alto y radio), pero
+   separado y con hover destructivo en rojo. Especificidad doble (.btn-icon.flour-delete)
+   para ganar a las reglas base de .btn-icon que van después en el archivo. */
+.btn-icon.flour-delete {
+  margin-left: 18px; width: 46px; height: 46px; min-width: 46px;
+  border: 1.5px solid var(--border); border-radius: 13px; background: var(--surface-2);
+}
+.btn-icon.flour-delete:hover { border-color: rgba(193,67,46,0.45); background: rgba(193,67,46,0.08); }
+
+/* Pista sobre el candado */
+.flour-hint { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 2px 2px 0; }
+.flour-hint svg { flex-shrink: 0; margin-top: 1px; opacity: 0.7; }
+
+/* Índice de la harina: punto de color que enlaza cada fila con su segmento en la
+   barra de proporción (sustituye al número [1]/[2]/[3]). */
+.flour-index { display: flex; align-items: center; justify-content: center; }
+.flour-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+/* Filas de harina - Escritorio: punto · selector · controles en una línea, con
+   flex-wrap: si la columna del formulario es estrecha (p. ej. layout a 2 columnas
+   en pantallas medianas), los controles bajan a una 2ª línea y el NOMBRE ocupa la
+   1ª a ancho completo, en vez de comprimirse hasta partirse. */
+@media (min-width: 560px) {
+  .flour-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-bottom: 12px; }
+  .flour-index { flex: 0 0 auto; }
+  .flour-select { flex: 1 1 170px; }
+}
+
+/* Filas de harina - Móvil (tarjeta: selector arriba, controles abajo) */
+@media (max-width: 559px) {
+  .flour-row {
+    display: grid; grid-template-columns: 22px 1fr; gap: 12px 10px; align-items: center;
+    background: var(--tint-a); border: 1px solid var(--border);
+    padding: 14px 12px; border-radius: 12px; margin-bottom: 14px;
+  }
+  .flour-controls { grid-column: 1 / -1; }
+  /* En móvil el borrar se va al extremo derecho, bien lejos del candado.
+     Especificidad doble para ganar a la regla base .btn-icon.flour-delete. */
+  .btn-icon.flour-delete { margin-left: auto; }
+}
+
+/* Pantallas muy estrechas (≈320-360px): recupera ancho reduciendo el padding
+   lateral, para que la fila de harina (selector + controles) no se desborde. */
+@media (max-width: 360px) {
+  .section { padding: 28px 16px; }
+  .results { padding: 26px 16px 20px; }
+  .flour-row { padding: 14px 10px; }
+  .pct-value { padding: 0 6px; }
+  .btn-icon.flour-delete { width: 42px; min-width: 42px; }
+}
+
+.btn-icon { background: none; border: none; cursor: pointer; padding: 6px; width: 44px; height: 44px; min-width: 44px; color: var(--text-soft); border-radius: 10px; transition: background 0.08s, color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; }
+.btn-icon:hover { background: var(--surface-3); color: var(--text); }
+.btn-icon:active { transform: scale(0.88); }
+.btn-icon.active-lock { color: var(--chip-ink); background: var(--surface-3); }
+.btn-icon.delete:hover { color: var(--pomodoro); background: rgba(193,67,46,0.1); }
+
+.flour-buttons { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.btn-outline { flex: 1; background: transparent; border: 1.5px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 14px; font-weight: 600; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.08s, border-color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-outline:hover { border-color: var(--forno); background: var(--tint-a); }
+.btn-outline:active { transform: scale(0.97); }
+.btn-secondary { background: var(--surface-3); border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: background 0.08s, transform 0.08s; }
+.btn-secondary:hover { background: var(--surface-3-hover); }
+.btn-secondary:active { transform: scale(0.96); }
+
+/* Pie del panel: acción global de restablecer, discreta hasta que se busca. */
+.panel-footer{ display:flex; justify-content:center; padding: 18px 28px; }
+.btn-reset{ display:inline-flex; align-items:center; gap:7px; background:transparent; border:none; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 9px 16px; border-radius: 9px; cursor:pointer; transition: color 0.1s, background 0.1s, transform 0.08s; }
+.btn-reset svg{ opacity: 0.8; }
+.btn-reset:hover{ color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+.btn-reset:hover svg{ opacity: 1; }
+.btn-reset:active{ transform: scale(0.97); }
+
+.warning-banner{ display:none; margin-top: 14px; background: rgba(193,67,46,0.09); border: 1.5px solid rgba(193,67,46,0.4); color: var(--pomodoro-dark); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; align-items:flex-start; gap: 8px; }
+.warning-banner.show{ display:flex; }
+
+/* Results Card */
+.results{ position: sticky; top: 20px; background: var(--forno); background-image: radial-gradient(ellipse 500px 300px at 100% 0%, rgba(193,67,46,0.25), transparent 60%); border-radius: var(--radius); padding: 30px 26px 26px; color: var(--farina); box-shadow: var(--card-shadow); border: 1px solid rgba(255,255,255,0.06); }
+@media (max-width:900px){ .results{ position:static; scroll-margin-top: 24px; } }
+.results-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 22px; }
+.results-title{ font-family: var(--font-display); font-size: 21px; font-weight:600; margin:0; }
+.results-badge{ font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 4px 10px; color: var(--farina-2); }
+.headline-stat{ display:flex; align-items:baseline; gap:10px; }
+.headline-number{ font-family: var(--font-mono); font-size: 44px; font-weight:700; letter-spacing: -0.02em; line-height: 1; }
+.headline-label{ font-size: 13px; color: rgba(243,234,217,0.65); }
+.headline-context{ margin: 6px 0 0; font-family: var(--font-mono); font-size: 12.5px; color: rgba(243,234,217,0.5); }
+
+/* Barra de proporción: composición de la masa por peso (harina/agua/sal/levadura) */
+.ingredient-bar{ display:flex; height: 8px; margin: 20px 0; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.06); }
+.ing-seg{ height: 100%; min-width: 2px; }
+.ing-seg + .ing-seg{ box-shadow: inset 1px 0 0 rgba(36,26,21,0.4); }
+
+/* Filas de ingredientes: icono + nombre | % de panadero | peso */
+.swatch{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
+.ing-row{ display:grid; grid-template-columns: 1fr auto 76px; align-items:center; gap:12px; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.ing-row.ing-row-last{ border-bottom:none; padding-bottom: 2px; }
+.ing-lead{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
+.ing-ico{ display:inline-flex; flex-shrink:0; margin-top:1px; }
+.ing-ico svg{ width:16px; height:16px; display:block; }
+.ing-ico-harina{ color: var(--c-harina); }
+.ing-ico-agua{ color: var(--c-agua); }
+.ing-ico-sal{ color: var(--c-sal); }
+.ing-ico-levadura{ color: var(--c-levadura); }
+.ing-name{ font-size: 13.5px; line-height: 1.3; color: rgba(243,234,217,0.82); min-width:0; overflow-wrap:anywhere; }
+.ing-pct{ font-family: var(--font-mono); font-size: 12px; color: rgba(243,234,217,0.5); text-align:right; font-variant-numeric: tabular-nums; }
+.ing-value{ font-family: var(--font-mono); font-size: 16px; font-weight:600; color: var(--farina); text-align:right; white-space:nowrap; font-variant-numeric: tabular-nums; }
+
+/* Desglose por harina, subordinado a "Harina total" */
+.flour-breakdown{ margin-top: 2px; }
+.flour-sub{ display:grid; grid-template-columns: 1fr auto 76px; align-items:start; gap:12px; padding: 7px 0 7px 26px; border-bottom: 1px dashed rgba(255,255,255,0.07); }
+.flour-sub:last-child{ border-bottom:none; }
+.flour-sub .fname{ color: rgba(243,234,217,0.7); display:flex; align-items:flex-start; gap:8px; min-width:0; font-size:12.5px; }
+.flour-sub .fname .swatch{ margin-top:4px; }
+.flour-sub .fname-text{ min-width:0; line-height:1.3; overflow-wrap:anywhere; }
+.flour-sub .fpct{ font-family: var(--font-mono); font-size:11.5px; color: rgba(243,234,217,0.42); text-align:right; font-variant-numeric: tabular-nums; }
+.flour-sub .fval{ font-family: var(--font-mono); font-size:13px; color: rgba(243,234,217,0.9); font-weight:600; white-space:nowrap; text-align:right; font-variant-numeric: tabular-nums; }
+/* Nota subordinada: la levadura seca es alternativa a la fresca, no un ingrediente aparte */
+.yeast-alt{ margin: 6px 0 0 26px; font-size: 12.5px; color: rgba(243,234,217,0.5); }
+.yeast-alt #totalLevaduraSeca{ font-family: var(--font-mono); }
+.disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
+.disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
+
+/* Footer & Socials */
+footer.note{ text-align:center; font-size: 12.5px; color: var(--text-soft); margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--tint-a); }
+footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02em; opacity: 0.55; }
+.social-block { display: flex; flex-direction: column; align-items: center; gap: 16px; padding-bottom: 20px; }
+.social-block span { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-soft); font-weight: bold; }
+.social-links { display: flex; gap: 16px; }
+.social-link { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; color: var(--text-soft); transition: background 0.1s, border-color 0.1s, transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 12px rgba(36,26,21,0.05); }
+.social-link:hover { color: white; background: var(--pomodoro); border-color: var(--pomodoro); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(193,67,46,0.25); }
+.social-link:active { transform: scale(0.9); }
+.social-link svg { width: 20px; height: 20px; fill: currentColor; }
+/* Botones sobre la tarjeta oscura de resultado (Copiar / Compartir) */
+.recipe-share-row{ display: flex; gap: 10px; margin-top: 16px; }
+.recipe-share-row .btn-on-dark{ flex: 1; margin-top: 0; }
+.btn-on-dark{ color: var(--farina); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.08s; }
+.btn-on-dark:hover{ background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); }
+.btn-on-dark-ok{ background: var(--basilico) !important; border-color: var(--basilico) !important; color: #fff !important; }
+
+/* Desplegable de consejos (fermentación): <details>/<summary> con estilo propio */
+.accordion{ width: 100%; }
+.accordion-summary{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 28px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.12s ease;
+}
+.accordion-summary::-webkit-details-marker{ display: none; }
+.accordion-summary::marker{ content: ""; }
+.accordion-summary:hover{ background: var(--tint-a); }
+.accordion-summary:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; border-radius: var(--radius); }
+.accordion-summary .section-title{ margin: 0; }
+.accordion-chevron{
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-soft);
+  transition: transform 0.22s ease, color 0.12s ease;
+}
+.accordion-summary:hover .accordion-chevron{ color: var(--text); }
+.accordion[open] .accordion-chevron{ transform: rotate(180deg); }
+.accordion-body{ padding: 0 28px 26px; }
+.accordion[open] .accordion-body{ animation: accordionReveal 0.28s ease; }
+@keyframes accordionReveal{
+  from{ opacity: 0; transform: translateY(-6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+/* Chips de multiplicador de levadura ("¿Tienes prisa?") */
+.rush-list{ margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.rush-row{ display: flex; align-items: center; justify-content: space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px; }
+.rush-mult{ font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--pomodoro); }
+
+/* Botón de modo oscuro/claro */
+.theme-toggle{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.theme-toggle:hover{ border-color: var(--pomodoro); }
+.theme-toggle:active{ transform: scale(0.9); }
+.theme-toggle .icon-moon{ display: none; }
+html[data-theme="dark"] .theme-toggle .icon-sun{ display: none; }
+html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
+
+/* Recetas guardadas */
+.saved-recipes-row{ display:flex; gap: 8px; align-items:center; }
+.saved-recipes-row select{ flex:1; min-width: 0; }
+.recipe-status{ margin-left:auto; align-self:center; font-family:var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:4px 10px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.recipe-status:empty{ display:none; }
+.recipe-status::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.recipe-status.saved{ color:var(--basilico); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); }
+.recipe-status.unsaved{ color:#c2410c; background:rgba(217,119,6,0.14); border:1px solid rgba(217,119,6,0.4); }
+html[data-theme="dark"] .recipe-status.saved{ color:#9cc088; }
+html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
+.recipes-io-row{ display:flex; gap: 8px; margin-top: 8px; }
+.recipe-notes-input{ width:100%; margin-top:10px; padding:11px 13px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.4; resize:vertical; min-height:64px; }
+.recipe-notes-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px var(--focus-ring); }
+.recipe-notes-display{ margin-top:10px; padding:10px 12px; background:var(--surface-3); border:1px solid var(--border); border-radius:10px; font-size:13px; line-height:1.45; color:var(--text-soft); white-space:pre-wrap; word-break:break-word; }
+.icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
+.icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
+.icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
+.icon-btn-square:disabled{ opacity: 0.4; cursor: not-allowed; }
+.icon-btn-square.delete:hover:not(:disabled){ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+
+/* ===== Sistema «Mis recetas» (receta activa + acciones + lista) ===== */
+.active-recipe-line{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-soft); margin-bottom:12px; min-width:0; }
+.active-recipe-ico{ flex-shrink:0; color:var(--basilico); }
+.active-recipe-line.none .active-recipe-ico{ color:var(--text-soft); opacity:0.6; }
+.active-recipe-label{ flex-shrink:0; }
+.active-recipe-name{ color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.recipe-actions-row{ display:flex; gap:8px; align-items:stretch; }
+.recipe-load-btn{ flex:1; margin-top:0; }
+.recipe-actions-row .icon-btn-square{ height:auto; align-self:stretch; }
+
+/* Lista de recetas del modal Cargar */
+.recipe-list{ display:flex; flex-direction:column; gap:8px; margin-top:12px; max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
+.recipe-item{ width:100%; text-align:left; background:var(--surface-2); border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; cursor:pointer; transition:border-color .1s, background .1s, transform .08s; display:flex; flex-direction:column; gap:3px; font-family:var(--font-body); color:var(--text); }
+.recipe-item:hover{ border-color:var(--pomodoro); background:var(--tint-a); }
+.recipe-item:active{ transform:scale(0.99); }
+.recipe-item.active{ border-color:var(--basilico); box-shadow:0 0 0 3px rgba(92,125,79,0.14); }
+.recipe-item-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; }
+.recipe-item-badge{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--basilico); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); border-radius:999px; padding:2px 8px; }
+.recipe-item-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:5px 14px; margin-top:3px; font-family:var(--font-mono); font-size:12px; color:var(--text-soft); }
+.recipe-meta-stat{ display:inline-flex; align-items:center; gap:5px; }
+.recipe-meta-ico{ display:inline-flex; flex-shrink:0; opacity:0.7; }
+.recipe-meta-ico svg{ width:13px; height:13px; display:block; }
+.recipe-item-notes{ font-size:12.5px; color:var(--text-soft); line-height:1.4; white-space:pre-wrap; word-break:break-word; }
+.recipe-list-empty{ text-align:center; padding:20px 4px; }
+
+/* Modal guardar receta */
+.modal-overlay{ position:fixed; inset:0; background: rgba(12,9,6,0.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 10000; display:flex; align-items:center; justify-content:center; padding: 20px; height: 100%; overscroll-behavior-y: contain; }
+/* Bloquea el scroll del fondo mientras haya cualquier modal abierto */
+html.modal-open, html.modal-open body{ overflow: hidden; }
+.modal-card{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65);
+  /* En pantallas bajas el modal debe caber y hacer scroll interno, no salirse
+     (el fondo tiene el scroll bloqueado y el título/acciones quedarían fuera). */
+  max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+/* En oscuro el modal se aclara un punto y refuerza su borde para despegarse del
+   fondo (antes se confundían por ser del mismo color). */
+html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color: rgba(243,234,217,0.20); }
+.modal-card .recipe-list { max-height: 50vh; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 10px; }
+/* Barra de scroll fina y discreta (sustituye a la nativa de escritorio); en móvil
+   los navegadores ya la ocultan salvo al desplazar. */
+.modal-card, .recipe-list{ scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+.modal-card::-webkit-scrollbar, .recipe-list::-webkit-scrollbar{ width: 8px; height: 8px; }
+.modal-card::-webkit-scrollbar-track, .recipe-list::-webkit-scrollbar-track{ background: transparent; }
+.modal-card::-webkit-scrollbar-thumb, .recipe-list::-webkit-scrollbar-thumb{ background: var(--scroll-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.modal-card::-webkit-scrollbar-thumb:hover, .recipe-list::-webkit-scrollbar-thumb:hover{ background: var(--scroll-thumb-hover); background-clip: padding-box; }
+.modal-title{ font-family: var(--font-display); font-size: 19px; font-weight:600; color: var(--heading); margin: 0 0 6px; }
+.modal-sub{ font-size: 13.5px; color: var(--text-soft); margin: 0 0 14px; }
+.modal-actions{ display:flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn-outline, .modal-actions .modal-confirm{ flex:1; margin-top:0; }
+/* Variante apilada (modal de guardar: hasta 3 acciones) */
+.modal-actions-stack{ flex-direction: column; }
+.modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
+/* Pista de validación del modal (p. ej. nombre duplicado) */
+.modal-error{ font-size: 12.5px; line-height: 1.4; color: var(--pomodoro); margin: 8px 2px 0; }
+/* Botones deshabilitados (acciones del modal) */
+.btn-outline:disabled, .btn-secondary:disabled{ opacity: 0.45; cursor: not-allowed; }
+
+/* ===== Botón de configuración (engranaje) y panel de ajustes ===== */
+.settings-toggle{
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.settings-toggle:hover{ border-color: var(--pomodoro); }
+.settings-toggle:active{ transform: scale(0.9); }
+
+.settings-card{ max-width: 380px; }
+/* En PC el modal de ajustes se ensancha y sus filas segmentadas se des-apilan
+   (etiqueta a la izquierda, control a la derecha): aprovecha el ancho y evita que
+   quede alto y estrecho. */
+@media (min-width: 560px) {
+  .settings-card{ max-width: 500px; }
+  .settings-card .settings-row.stacked{ flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+  .settings-card .settings-row.stacked .segmented{ flex: 0 0 auto; min-width: 240px; }
+}
+.settings-head{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.settings-head .modal-title{ margin: 0; }
+.settings-row{ display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.settings-row.stacked{ flex-direction: column; align-items: stretch; gap: 10px; }
+.settings-row-label{ font-size: 13.5px; font-weight: 600; color: var(--text); }
+.settings-section{ padding-top: 16px; }
+.settings-section .settings-row-label{ display: block; margin-bottom: 10px; }
+.settings-section .recipes-io-row{ margin-top: 0; }
+
+/* Control segmentado (unidades) */
+.segmented{ display: flex; gap: 4px; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 3px; }
+.segmented .seg-opt{ flex: 1; border: none; background: transparent; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 9px 10px; border-radius: 7px; cursor: pointer; transition: background 0.1s, color 0.1s; }
+.segmented .seg-opt:hover{ color: var(--text); }
+.segmented .seg-opt.active{ background: var(--pomodoro); color: #fff; }
+
+/* Botón de idioma ES/EN */
+.lang-toggle{
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.lang-toggle:hover{ border-color: var(--pomodoro); }
+.lang-toggle:active{ transform: scale(0.94); }
+.lang-toggle .lang-opt{ opacity: 0.4; }
+.lang-toggle .lang-opt.active{ opacity: 1; color: var(--pomodoro); }
+.lang-toggle .lang-sep{ opacity: 0.3; }
+@media (max-width: 480px){
+  /* En móvil los controles pasan a su propia fila alineada a la derecha,
+     para no apretarse contra el logo centrado ni salirse por la derecha. */
+  .hero-controls{ position: static; width: 100%; justify-content: flex-end; margin-bottom: 2px; }
+}
+
+/* ===== Barra-resumen fija (solo móvil) ===== */
+.mobile-summary{ display: none; }
+@media (max-width: 900px){
+  .mobile-summary{
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--forno); color: var(--farina);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.45);
+    transform: translateY(120%);
+    transition: transform 0.25s ease;
+    cursor: pointer;
+  }
+  .mobile-summary.show{ transform: translateY(0); }
+}
+.ms-stats{ display: flex; flex: 1; gap: 10px; justify-content: space-between; min-width: 0; }
+.ms-stat{ display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.ms-label{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
+.ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.ms-blocked{ display: none; flex: 1; font-size: 13px; font-weight: 600; color: #f0a44e; }
+.ms-chevron{ flex-shrink: 0; opacity: 0.75; }
+.mobile-summary.blocked .ms-stats{ display: none; }
+.mobile-summary.blocked .ms-blocked{ display: block; }
+
+/* ===== Foco de teclado ===== */
+/* :focus-visible nativo: el anillo solo aparece al navegar con teclado, nunca
+   con ratón ni táctil. Sustituye a la antigua clase manual .using-keyboard. */
+button:focus-visible,
+[role="button"]:focus-visible,
+a.social-link:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible{
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ===== Respeta la preferencia de movimiento reducido ===== */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-logo:hover{ transform: none; }
+}
