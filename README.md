@@ -97,3 +97,7 @@ python -m http.server 8000
 
 - Calculadora: Edu Robayna
 - Logo: Mónica Pozo
+
+## Licencia
+
+[MIT](LICENSE) © 2026 Edu Robayna
