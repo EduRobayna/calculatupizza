@@ -179,6 +179,14 @@
     return 'W' + (f.wMax || f.wMin);
   }
 
+  // Valor NUMÉRICO de fuerza W para cálculo (no presentación): punto medio del rango
+  // wMin/wMax (igual criterio que bandOf). 0 si la harina no tiene dato de fuerza.
+  function wValue(id) {
+    const f = byId.get(id);
+    if (!f || (!f.wMin && !f.wMax)) return 0;
+    return (f.wMin && f.wMax) ? (f.wMin + f.wMax) / 2 : (f.wMax || f.wMin);
+  }
+
   // Banda de fuerza (para el filtro y la insignia), por el punto medio del rango W:
   //   baja < 250 ≤ media < 290 ≤ alta < 340 ≤ muyalta ; sin rango -> 'nd' (sin dato).
   // Etiquetas todas en femenino (concuerdan con "fuerza"): Baja/Media/Alta/Muy alta.
@@ -293,7 +301,7 @@
 
   const api = {
     all: all, get: get, name: name, mainName: mainName, subLabel: subLabel,
-    typeLabel: typeLabel, w: w, band: band, bandsOrder: BANDS,
+    typeLabel: typeLabel, w: w, wValue: wValue, band: band, bandsOrder: BANDS,
     brands: brands, types: types, search: search,
     migrateRef: migrateRef, firstUnused: firstUnused,
     DEFAULT_ID: DEFAULT_ID, LEGACY_INDEX_TO_ID: LEGACY_INDEX_TO_ID

@@ -119,6 +119,7 @@ label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02e
 
 /* Stepper & Inputs */
 .stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+.stepper[hidden] { display: none; } /* el atributo hidden debe ganar al display:flex */
 .stepper:has(input:focus-visible) { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
 .stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
 .stepper-btn:hover { background: var(--tint-b); }
@@ -147,7 +148,66 @@ input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 
 /* Temp slider */
 .temp-row{ display:flex; align-items:center; gap: 16px; }
-.temp-readout{ font-family: var(--font-mono); font-size: 28px; font-weight: 600; color: var(--pomodoro-dark); min-width: 78px; text-align:center; background: var(--surface-3); border-radius: 12px; padding: 8px 6px; border: 1.5px solid var(--border); }
+.temp-readout{ display:inline-flex; align-items:baseline; justify-content:center; font-family: var(--font-mono); font-size: 28px; font-weight: 600; color: var(--pomodoro-dark); min-width: 78px; text-align:center; background: var(--surface-3); border-radius: 12px; padding: 8px 6px; border: 1.5px solid var(--border); }
+.temp-readout:focus-within{ border-color: var(--pomodoro); box-shadow: 0 0 0 2px rgba(193,67,46,0.18); }
+.temp-input{ font: inherit; color: inherit; background: transparent; border: none; width: 1.7em; text-align: right; padding: 0; margin: 0; -moz-appearance: textfield; }
+.temp-input:focus{ outline: none; }
+/* Fermentación mixta: interruptor de nevera + fase fría + error de tiempo total */
+.fridge-toggle { margin-top: 18px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch-track { position: relative; flex-shrink: 0; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-3); border: 1.5px solid var(--border); transition: background .18s ease, border-color .18s ease; }
+.switch-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.35); transition: transform .18s ease; }
+.switch input:checked + .switch-track { background: var(--pomodoro); border-color: var(--pomodoro); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(18px); }
+.switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px rgba(193,67,46,0.3); }
+.switch-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.fridge-phase[hidden] { display: none; }
+/* Fase fría como tarjeta agrupada */
+.phase-card { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-3); }
+.phase-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-soft); }
+.phase-card-icon { display: inline-flex; color: #4a90d9; }
+html[data-theme="dark"] .phase-card-icon { color: #7fb0d9; }
+.phase-card .param + .param { margin-top: 14px; }
+.phase-tip { position: relative; margin: 14px 0 2px; padding-left: 24px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
+.phase-tip::before { content: '💡'; position: absolute; left: 0; top: 0; font-size: 13px; }
+/* Lector del tiempo TOTAL de fermentación */
+/* Recuadro inferior "Fermentación total": separado del bloque de fases con más margen,
+   borde propio y un filete superior que actúa de divisor. */
+.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 24px; padding: 12px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; }
+.ferm-total[hidden] { display: none; }
+.ferm-total-label { font-size: 12.5px; font-weight: 600; color: var(--text-soft); }
+.ferm-total-value { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--heading); }
+/* Aviso suave (informativo, no error) al llegar al máximo recomendado de fermentación */
+.ferm-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
+.ferm-note[hidden] { display: none; }
+.ferm-note svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
+html[data-theme="dark"] .ferm-note svg { color: #d8a63c; }
+/* Aviso contextual (caja ámbar) para temperaturas extremas y tiempos de frío atípicos */
+.ctx-warn { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(176,135,42,0.12); font-size: 12px; line-height: 1.45; color: var(--text); }
+.ctx-warn[hidden] { display: none; }
+.ctx-warn svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
+html[data-theme="dark"] .ctx-warn { background: rgba(216,166,60,0.14); }
+html[data-theme="dark"] .ctx-warn svg { color: #d8a63c; }
+/* Variante informativa (azul suave) para la nota 💡 de exceso de levadura */
+.ctx-warn--info { background: rgba(56,120,190,0.12); }
+html[data-theme="dark"] .ctx-warn--info { background: rgba(96,160,230,0.16); }
+/* Enlace a los consejos de fermentación (abre el bloque de abajo) */
+.ferm-tips-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--pomodoro); text-decoration: none; }
+.ferm-tips-link:hover { text-decoration: underline; }
+/* Levadura en modo Auto: valor calculado, de solo lectura (sin controles) */
+.yeast-auto { display: flex; align-items: baseline; gap: 8px; padding: 11px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; }
+.yeast-auto[hidden] { display: none; }
+.yeast-auto-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--heading); line-height: 1; }
+.yeast-auto-unit { font-size: 12px; color: var(--text-soft); }
+.yeast-auto-badge { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--basilico); background: rgba(92,125,79,0.14); border-radius: 999px; padding: 4px 10px; }
+html[data-theme="dark"] .yeast-auto-badge { color: #90b384; background: rgba(144,179,132,0.16); }
+/* Subtítulo de sección (p. ej. "La levadura se ajusta según el tiempo y la temperatura") */
+.section-sub { margin: -4px 0 6px; font-size: 13px; line-height: 1.45; color: var(--text-soft); }
+/* Botón-enlace para alternar Auto/Manual de la levadura (una sola acción contextual) */
+.mode-link { background: none; border: none; padding: 4px 6px; margin: -4px -6px; color: var(--pomodoro); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; white-space: nowrap; }
+.mode-link:hover { text-decoration: underline; }
+.mode-link:focus-visible { outline: 2px solid var(--pomodoro); outline-offset: 1px; }
 /* Gradiente frío → calor acorde a la temperatura (17 °C frío → 25 °C calor):
    azul → teal → ámbar → rojo de marca.
    El input es ALTO (28px) para que toda la zona sea agarrable —antes medía 8px
@@ -166,16 +226,26 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 
 /* ===== Parámetros de la masa: bloque apilado + Auto/Manual ===== */
 .param + .param { margin-top: 18px; }
+.param-hours { margin-top: 18px; } /* separa el tiempo de fermentación del slider de temperatura */
 .param-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 8px; }
 .param-head label { margin-bottom: 0; }
 .param-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 8px 2px 0; }
+/* Horas de ambiente: el stepper ocupa el ancho completo y el consejo de reposo va
+   SIEMPRE debajo (nunca al lado), y solo cuando el ambiente es corto (lo decide calcular). */
+.hours-row { display: block; }
+/* La hora es un entero (0-96): se centra con ancho ajustado. Los demás steppers usan
+   4.5ch/right por los decimales (63.5, 0.12…), pero aquí eso descentraba el "20 h". */
+.hours-row .stepper-unit-wrap input { width: 3ch; text-align: center; }
+.ambient-rest-tip { position: relative; margin: 10px 2px 0; padding-left: 22px; font-size: 12px; line-height: 1.4; color: var(--text-soft); }
+.ambient-rest-tip::before { content: '💡'; position: absolute; left: 0; top: 1px; font-size: 13px; }
+.ambient-rest-tip[hidden] { display: none; }
 
 /* Hidratación: escala de color con marcador (bajo el stepper) + categoría y
    descripción. La barra muestra el espectro 55→85% en cuatro bandas
    (verde/ámbar/naranja/rojo) y el marcador indica dónde cae el valor actual. */
 .hyd-scale { margin-top: 12px; }
 .hyd-scale-track { position: relative; height: 8px; border-radius: 4px;
-  background: linear-gradient(90deg, #5c7d4f 0 26.7%, #c69214 26.7% 50%, #c2622e 50% 83.3%, #c1432e 83.3% 100%); }
+  background: linear-gradient(90deg, #c1432e 0 15.7%, #5c7d4f 15.7% 37.1%, #c69214 37.1% 57.1%, #c2622e 57.1% 85.7%, #9c3423 85.7% 100%); }
 .hyd-scale-marker { position: absolute; top: 50%; left: 0; width: 3px; height: 16px; border-radius: 2px;
   background: var(--heading); box-shadow: 0 0 0 1.5px var(--surface); transform: translate(-50%, -50%); transition: left .2s ease; }
 .hyd-scale-ends { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-soft); }
@@ -183,10 +253,12 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 .hyd-info-head { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12.5px; }
 .hyd-info-head::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .hyd-info-body { color: var(--text-soft); }
+.hyd-info--dense  .hyd-info-head { color: var(--pomodoro); }
 .hyd-info--green  .hyd-info-head { color: #5c7d4f; }
 .hyd-info--yellow .hyd-info-head { color: #9c7208; }
 .hyd-info--orange .hyd-info-head { color: #b0512f; }
 .hyd-info--red    .hyd-info-head { color: var(--pomodoro-dark); }
+html[data-theme="dark"] .hyd-info--dense  .hyd-info-head { color: #ec9d86; }
 html[data-theme="dark"] .hyd-info--green  .hyd-info-head { color: #90b384; }
 html[data-theme="dark"] .hyd-info--yellow .hyd-info-head { color: #d8a63c; }
 html[data-theme="dark"] .hyd-info--orange .hyd-info-head { color: #e18a5a; }
@@ -211,6 +283,10 @@ html[data-theme="dark"] .hyd-info--red    .hyd-info-head { color: #e2846a; }
 .progress-segment { height: 100%; min-width: 3px; border-radius: 999px; transition: width 0.3s ease; }
 .progress-status { margin: 10px 0 0; font-size: 12.5px; font-weight: 700; font-family: var(--font-mono); color: var(--pomodoro); }
 .progress-status:empty { display: none; }
+/* Fuerza (W) total de la mezcla, bajo la barra de proporción */
+.flour-strength { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 12.5px; }
+.flour-strength-label { font-weight: 600; color: var(--text-soft); }
+.flour-strength-value { font-family: var(--font-mono); font-weight: 700; color: var(--heading); }
 
 /* ===== Filas de harina (selector de dos niveles + stepper de % + acciones) ===== */
 
@@ -360,7 +436,8 @@ html[data-theme="dark"] .fp-band--muyalta{ background: rgba(193,67,46,0.30); col
 }
 .flour-pct-group:focus-within { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
 .pct-btn {
-  border: none; background: transparent; color: var(--text); width: 40px;
+  /* Área táctil mínima 44x44 (accesibilidad). */
+  border: none; background: transparent; color: var(--text); width: 44px; height: 44px; min-width: 44px;
   font-size: 20px; font-weight: 600; cursor: pointer; user-select: none;
   display: flex; align-items: center; justify-content: center; transition: background-color .1s;
 }
@@ -505,6 +582,12 @@ html[data-theme="dark"] .fp-band--muyalta{ background: rgba(193,67,46,0.30); col
 /* Nota subordinada: la levadura seca es alternativa a la fresca, no un ingrediente aparte */
 .yeast-alt{ margin: 6px 0 0 26px; font-size: 12.5px; color: rgba(243,234,217,0.5); }
 .yeast-alt #totalLevaduraSeca{ font-family: var(--font-mono); }
+/* Resumen de fermentación (tiempos + temperaturas) dentro del panel de resultado */
+.result-ferment{ margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.12); }
+.result-ferment-title{ display:block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--farina-2); margin-bottom: 8px; }
+.result-ferment-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding: 4px 0; font-size: 13.5px; }
+.result-ferment-row .rf-label{ color: rgba(243,234,217,0.7); }
+.result-ferment-row .rf-value{ font-family: var(--font-mono); font-weight:600; color: var(--farina); }
 .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
 .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
 
@@ -557,11 +640,6 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
   from{ opacity: 0; transform: translateY(-6px); }
   to{ opacity: 1; transform: translateY(0); }
 }
-
-/* Chips de multiplicador de levadura ("¿Tienes prisa?") */
-.rush-list{ margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-.rush-row{ display: flex; align-items: center; justify-content: space-between; background: var(--surface-3); border-radius: 8px; padding: 7px 12px; }
-.rush-mult{ font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--pomodoro); }
 
 /* Botón de modo oscuro/claro */
 .theme-toggle{
@@ -774,4 +852,53 @@ input:focus-visible{
     scroll-behavior: auto !important;
   }
   .hero-logo:hover{ transform: none; }
+}
+
+/* ===== Distintivo de entorno de PRUEBAS (beta) =====
+   Todo lo relacionado con la beta está OCULTO por defecto y solo se muestra bajo
+   .beta-mode, clase que el script del <head> añade al <html> únicamente en hosts
+   que no son producción (ver index.html). Así estos estilos pueden convivir en
+   main sin aparecer jamás en calculatupizza.com. */
+.beta-badge{ display: none; }
+.beta-watermark{ display: none; }
+
+.beta-mode .beta-badge{
+  position: absolute; top: 18px; left: 4px; z-index: 5;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  color: #fff; background: var(--pomodoro);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px -6px rgba(193,67,46,0.6);
+  user-select: none;
+}
+.beta-badge__ver{ font-weight: 600; opacity: 0.85; letter-spacing: 0.04em; }
+.beta-badge__dot{
+  width: 7px; height: 7px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 0 rgba(255,255,255,0.6);
+  animation: beta-pulse 2s infinite;
+}
+@keyframes beta-pulse{
+  0%{ box-shadow: 0 0 0 0 rgba(255,255,255,0.55); }
+  70%{ box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+.beta-mode .beta-watermark{
+  display: block; position: fixed; right: 14px; bottom: 12px; z-index: 9980;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--pomodoro); opacity: 0.5;
+  pointer-events: none; user-select: none;
+}
+
+@media (max-width: 900px){
+  /* En móvil la barra-resumen fija ocupa la parte baja: ocultamos la marca de
+     agua para no solaparla. El badge de la cabecera es suficiente. */
+  .beta-mode .beta-watermark{ display: none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .beta-badge__dot{ animation: none; }
 }

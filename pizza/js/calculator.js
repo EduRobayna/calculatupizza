@@ -23,6 +23,14 @@ window.stepValue = function(id, delta, minVal, maxVal) {
   input.dispatchEvent(new Event('input'));
 };
 
+// Mínimo de horas de fermentación a temperatura ambiente: 2 h normalmente, pero 0 h si la
+// fase fría está activa (permite meter la masa directa a la nevera). Global porque lo usan
+// el onclick del stepper de #horas y clampHoras/capFermCoupling dentro de la calculadora.
+window.ambHorasMin = function() {
+  const fr = document.getElementById('fridgeToggle');
+  return (fr && fr.checked) ? 0 : 2;
+};
+
 // Stepper del peso por pizza: el paso depende de la unidad activa (10 g / 0,5 oz).
 window.stepPeso = function(dir) {
   const input = document.getElementById('pesoPaneto');
@@ -52,13 +60,29 @@ window.stepSal = function(dir) {
 };
 
 // Stepper de la levadura fresca (% del peso de la harina), paso 0,01. Solo en Manual.
+// El manual se mueve en [0,01 %, 3 %] (mismos topes que la fórmula automática).
 window.stepYeast = function(dir) {
   const input = document.getElementById('levadura');
   let v = (parseDecimal(input.value) || 0) + dir * 0.01;
   v = Math.round(v * 100) / 100;
-  if (v < 0) v = 0;
-  if (v > 1) v = 1;
+  if (v < 0.01) v = 0.01;
+  if (v > 3) v = 3;
   input.value = v;
+  input.dispatchEvent(new Event('input'));
+};
+
+// Stepper de la temperatura de la nevera. El canónico es SIEMPRE °C (rango [2,18]); el
+// campo se muestra en la unidad activa (°C/°F). Damos el paso en °C aunque se vea en
+// °F (una nevera se ajusta en grados enteros °C), evitando conversiones "atascadas".
+window.stepColdTemp = function(dir) {
+  const U = window.PizzaUnits;
+  const input = document.getElementById('tempFrio');
+  const f = !!(U && U.isFahrenheit && U.isFahrenheit());
+  let shown = parseDecimal(input.value);
+  if (!isFinite(shown)) shown = f ? 39 : 4;
+  let c = f ? Math.round((shown - 32) * 5 / 9) : Math.round(shown);
+  c = Math.max(2, Math.min(18, c + dir));
+  input.value = Math.round(f ? c * 9 / 5 + 32 : c);
   input.dispatchEvent(new Event('input'));
 };
 
@@ -111,13 +135,33 @@ window.stepYeast = function(dir) {
     temperatura: document.getElementById('temperatura'),
     tempValue: document.getElementById('tempValue'),
     tempUnit: document.getElementById('tempUnit'),
+    horas: document.getElementById('horas'),
+    fridgeToggle: document.getElementById('fridgeToggle'),
+    fridgePhase: document.getElementById('fridgePhase'),
+    ambientRestTip: document.getElementById('ambientRestTip'),
+    tempFrio: document.getElementById('tempFrio'),
+    tempFrioUnit: document.getElementById('tempFrioUnit'),
+    horasFrio: document.getElementById('horasFrio'),
+    fermTotal: document.getElementById('fermTotal'),
+    fermTotalValue: document.getElementById('fermTotalValue'),
+    fermMaxNote: document.getElementById('fermMaxNote'),
+    tempNote: document.getElementById('tempNote'),
+    tempNoteText: document.getElementById('tempNoteText'),
+    coldNote: document.getElementById('coldNote'),
+    coldNoteText: document.getElementById('coldNoteText'),
+    warnHighYeast: document.getElementById('warnHighYeast'),
+    flourStrengthValue: document.getElementById('flourStrengthValue'),
+    flourWarn: document.getElementById('flourWarn'),
+    flourWarnText: document.getElementById('flourWarnText'),
+    fermTipsLink: document.getElementById('fermTipsLink'),
     hidratacion: document.getElementById('hidratacion'),
     sal: document.getElementById('sal'),
     levadura: document.getElementById('levadura'),
     salStepper: document.getElementById('salStepper'),
     yeastStepper: document.getElementById('yeastStepper'),
-    salModeToggle: document.getElementById('salModeToggle'),
-    yeastModeToggle: document.getElementById('yeastModeToggle'),
+    yeastAuto: document.getElementById('yeastAuto'),
+    yeastAutoValue: document.getElementById('yeastAutoValue'),
+    yeastModeBtn: document.getElementById('yeastModeBtn'),
     salHint: document.getElementById('salHint'),
     yeastHint: document.getElementById('yeastHint'),
     hydrationInfo: document.getElementById('hydrationInfo'),
@@ -139,6 +183,7 @@ window.stepYeast = function(dir) {
     totalLevadura: document.getElementById('totalLevadura'),
     levaduraPct: document.getElementById('levaduraPct'),
     totalLevaduraSeca: document.getElementById('totalLevaduraSeca'),
+    resultFermentBody: document.getElementById('resultFermentBody'),
     flourBreakdown: document.getElementById('flourBreakdown'),
     flourRowsContainer: document.getElementById('flourRowsContainer'),
     progressBar: document.getElementById('progressBar'),
@@ -156,23 +201,107 @@ window.stepYeast = function(dir) {
     lev: document.getElementById('ms-lev')
   };
 
-  // Rango de hidratación: la napolitana rara vez baja del 55%, y la escala y las
-  // notas de color están pensadas para 55%+. Suelo en 55% para que el control,
-  // la barra (55%→85%+) y las notas coincidan.
-  const HID_MIN = 55, HID_MAX = 100;
+  // Rango de hidratación: la napolitana clásica vive en 55,5%+, pero permitimos
+  // bajar hasta el 50% (masa densa, por debajo del estándar). La barra (50%→85%+)
+  // y las notas de color cubren desde esa banda "densa" hasta la extrema.
+  const HID_MIN = 50, HID_MAX = 100;
   function clampHidratacion(v) {
     const n = parseDecimal(v);
     if (!isFinite(n)) return HID_MIN;
     return Math.max(HID_MIN, Math.min(HID_MAX, n));
   }
 
+  // Horas de fermentación a temperatura ambiente. Máximo 96 h; el MÍNIMO es dinámico
+  // (ambHorasMin): 2 h normalmente, pero 0 h si la fase fría está activa (se permite meter
+  // la masa directa a la nevera). Un valor no válido cae a 28 h, la referencia por defecto
+  // (a 18 °C reproduce ≈0,10% de levadura fresca, la napolitana clásica de siempre).
+  const HORAS_MAX = 96, HORAS_DEFAULT = 28;
+  function clampHoras(v) {
+    const n = parseInt(v, 10);
+    if (!isFinite(n)) return HORAS_DEFAULT;
+    return Math.max(window.ambHorasMin(), Math.min(HORAS_MAX, n));
+  }
+
+  // Fermentación en nevera (fase fría opcional). Horas [0, 96]. Temperatura [2, 18] °C:
+  // el canónico es SIEMPRE °C, pero el campo se muestra/edita en la unidad activa
+  // (°C/°F). El tiempo TOTAL (ambiente + nevera) se capa a 96 h en capFermCoupling.
+  function clampColdHoras(v) {
+    const n = parseInt(v, 10);
+    if (!isFinite(n)) return 0;
+    return Math.max(0, Math.min(96, n));
+  }
+  function clampColdTempC(v) {
+    const n = Math.round(parseFloat(v));
+    if (!isFinite(n)) return 4;
+    return Math.max(2, Math.min(18, n));
+  }
+  // ¿El campo de la nevera se muestra ahora mismo en °F? Se mantiene sincronizado con
+  // la unidad activa y sirve para convertir el campo al cambiar de unidad.
+  let fridgeShownF = false;
+  // Temperatura canónica de la nevera en °C (entero, [2,18]), leída del campo según la
+  // unidad mostrada. Es lo que usan la fórmula y los textos.
+  function coldTempC() {
+    const v = parseDecimal(el.tempFrio.value);
+    if (!isFinite(v)) return 4;
+    return clampColdTempC(U.isFahrenheit() ? (v - 32) * 5 / 9 : v);
+  }
+  // Pinta el campo de la nevera desde un valor canónico °C, en la unidad activa.
+  function renderColdTempField(c) {
+    if (!el.tempFrio) return;
+    el.tempFrio.value = Math.round(U.tempValue(clampColdTempC(c)));
+    if (el.tempFrioUnit) el.tempFrioUnit.textContent = U.tempUnit();
+    fridgeShownF = U.isFahrenheit();
+  }
+  // Horas de la fase fría que cuentan (0 si la nevera está desactivada).
+  function coldHoursActive() {
+    return el.fridgeToggle.checked ? clampColdHoras(el.horasFrio.value) : 0;
+  }
+  // El tiempo TOTAL de fermentación (ambiente + nevera) no puede superar 96 h. En vez
+  // de dar error, capamos el campo RECIÉN EDITADO para que no se pase (el otro campo
+  // se conserva). Usa el valor crudo para no forzar el mínimo mientras se teclea.
+  function capFermCoupling(edited) {
+    const amb = parseInt(el.horas.value, 10);
+    const cold = el.fridgeToggle.checked ? parseInt(el.horasFrio.value, 10) : 0;
+    if (!isFinite(amb) || !isFinite(cold) || amb + cold <= 96) return;
+    if (edited === 'cold') el.horasFrio.value = Math.max(0, 96 - amb);
+    else el.horas.value = Math.max(window.ambHorasMin(), 96 - cold);
+  }
+  // Muestra/oculta la fase de nevera según el interruptor.
+  function applyFridgeVisibility() {
+    if (el.fridgePhase) el.fridgePhase.hidden = !el.fridgeToggle.checked;
+    // La visibilidad del consejo de reposo la decide calcular(): nevera activa Y ambiente < 2 h.
+  }
+  // g/kg de levadura fresca en modo Auto según el estado actual de la interfaz
+  // (fase ambiente + fase nevera si está activada).
+  function autoYeastGkg() {
+    return D.yeastPerKgFlour(
+      clampHoras(el.horas.value),
+      parseInt(el.temperatura.value, 10) || 18,
+      coldHoursActive(),
+      coldTempC()
+    );
+  }
+
+  // Levadura en modo Manual: % del peso de la harina, topado a [0,01 %, 3 %], los
+  // mismos límites de seguridad que la fórmula automática. Valor no válido → 0,01 %.
+  const YEAST_MANUAL_MIN = 0.01, YEAST_MANUAL_MAX = 3;
+  function clampYeastPct(v) {
+    const n = parseDecimal(v);
+    if (!isFinite(n)) return YEAST_MANUAL_MIN;
+    return Math.max(YEAST_MANUAL_MIN, Math.min(YEAST_MANUAL_MAX, Math.round(n * 100) / 100));
+  }
+
   const defaultSettings = {
     numPaneteos: 6,
     pesoPaneto: 280,
     temperatura: 18,
+    horas: 28,
+    fridgeOn: false,   // fermentación mixta (nevera) desactivada por defecto
+    tempFrio: 4,       // °C de la nevera (fase fría)
+    horasFrio: 24,     // horas en nevera (fase fría)
     hidratacion: 63,
     sal: 40,
-    salMode: 'auto',        // 'auto' = bloqueada en 4% | 'manual' = editable
+    salMode: 'manual',      // la sal ya no tiene modo; siempre editable (valor recomendado por defecto)
     yeastMode: 'auto',      // 'auto' = según temperatura | 'manual' = valor fijo
     manualYeastPerKg: 1.0,  // g de levadura fresca por kg de harina (modo Manual)
     flours: [
@@ -197,6 +326,10 @@ window.stepYeast = function(dir) {
       numPaneteos: parseDecimal(el.numPaneteos.value),
       pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
+      horas: clampHoras(el.horas.value),
+      fridgeOn: el.fridgeToggle.checked,
+      tempFrio: coldTempC(),
+      horasFrio: clampColdHoras(el.horasFrio.value),
       hidratacion: parseDecimal(el.hidratacion.value),
       sal: salGL,
       salMode: salMode,
@@ -212,6 +345,13 @@ window.stepYeast = function(dir) {
   const initData = loadSettings();
   el.numPaneteos.value = initData.numPaneteos !== undefined ? initData.numPaneteos : defaultSettings.numPaneteos;
   el.temperatura.value = initData.temperatura !== undefined ? initData.temperatura : defaultSettings.temperatura;
+  // La fase fría debe fijarse ANTES de topar las horas: ambHorasMin() depende de ella (con
+  // nevera activa el mínimo es 0, así se respeta un ambiente de 0 h guardado).
+  el.fridgeToggle.checked = initData.fridgeOn !== undefined ? !!initData.fridgeOn : defaultSettings.fridgeOn;
+  el.horas.value = initData.horas !== undefined ? clampHoras(initData.horas) : defaultSettings.horas;
+  renderColdTempField(initData.tempFrio !== undefined ? clampColdTempC(initData.tempFrio) : defaultSettings.tempFrio);
+  el.horasFrio.value = initData.horasFrio !== undefined ? clampColdHoras(initData.horasFrio) : defaultSettings.horasFrio;
+  applyFridgeVisibility();
   el.hidratacion.value = initData.hidratacion !== undefined ? initData.hidratacion : defaultSettings.hidratacion;
   // Peso por pizza y sal: valores canónicos SIEMPRE en métrico (gramos y g/L).
   // El peso se muestra en g u oz según el sistema; la sal siempre como % del agua.
@@ -220,14 +360,13 @@ window.stepYeast = function(dir) {
   // La sal se guarda SIEMPRE en g/L (canónico). En modo "% harina" la variable
   // autoritativa es salPctFlour; se deriva aquí del g/L canónico y la hidratación.
   let salPctFlour = 0;
-  // Modos Auto/Manual de sal y levadura. Migración: si un usuario ya tenía una
-  // sal distinta de 4% (40 g/L), se respeta arrancando en Manual.
-  let salMode = initData.salMode || (salGL === 40 ? 'auto' : 'manual');
+  // La sal ya no tiene modo Auto/Manual: es siempre editable, con el valor recomendado
+  // por defecto (40 g/L). La levadura sí conserva Auto (fórmula) / Manual (valor fijo).
+  let salMode = 'manual';
   let yeastMode = initData.yeastMode || 'auto';
   let manualYeastPerKg = (initData.manualYeastPerKg != null)
     ? initData.manualYeastPerKg
-    : D.yeastPerKgFlour(parseInt(el.temperatura.value, 10) || 18);
-  if (salMode === 'auto') salGL = 40; // en Auto, la sal queda fijada en 4% (40 g/L)
+    : autoYeastGkg();
   { const h0 = (parseDecimal(el.hidratacion.value) || 0) / 100; salPctFlour = h0 > 0 ? h0 * salGL / 10 : 2.5; }
 
   // Lee un campo (en su unidad visible) y lo devuelve en la unidad canónica.
@@ -284,15 +423,6 @@ window.stepYeast = function(dir) {
   }
   renderInputUnits();
 
-  // Marca la opción activa (Auto/Manual) en el toggle segmentado.
-  function syncModeToggle(toggle, mode){
-    if (!toggle) return;
-    toggle.querySelectorAll('.seg').forEach(b => {
-      const on = b.getAttribute('data-mode') === mode;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-pressed', String(on));
-    });
-  }
   // Bloquea o desbloquea un stepper (botones + input) según el modo Auto.
   function lockStepper(stepper, input, locked){
     if (!stepper) return;
@@ -300,28 +430,47 @@ window.stepYeast = function(dir) {
     if (input) input.disabled = locked;
     stepper.querySelectorAll('.stepper-btn').forEach(b => { b.disabled = locked; });
   }
-  // Aplica los modos Auto/Manual de sal y levadura a la interfaz (valores visibles,
-  // bloqueo de steppers, toggles y pista). No recalcula; el llamador hace calcular().
-  function renderParamModes(){
-    const temp = parseInt(el.temperatura.value, 10) || 18;
-    // Sal: en Auto se fija el valor recomendado según la base (40 g/L de agua o
-    // 2,5% de la harina, equivalentes ≈ a hidratación típica).
-    const salAuto = salMode === 'auto';
-    if (salAuto) {
-      if (saltIsFlour()) salPctFlour = 2.5; else salGL = 40;
-      syncSaltDerived();
-      el.sal.value = saltDisplayValue();
+  // Resumen de fermentación en el panel de resultado (tiempos + temperaturas). Se
+  // muestra SIEMPRE (aun con levadura manual), porque son datos clave de la receta.
+  function renderResultFerment(){
+    if (!el.resultFermentBody) return;
+    const ambH = clampHoras(el.horas.value);
+    const ambT = parseInt(el.temperatura.value, 10) || 18;
+    const coldH = coldHoursActive();
+    const ambStr = U.formatNumber(ambH, 0) + ' h · ' + U.tempValue(ambT) + U.tempUnit();
+    const coldStr = U.formatNumber(coldH, 0) + ' h · ' + Math.round(U.tempValue(coldTempC())) + U.tempUnit();
+    const rows = [];
+    if (el.fridgeToggle.checked) {
+      rows.push([I18N.t('fridgePhaseTitle'), coldStr]);
+      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
+      rows.push([I18N.t('fermRowTotal'), U.formatNumber(ambH + coldH, 0) + ' h']);
+    } else {
+      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     }
-    lockStepper(el.salStepper, el.sal, salAuto);
-    syncModeToggle(el.salModeToggle, salMode);
-    if (el.salHint) el.salHint.textContent = I18N.t(salAuto ? (saltIsFlour() ? 'salAutoHintFlour' : 'salAutoHintGL') : 'salManualHint');
-    // Levadura: en Auto sigue la temperatura; en Manual, valor fijo.
+    el.resultFermentBody.innerHTML = rows.map(function (r) {
+      return '<div class="result-ferment-row"><span class="rf-label">' + r[0] +
+             '</span><span class="rf-value">' + r[1] + '</span></div>';
+    }).join('');
+  }
+  // Aplica el modo de la levadura (Auto/Manual) a la interfaz y refresca la pista de
+  // la sal (siempre editable). No recalcula; el llamador hace calcular().
+  function renderParamModes(){
+    // Sal: siempre editable, con la pista del valor recomendado según la unidad.
+    lockStepper(el.salStepper, el.sal, false);
+    if (el.salHint) el.salHint.textContent = I18N.t(saltIsFlour() ? 'salAutoHintFlour' : 'salAutoHintGL');
+    // Levadura: en Auto sigue la fórmula (horas + temperatura); en Manual, valor fijo.
     const yeastAuto = yeastMode === 'auto';
     // Canónico en g/kg; se MUESTRA como % del peso de la harina (1 g/kg = 0,1 %).
-    const shownGkg = yeastAuto ? D.yeastPerKgFlour(temp) : manualYeastPerKg;
-    el.levadura.value = round2(shownGkg / 10);
+    const shownGkg = yeastAuto ? autoYeastGkg() : manualYeastPerKg;
+    const shownPct = round2(shownGkg / 10);
+    el.levadura.value = shownPct;
+    // En Auto se muestra el valor calculado como lectura (sin controles); en Manual,
+    // el stepper editable. El botón alterna entre ambos (sin toggle Auto/Manual).
+    if (el.yeastAuto) el.yeastAuto.hidden = !yeastAuto;
+    if (el.yeastStepper) el.yeastStepper.hidden = yeastAuto;
+    if (yeastAuto && el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(shownPct, 2);
     lockStepper(el.yeastStepper, el.levadura, yeastAuto);
-    syncModeToggle(el.yeastModeToggle, yeastMode);
+    if (el.yeastModeBtn) el.yeastModeBtn.textContent = I18N.t(yeastAuto ? 'yeastAdjustManual' : 'yeastUseAuto');
     if (el.yeastHint) el.yeastHint.textContent = I18N.t(yeastAuto ? 'yeastAutoHint' : 'yeastManualHint');
   }
   renderParamModes();
@@ -416,9 +565,10 @@ window.stepYeast = function(dir) {
   }
 
   // Caja informativa bajo la hidratación: color de fondo/borde + texto según el
-  // rango del %. Bandas contiguas (sin huecos): <63 verde (napolitana clásica) ·
-  // 63–<70 amarillo (media) · 70–80 naranja (alta) · >80 rojo (extrema).
-  const HYD_CLASSES = ['hyd-info--green', 'hyd-info--yellow', 'hyd-info--orange', 'hyd-info--red'];
+  // rango del %. Bandas contiguas (sin huecos): <55,5 rojo (densa, bajo estándar) ·
+  // 55,5–<63 verde (napolitana clásica) · 63–<70 amarillo (media) ·
+  // 70–80 naranja (alta) · >80 rojo oscuro (extrema).
+  const HYD_CLASSES = ['hyd-info--dense', 'hyd-info--green', 'hyd-info--yellow', 'hyd-info--orange', 'hyd-info--red'];
   function updateHydrationInfo(){
     if (!el.hydrationInfo) return;
     const pct = parseDecimal(el.hidratacion.value) || 0;
@@ -426,14 +576,15 @@ window.stepYeast = function(dir) {
     if (pct > 80) key = 'Red';
     else if (pct >= 70) key = 'Orange';
     else if (pct >= 63) key = 'Yellow';
-    else key = 'Green';
+    else if (pct >= 55.5) key = 'Green';
+    else key = 'Dense';
     HYD_CLASSES.forEach(c => el.hydrationInfo.classList.remove(c));
     el.hydrationInfo.classList.add('hyd-info--' + key.toLowerCase());
     el.hydrationInfoHead.textContent = I18N.t('hyd' + key + 'Head');
     el.hydrationInfoText.textContent = I18N.t('hyd' + key + 'Body');
-    // Marcador sobre la escala 55→85%: posición proporcional (topada a los extremos).
+    // Marcador sobre la escala 50→85%: posición proporcional (topada a los extremos).
     if (el.hydMarker) {
-      const p = Math.max(0, Math.min(100, (pct - 55) / 30 * 100));
+      const p = Math.max(0, Math.min(100, (pct - 50) / 35 * 100));
       el.hydMarker.style.left = p + '%';
     }
   }
@@ -808,11 +959,16 @@ window.stepYeast = function(dir) {
     const ok = await showConfirm(I18N.t('resetConfirm'), I18N.t('resetConfirmOk'));
     if (!ok) return;
     el.temperatura.value = defaultSettings.temperatura;
+    el.horas.value = defaultSettings.horas;
+    el.fridgeToggle.checked = defaultSettings.fridgeOn;
+    renderColdTempField(defaultSettings.tempFrio);
+    el.horasFrio.value = defaultSettings.horasFrio;
+    applyFridgeVisibility();
     el.hidratacion.value = defaultSettings.hidratacion;
     salGL = defaultSettings.sal;
     salMode = defaultSettings.salMode;
     yeastMode = defaultSettings.yeastMode;
-    manualYeastPerKg = D.yeastPerKgFlour(defaultSettings.temperatura);
+    manualYeastPerKg = autoYeastGkg();
     syncSaltDerived();
     renderInputUnits();
     renderParamModes();
@@ -833,23 +989,116 @@ window.stepYeast = function(dir) {
     const numPaneteos = Math.max(1, parseDecimal(el.numPaneteos.value) || 0); // mínimo 1 pizza (E2)
     const pesoPaneto = pesoG;
     const temp = parseInt(el.temperatura.value, 10);
+    const horas = clampHoras(el.horas.value);
+    const coldH = coldHoursActive();           // 0 si la nevera está desactivada
+    const coldT = coldTempC();                 // °C canónico de la nevera
     const hidratacionPct = parseDecimal(el.hidratacion.value) || 0;
     updateHydrationInfo(); // caja de guía por rango de hidratación (siempre, aun si la mezcla no es válida)
     // La hidratación puede haber cambiado: resincroniza la sal. En modo % harina
     // el % se mantiene fijo (y salGL se recalcula); en g/L, salGL se mantiene.
     syncSaltDerived();
-    // Levadura: en Manual usa el valor fijo; en Auto, la tabla de temperatura.
-    const levPorKg = (yeastMode === 'manual') ? manualYeastPerKg : D.yeastPerKgFlour(temp);
-    if (yeastMode === 'auto') el.levadura.value = round2(levPorKg / 10); // muestra % en Auto
+    // Levadura: en Manual usa el valor fijo; en Auto, el modelo multifase (ambiente + nevera).
+    const levPorKg = (yeastMode === 'manual') ? manualYeastPerKg : D.yeastPerKgFlour(horas, temp, coldH, coldT);
+    if (yeastMode === 'auto') {
+      const pct = round2(levPorKg / 10);
+      el.levadura.value = pct; // mantiene el input sincronizado (oculto en Auto)
+      if (el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(pct, 2); // lectura visible
+    }
 
-    el.tempValue.textContent = U.tempValue(temp);
+    // Lector del total (ambiente + nevera): solo con nevera (con una fase el total =
+    // ese tiempo). El total no puede pasar de 96 h: los campos se capan al editarlos.
+    if (el.fermTotal) {
+      el.fermTotal.hidden = !el.fridgeToggle.checked;
+      if (el.fermTotalValue) el.fermTotalValue.textContent = U.formatNumber(horas + coldH, 0) + ' h';
+    }
+    // Aviso suave al alcanzar el máximo recomendado (96 h), esté o no activa la nevera.
+    if (el.fermMaxNote) el.fermMaxNote.hidden = (horas + coldH) < 96;
+    // Avisos por temperatura ambiente extrema (>28 °C frenético · <17 °C casi dormido).
+    if (el.tempNote) {
+      let key = null;
+      if (temp > 28) key = 'tempNoteHigh';
+      else if (temp < 17) key = 'tempNoteLow';
+      el.tempNote.hidden = !key;
+      if (key && el.tempNoteText) el.tempNoteText.textContent = I18N.t(key);
+    }
+    // Avisos por tiempo en frío atípico (0<t<12 h insuficiente · >72 h maduración extrema).
+    if (el.coldNote) {
+      let key = null;
+      if (coldH > 0 && coldH < 12) key = 'coldNoteShort';
+      else if (coldH > 72) key = 'coldNoteLong';
+      el.coldNote.hidden = !key;
+      if (key && el.coldNoteText) el.coldNoteText.textContent = I18N.t(key);
+    }
+    // Consejo de reposo previo a la nevera: SOLO si se usa la fase fría Y el tiempo de
+    // ambiente es corto (< 2 h). Recuerda dejar 1-2 h de ambiente antes de enfriar.
+    if (el.ambientRestTip) el.ambientRestTip.hidden = !(el.fridgeToggle.checked && horas < 2);
+    // Aviso de exceso de levadura (Auto y Manual): cantidad alta → nota informativa
+    // NO bloqueante. Umbral > 1,5 % del peso de la harina (= 15 g/kg). En Auto,
+    // #levadura ya está sincronizado con el valor calculado, así que refleja el número
+    // mostrado en ambos modos (en Auto se reduce alargando horas o bajando temperatura).
+    if (el.warnHighYeast) {
+      el.warnHighYeast.hidden = !D.isHighYeast(parseDecimal(el.levadura.value));
+    }
+    // Fuerza (W) efectiva de la mezcla: media ponderada por % de las harinas con dato
+    // (null si ninguna lo tiene). Se muestra junto a la barra de proporción y alimenta
+    // el aviso de compatibilidad W↔tiempo (RN-02).
+    const wEff = D.effectiveW(flours.map(function (f) { return { w: F.wValue(f.flourId), pct: f.pct }; }));
+    if (el.flourStrengthValue) el.flourStrengthValue.textContent = (wEff != null) ? ('W' + wEff) : '—';
+    // Compatibilidad fuerza de la harina ↔ tiempo de fermentación de RELOJ total
+    // (ambiente + nevera activa). Sin dato de W en la mezcla → sin aviso.
+    if (el.flourWarn) {
+      let show = false;
+      if (wEff != null) {
+        // Horas estructurales de desgaste del gluten (modelo Q10/Arrhenius: AMBAS fases se
+        // ponderan por su temperatura; ver structuralHours en dough.js). EXCLUSIVO para
+        // validar contra la tabla de rangos W. temp = °C ambiente (#temperatura); coldT =
+        // °C CANÓNICA de la fría (convertida desde °F). El tope de 96 h sigue siendo de
+        // RELOJ (lo garantiza capFermCoupling, sin tocar aquí).
+        const H = D.structuralHours(horas, temp, coldH, coldT);
+        const clockHours = horas + coldH; // tiempo de reloj real configurado por el usuario
+        const verdict = D.flourTimeWarning(wEff, H);
+        if (verdict) {
+          const band = D.flourBand(wEff);
+          // Damos DOS arreglos concretos: fuerza de harina (de la tabla de bandas) y tiempo
+          // total de reloj. El tiempo es proporcional a H manteniendo la mezcla de
+          // temperaturas actual (escala lineal: reloj · objetivo_estructural / H).
+          const opts = [];
+          let head;
+          if (verdict === 'weak') {
+            head = I18N.t('warnFlourWeakHead').replace('{W_value}', wEff);
+            const minW = D.minWForHours(H);
+            if (minW != null) opts.push(I18N.t('adviceFlourMin').replace('{w}', minW));
+            if (H > 0 && clockHours > 0) {
+              const maxHours = Math.max(1, Math.floor(clockHours * band.maxH / H));
+              opts.push(I18N.t('adviceTimeMax').replace('{h}', maxHours));
+            }
+          } else { // strong
+            head = I18N.t('warnFlourStrongHead').replace('{W_value}', wEff);
+            const maxW = D.maxWForHours(H);
+            if (maxW != null) opts.push(I18N.t('adviceFlourMax').replace('{w}', maxW));
+            if (H > 0 && clockHours > 0) {
+              const minHours = Math.ceil(clockHours * band.minH / H);
+              if (minHours <= 96) opts.push(I18N.t('adviceTimeMin').replace('{h}', minHours));
+            }
+          }
+          let text = head;
+          if (opts.length) text += ' ' + I18N.t('adviceNeed') + ' ' + opts.join(I18N.t('adviceOr')) + '.';
+          if (el.flourWarnText) el.flourWarnText.textContent = text;
+          show = true;
+        }
+      }
+      el.flourWarn.hidden = !show;
+    }
+
+    // No pisar el campo mientras el usuario lo está escribiendo (lo confirma al salir).
+    if (document.activeElement !== el.tempValue) el.tempValue.value = U.tempValue(temp);
     if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
     saveSettings();
     if (onConfigChange) onConfigChange();
 
     const sumaPct = flours.reduce((a, b) => a + b.pct, 0);
     const sumaRedondeada = Math.round(sumaPct * 100) / 100;
-    const esValido = Math.abs(sumaRedondeada - 100) < 0.001;
+    const esValidoHarina = Math.abs(sumaRedondeada - 100) < 0.001;
 
     el.progressBar.innerHTML = flours.map((f, i) => {
       if(f.pct <= 0) return '';
@@ -860,7 +1109,7 @@ window.stepYeast = function(dir) {
     // La app fuerza el 100% de forma reactiva, así que no anunciamos "equilibrado":
     // el estado solo aparece en el caso límite en que la mezcla no llega a 100
     // (todas las harinas restantes bloqueadas). Indica cuánto falta o sobra.
-    if (esValido) {
+    if (esValidoHarina) {
       el.progressStatus.textContent = '';
     } else {
       const delta = Math.round(sumaRedondeada - 100);
@@ -869,8 +1118,11 @@ window.stepYeast = function(dir) {
         : I18N.t('mixExcess').replace('{n}', delta);
     }
 
-    el.warningBanner.classList.toggle('show', !esValido);
+    el.warningBanner.classList.toggle('show', !esValidoHarina);
 
+    // Se bloquea el resultado solo si la mezcla de harinas no suma 100%. El tiempo de
+    // fermentación ya no puede ser inválido: se capa al total de 96 h al editarlo.
+    const esValido = esValidoHarina;
     if(!esValido){
       el.resultsBody.style.display = 'none';
       el.disabledOverlay.style.display = 'block';
@@ -923,6 +1175,7 @@ window.stepYeast = function(dir) {
         I18N.t('recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
         U.formatWeight(pesoPaneto);
     }
+    renderResultFerment(); // resumen de fermentación (tiempos + temperaturas) en el resultado
 
     // Porcentajes de panadero (relativos a la harina = 100%).
     if (el.aguaPct) el.aguaPct.textContent = pctSobreHarina(aguaTotal, harinaTotal, 1);
@@ -954,9 +1207,12 @@ window.stepYeast = function(dir) {
     }
   }
 
-  [el.numPaneteos, el.temperatura, el.hidratacion].forEach(input => {
+  [el.numPaneteos, el.temperatura, el.tempFrio, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
   });
+  // Tiempos de fermentación: al editarlos (stepper o tecleo) capamos el total a 96 h.
+  el.horas.addEventListener('input', () => { capFermCoupling('amb'); calcular(); });
+  el.horasFrio.addEventListener('input', () => { capFermCoupling('cold'); calcular(); });
   // Nº de pizzas: al salir del campo, normaliza a entero ≥ 1 (E2).
   el.numPaneteos.addEventListener('change', () => {
     let v = Math.round(parseDecimal(el.numPaneteos.value) || 0);
@@ -964,11 +1220,64 @@ window.stepYeast = function(dir) {
     el.numPaneteos.value = v;
     calcular();
   });
-  // Hidratación: al salir del campo, la topamos al rango [55, 100] (los botones
+  // Hidratación: al salir del campo, la topamos al rango [50, 100] (los botones
   // ya lo hacen; esto cubre el tecleo directo de un valor fuera de rango).
   el.hidratacion.addEventListener('change', () => {
     el.hidratacion.value = clampHidratacion(el.hidratacion.value);
     calcular();
+  });
+  // Horas de fermentación: al salir del campo, topamos a [2, 96] (los botones ya lo
+  // hacen; esto cubre el tecleo directo de un valor fuera de rango).
+  el.horas.addEventListener('change', () => {
+    el.horas.value = clampHoras(el.horas.value);
+    capFermCoupling('amb');
+    calcular();
+  });
+  // Fase de nevera: tiempo y temperatura (topados al salir del campo), y el
+  // interruptor que la muestra/oculta y recalcula.
+  el.tempFrio.addEventListener('change', () => { renderColdTempField(coldTempC()); calcular(); });
+  el.horasFrio.addEventListener('change', () => { el.horasFrio.value = clampColdHoras(el.horasFrio.value); capFermCoupling('cold'); calcular(); });
+  el.fridgeToggle.addEventListener('change', () => {
+    if (el.fridgeToggle.checked) {
+      // Al ACTIVAR la nevera: 4 °C (lo habitual en un frigorífico) y las horas por
+      // defecto, pero sin superar el total de 96 h (si ya hay 96 h de ambiente, 0 h).
+      renderColdTempField(defaultSettings.tempFrio);
+      const room = Math.max(0, 96 - clampHoras(el.horas.value));
+      el.horasFrio.value = Math.min(defaultSettings.horasFrio, room);
+    }
+    // El mínimo de ambiente cambia con la nevera (0 h activa / 2 h apagada): re-topamos el
+    // campo por si queda por debajo del nuevo mínimo (p. ej. estaba en 0 h y se apaga).
+    el.horas.value = clampHoras(el.horas.value);
+    applyFridgeVisibility();
+    calcular();
+  });
+  // Enlace "Ver consejos de fermentación": abre el acordeón de consejos y hace scroll.
+  if (el.fermTipsLink) el.fermTipsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tips = document.getElementById('fermentTips');
+    if (!tips) return;
+    tips.open = true;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    tips.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
+  // Temperatura: además del slider, se puede escribir el valor (para quien tenga
+  // problemas con el slider). El valor interno es SIEMPRE °C; si se muestra en °F
+  // lo convertimos. Al salir del campo (o Enter) topamos al rango del slider
+  // [5,35] °C y resincronizamos el slider; un valor no válido se restaura.
+  function commitTempInput(){
+    const shown = parseDecimal(el.tempValue.value);
+    const cur = parseInt(el.temperatura.value, 10) || 18;
+    if (!isFinite(shown)) { el.tempValue.value = U.tempValue(cur); return; } // restaura
+    let c = U.isFahrenheit() ? Math.round((shown - 32) * 5 / 9) : Math.round(shown);
+    const min = parseInt(el.temperatura.min, 10), max = parseInt(el.temperatura.max, 10);
+    c = Math.max(min, Math.min(max, c));
+    el.temperatura.value = c;
+    el.tempValue.value = U.tempValue(c); // muestra el valor canónico ya topado
+    calcular();
+  }
+  el.tempValue.addEventListener('change', commitTempInput);
+  el.tempValue.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); el.tempValue.blur(); }
   });
 
   // ---- A4: pulsación mantenida en los +/− (auto-repetición con aceleración) ----
@@ -1012,25 +1321,30 @@ window.stepYeast = function(dir) {
     if (yeastMode === 'manual') manualYeastPerKg = (parseDecimal(el.levadura.value) || 0) * 10;
     calcular();
   });
-
-  // ---- Toggles Auto/Manual (sal y levadura) ----
-  function setSalMode(mode){
-    salMode = (mode === 'manual') ? 'manual' : 'auto';
-    renderParamModes(); // en Auto fija el valor recomendado según la base (g/L o % harina)
+  // Al salir del campo (o Enter), topamos el % manual a [0,01 %, 3 %] (los botones ya
+  // lo hacen; esto cubre el tecleo directo de un valor fuera de rango o no válido).
+  el.levadura.addEventListener('change', () => {
+    if (yeastMode !== 'manual') return;
+    const pct = clampYeastPct(el.levadura.value);
+    el.levadura.value = pct;
+    manualYeastPerKg = pct * 10;
     calcular();
-  }
+  });
+
+  // ---- Levadura: alternar entre cálculo automático y ajuste manual ----
   function setYeastMode(mode){
     yeastMode = (mode === 'manual') ? 'manual' : 'auto';
-    // Al pasar a Manual, arranca desde el valor Auto actual (según la temperatura).
-    if (yeastMode === 'manual') manualYeastPerKg = D.yeastPerKgFlour(parseInt(el.temperatura.value, 10) || 18);
+    // Al pasar a Manual, arranca desde el valor Auto actual (ambiente + nevera),
+    // topado al rango manual [0,01 %, 3 %].
+    if (yeastMode === 'manual') {
+      manualYeastPerKg = clampYeastPct(autoYeastGkg() / 10) * 10;
+    }
     renderParamModes();
     calcular();
   }
-  if (el.salModeToggle) el.salModeToggle.querySelectorAll('.seg').forEach(b => {
-    b.addEventListener('click', () => setSalMode(b.getAttribute('data-mode')));
-  });
-  if (el.yeastModeToggle) el.yeastModeToggle.querySelectorAll('.seg').forEach(b => {
-    b.addEventListener('click', () => setYeastMode(b.getAttribute('data-mode')));
+  // Botón contextual único: en Auto → "Ajustar a mano"; en Manual → "Volver al automático".
+  if (el.yeastModeBtn) el.yeastModeBtn.addEventListener('click', () => {
+    setYeastMode(yeastMode === 'auto' ? 'manual' : 'auto');
   });
 
   renderFlours();
@@ -1038,7 +1352,7 @@ window.stepYeast = function(dir) {
   // Al hacer foco/tap en cualquier input numérico, selecciona su contenido
   // para que el usuario pueda escribir encima sin tener que borrar antes.
   document.addEventListener('focus', (e) => {
-    if (e.target.matches('input[type="number"], input[inputmode="decimal"]')) {
+    if (e.target.matches('input[type="number"], input[inputmode="decimal"], input[inputmode="numeric"]')) {
       e.target.select();
     }
   }, true);
@@ -1093,8 +1407,15 @@ window.stepYeast = function(dir) {
   // siguen en °C, así que ningún gramo cambia. Actualizamos únicamente el display.
   window.addEventListener('pizzaTempChange', () => {
     const t = parseInt(el.temperatura.value, 10) || 18;
-    el.tempValue.textContent = U.tempValue(t);
+    el.tempValue.value = U.tempValue(t);
     if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
+    // Nevera: convierte el valor mostrado a la nueva unidad (el canónico es °C).
+    if (el.tempFrio && U.isFahrenheit() !== fridgeShownF) {
+      const v = parseDecimal(el.tempFrio.value);
+      const c = isFinite(v) ? (fridgeShownF ? (v - 32) * 5 / 9 : v) : 4;
+      renderColdTempField(clampColdTempC(c));
+    }
+    renderResultFerment(); // refresca las temperaturas del resumen en la nueva unidad
   });
 
   // ==================== RECETAS GUARDADAS (con nombre) ====================
@@ -1147,7 +1468,8 @@ window.stepYeast = function(dir) {
     const sm = d.salMode || 'auto';
     const ym = d.yeastMode || 'auto';
     const my = (ym === 'manual') ? (d.manualYeastPerKg != null ? d.manualYeastPerKg : '') : '';
-    return [d.numPaneteos, d.pesoPaneto, d.temperatura, d.hidratacion, d.sal, sm, ym, my, flours].join('|');
+    const cold = d.fridgeOn ? ('1:' + d.tempFrio + ':' + d.horasFrio) : '0';
+    return [d.numPaneteos, d.pesoPaneto, d.temperatura, d.horas, cold, d.hidratacion, d.sal, sm, ym, my, flours].join('|');
   }
 
   // ¿La configuración actual coincide con alguna receta guardada?
@@ -1462,6 +1784,10 @@ window.stepYeast = function(dir) {
       numPaneteos: parseDecimal(el.numPaneteos.value),
       pesoPaneto: pesoG,
       temperatura: parseInt(el.temperatura.value, 10),
+      horas: clampHoras(el.horas.value),
+      fridgeOn: el.fridgeToggle.checked,
+      tempFrio: coldTempC(),
+      horasFrio: clampColdHoras(el.horasFrio.value),
       hidratacion: parseDecimal(el.hidratacion.value),
       sal: salGL,
       salMode: salMode,
@@ -1532,14 +1858,20 @@ window.stepYeast = function(dir) {
     el.numPaneteos.value = d.numPaneteos;
     pesoG = d.pesoPaneto;
     el.temperatura.value = d.temperatura;
-    el.hidratacion.value = clampHidratacion(d.hidratacion); // recetas antiguas < 55% se topan a 55
+    el.horas.value = clampHoras(d.horas); // recetas antiguas sin horas -> 28 h por defecto
+    el.fridgeToggle.checked = !!d.fridgeOn; // recetas antiguas -> sin nevera
+    renderColdTempField(clampColdTempC(d.tempFrio));
+    el.horasFrio.value = clampColdHoras(d.horasFrio);
+    capFermCoupling('cold'); // por si una receta trae un total > 96 h, reduce la nevera
+    applyFridgeVisibility();
+    el.hidratacion.value = clampHidratacion(d.hidratacion); // recetas antiguas < 50% se topan a 50
     salGL = d.sal;
     // Deriva el % de harina desde el g/L canónico guardado y la hidratación de la
     // receta (round-trip exacto si se guardó en modo % harina a esa hidratación).
     { const hLoad = (parseDecimal(el.hidratacion.value) || 0) / 100; salPctFlour = hLoad > 0 ? hLoad * salGL / 10 : 2.5; }
-    salMode = d.salMode || (d.sal === 40 ? 'auto' : 'manual');
+    salMode = 'manual'; // la sal es siempre editable (sin modo)
     yeastMode = d.yeastMode || 'auto';
-    manualYeastPerKg = (d.manualYeastPerKg != null) ? d.manualYeastPerKg : D.yeastPerKgFlour(d.temperatura || 18);
+    manualYeastPerKg = (d.manualYeastPerKg != null) ? d.manualYeastPerKg : autoYeastGkg();
     renderInputUnits();
     renderParamModes();
     flours = migrateFlours(d.flours); // acepta recetas antiguas (catalogId) y nuevas (flourId)
@@ -1626,6 +1958,10 @@ window.stepYeast = function(dir) {
         numPaneteos: num(d.numPaneteos, 6),
         pesoPaneto: num(d.pesoPaneto, 280),
         temperatura: Math.round(num(d.temperatura, 18)),
+        horas: clampHoras(num(d.horas, 28)),
+        fridgeOn: (d.fridgeOn === true),
+        tempFrio: clampColdTempC(num(d.tempFrio, 4)),
+        horasFrio: clampColdHoras(num(d.horasFrio, 24)),
         hidratacion: clampHidratacion(num(d.hidratacion, 63)),
         sal: num(d.sal, 40),
         salMode: (d.salMode === 'manual' || d.salMode === 'auto') ? d.salMode : (num(d.sal, 40) === 40 ? 'auto' : 'manual'),
@@ -1731,22 +2067,39 @@ window.stepYeast = function(dir) {
 
   // Genera el texto de la receta (compartido por Copiar y Compartir).
   function buildRecipeText() {
+    const tempC = parseInt(el.temperatura.value, 10);
+    const horas = clampHoras(el.horas.value);
+    const coldH = coldHoursActive();
+    const coldT = coldTempC();
     const harinaT = D.computeRecipe({
       numPizzas: parseDecimal(el.numPaneteos.value) || 0, pesoG: pesoG,
-      tempC: parseInt(el.temperatura.value, 10), hidPct: parseDecimal(el.hidratacion.value),
+      ambTemp: tempC, ambHours: horas, coldHours: coldH, coldTemp: coldT,
+      hidPct: parseDecimal(el.hidratacion.value),
       salGL: salGL, salPctFlour: saltIsFlour() ? salPctFlour : null, flours: flours
     }).harinaTotal;
 
+    // Línea de fermentación: solo ambiente, o nevera + ambiente si hay fase fría.
+    // Conector localizado ("a"/"at") y espacio antes del grado. Ambas temperaturas se
+    // muestran en la unidad activa (°C/°F).
+    const at = I18N.t('recipeAt');
+    const ambTempStr = U.tempValue(tempC) + ' ' + U.tempUnit();
+    const coldTempStr = Math.round(U.tempValue(coldT)) + ' ' + U.tempUnit();
+    const fermLine = coldH > 0
+      ? `${U.formatNumber(coldH, 0)} h ${at} ${coldTempStr} (${I18N.t('recipeFridge')}) + ${U.formatNumber(horas, 0)} h ${at} ${ambTempStr}`
+      : `${U.formatNumber(horas, 0)} h ${at} ${ambTempStr}`;
+
     return `${I18N.t('recipeHeader')}
-${I18N.t('recipePizzas')}: ${U.formatNumber(el.numPaneteos.value, 0)} ${I18N.t('recipeOf')} ${U.formatNumber(el.pesoPaneto.value)} ${U.weightUnit()}
-${I18N.t('recipeHydration')}: ${U.formatNumber(el.hidratacion.value)}% | ${I18N.t('recipeSalt')}: ${U.formatNumber(el.sal.value)} ${saltIsFlour() ? I18N.t('salUnitFlour') : I18N.t('salUnitGL')}
+
+${I18N.t('recipePizzas')}: ${U.formatNumber(el.numPaneteos.value, 0)} × ${U.formatNumber(el.pesoPaneto.value)} ${U.weightUnit()}
+${I18N.t('recipeFermentation')}: ${fermLine}
+${I18N.t('recipeHydration')}: ${U.formatNumber(el.hidratacion.value)}%
+${I18N.t('recipeSalt')}: ${U.formatNumber(el.sal.value)} ${saltIsFlour() ? I18N.t('salUnitFlour') : I18N.t('salUnitGL')}
 
 ${I18N.t('recipeTotals')}
 - ${I18N.t('recipeTotalFlour')}: ${el.totalHarina.textContent}
 - ${I18N.t('recipeWater')}: ${el.totalAgua.textContent}
 - ${I18N.t('recipeSalt2')}: ${el.totalSal.textContent}
-- ${I18N.t('recipeFreshYeast')}: ${el.totalLevadura.textContent}
-- (${I18N.t('recipeDryYeast')}: ${el.totalLevaduraSeca.textContent})
+- ${I18N.t('recipeFreshYeast')}: ${el.totalLevadura.textContent} ${I18N.t('recipeDryYeast').replace('{n}', el.totalLevaduraSeca.textContent)}
 
 ${I18N.t('recipeFlourMix')}
 ${flours.map(f => `- ${flourName(f.flourId)}: ${U.formatWeight(harinaT * (f.pct/100))} (${U.formatNumber(f.pct)}%)`).join('\n')}`;

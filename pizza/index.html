@@ -22,6 +22,27 @@
   })();
 </script>
 
+<!-- Entorno: en hosts que NO son producción (previews de Cloudflare Pages,
+     beta.calculatupizza.com, localhost, etc.) marcamos el modo BETA en el <html>
+     y pedimos a los buscadores que NO indexen, para no competir con la versión
+     estable. Como la detección es por hostname EN TIEMPO DE EJECUCIÓN, este bloque
+     puede convivir en main sin activarse jamás en calculatupizza.com. -->
+<script>
+  (function(){
+    try{
+      var h = location.hostname;
+      var esProd = (h === 'calculatupizza.com' || h === 'www.calculatupizza.com');
+      if (!esProd){
+        document.documentElement.classList.add('beta-mode');
+        var m = document.createElement('meta');
+        m.name = 'robots';
+        m.content = 'noindex, nofollow';
+        document.head.appendChild(m);
+      }
+    } catch(e){}
+  })();
+</script>
+
 <!-- Meta Etiquetas SEO y Open Graph -->
 <meta name="description" content="Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.">
 <link rel="canonical" href="https://calculatupizza.com/">
@@ -74,6 +95,14 @@
 <div class="wrap">
 
   <header class="hero">
+    <!-- Distintivo de entorno de PRUEBAS. Oculto por defecto; el script del <head>
+         añade .beta-mode al <html> solo fuera de producción y el CSS lo muestra.
+         La versión (vNN) se mantiene sincronizada a mano con CACHE_NAME en sw.js. -->
+    <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
+      <span class="beta-badge__dot" aria-hidden="true"></span>
+      <span class="beta-badge__label">BETA</span>
+      <span class="beta-badge__ver">v48</span>
+    </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -154,13 +183,91 @@
       <div class="section">
         <div class="section-head">
           <span class="section-num">02</span>
-          <h2 class="section-title" data-i18n="section2Title">Entorno</h2>
+          <h2 class="section-title" data-i18n="section2Title">Fermentación</h2>
         </div>
+        <p class="section-sub" data-i18n="section2Sub">La levadura se ajusta según el tiempo y la temperatura.</p>
         <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
         <div class="temp-row">
-          <div class="temp-readout"><span id="tempValue">18</span><span id="tempUnit">°C</span></div>
-          <input type="range" id="temperatura" min="17" max="25" step="1" value="18" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
+          <div class="temp-readout"><input type="text" id="tempValue" class="temp-input" value="18" maxlength="3" inputmode="numeric" autocomplete="off" aria-label="Escribe la temperatura ambiente" data-i18n-aria="tempInputAria"><span id="tempUnit">°C</span></div>
+          <input type="range" id="temperatura" min="15" max="35" step="1" value="18" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
         </div>
+        <p class="ctx-warn" id="tempNote" role="status" hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="tempNoteText"></span>
+        </p>
+        <div class="param param-hours">
+          <div class="param-head">
+            <label for="horas" data-i18n="horasLabel">Tiempo a temperatura ambiente</label>
+          </div>
+          <div class="hours-row">
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('horas', -1, ambHorasMin(), 96)" aria-label="Restar 1 hora" data-i18n-aria="restarHoras">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="horas" value="28" min="0" max="96" step="1" inputmode="numeric" aria-label="Horas de fermentación" data-i18n-aria="horasAria">
+                <span class="unit-tag" data-i18n="horasUnit">h</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('horas', 1, ambHorasMin(), 96)" aria-label="Añadir 1 hora" data-i18n-aria="sumarHoras">+</button>
+            </div>
+            <p class="ambient-rest-tip" id="ambientRestTip" data-i18n="fridgePhaseTip" hidden>Es muy recomendable dejar la masa reposar 1 o 2 horas a temperatura ambiente antes de meterla en la nevera, para que la levadura se active.</p>
+          </div>
+        </div>
+
+        <div class="fridge-toggle">
+          <label class="switch">
+            <input type="checkbox" id="fridgeToggle">
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            <span class="switch-text" data-i18n="fridgeToggleLabel">Añadir fermentación en nevera</span>
+          </label>
+        </div>
+
+        <div class="fridge-phase phase-card" id="fridgePhase" hidden>
+          <div class="phase-card-head">
+            <span class="phase-card-icon" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>
+            <span data-i18n="fridgePhaseTitle">Nevera</span>
+          </div>
+          <div class="param">
+            <div class="param-head">
+              <label for="tempFrio" data-i18n="tempFrioLabel">Temperatura</label>
+            </div>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepColdTemp(-1)" aria-label="Bajar temperatura de la nevera" data-i18n-aria="restarTempFrio">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="tempFrio" value="4" inputmode="numeric" autocomplete="off" aria-label="Temperatura de la nevera" data-i18n-aria="tempFrioAria">
+                <span class="unit-tag" id="tempFrioUnit">°C</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepColdTemp(1)" aria-label="Subir temperatura de la nevera" data-i18n-aria="sumarTempFrio">+</button>
+            </div>
+          </div>
+          <div class="param">
+            <div class="param-head">
+              <label for="horasFrio" data-i18n="horasFrioLabel">Tiempo</label>
+            </div>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('horasFrio', -1, 0, 96)" aria-label="Restar 1 hora en nevera" data-i18n-aria="restarHorasFrio">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="horasFrio" value="24" min="0" max="96" step="1" inputmode="numeric" aria-label="Horas en nevera" data-i18n-aria="horasFrioAria">
+                <span class="unit-tag" data-i18n="horasUnit">h</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('horasFrio', 1, 0, 96)" aria-label="Añadir 1 hora en nevera" data-i18n-aria="sumarHorasFrio">+</button>
+            </div>
+          </div>
+          <p class="ctx-warn" id="coldNote" role="status" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span id="coldNoteText"></span>
+          </p>
+        </div>
+
+        <div class="ferm-total" id="fermTotal" hidden>
+          <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
+          <span class="ferm-total-value" id="fermTotalValue">—</span>
+        </div>
+
+        <p class="ferm-note" id="fermMaxNote" role="status" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span data-i18n="fermMaxNote">Has alcanzado el máximo recomendado de fermentación (96 h).</span>
+        </p>
+
+        <a class="ferm-tips-link" id="fermTipsLink" href="#fermentTips" data-i18n="fermTipsLink">Ver consejos de fermentación →</a>
       </div>
 
       <div class="section">
@@ -174,16 +281,16 @@
           </div>
           <div class="hyd-group">
             <div class="stepper">
-              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', -0.5, 55, 100)" aria-label="Restar 0,5% de hidratación" data-i18n-aria="restarHidra">−</button>
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', -0.5, 50, 100)" aria-label="Restar 0,5% de hidratación" data-i18n-aria="restarHidra">−</button>
               <div class="stepper-unit-wrap">
-                <input type="text" id="hidratacion" value="63" min="55" max="100" step="0.5" inputmode="decimal" aria-label="Hidratación en porcentaje" data-i18n-aria="hidratacionAria">
+                <input type="text" id="hidratacion" value="63" min="50" max="100" step="0.5" inputmode="decimal" aria-label="Hidratación en porcentaje" data-i18n-aria="hidratacionAria">
                 <span class="unit-tag">%</span>
               </div>
-              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', 0.5, 55, 100)" aria-label="Añadir 0,5% de hidratación" data-i18n-aria="sumarHidra">+</button>
+              <button type="button" class="stepper-btn" onclick="stepValue('hidratacion', 0.5, 50, 100)" aria-label="Añadir 0,5% de hidratación" data-i18n-aria="sumarHidra">+</button>
             </div>
             <div class="hyd-scale" aria-hidden="true">
               <div class="hyd-scale-track"><span class="hyd-scale-marker" id="hydMarker"></span></div>
-              <div class="hyd-scale-ends"><span>55%</span><span>85%+</span></div>
+              <div class="hyd-scale-ends"><span>50%</span><span>85%+</span></div>
             </div>
             <div class="hyd-info" id="hydrationInfo" role="status" aria-live="polite">
               <span class="hyd-info-head" id="hydrationInfoHead"></span>
@@ -195,10 +302,6 @@
         <div class="param">
           <div class="param-head">
             <label for="sal" data-i18n="salLabel">Sal</label>
-            <div class="mode-seg" id="salModeToggle" role="group" data-i18n-aria="salModeAria" aria-label="Modo de la sal">
-              <button type="button" class="seg" data-mode="auto" data-i18n="modeAuto">Auto</button>
-              <button type="button" class="seg" data-mode="manual" data-i18n="modeManual">Manual</button>
-            </div>
           </div>
           <div class="stepper" id="salStepper">
             <button type="button" class="stepper-btn" onclick="stepSal(-1)" aria-label="Reducir sal" data-i18n-aria="restarSal">−</button>
@@ -216,20 +319,28 @@
         <div class="param param-yeast">
           <div class="param-head">
             <label for="levadura" data-i18n="levaduraLabel">Levadura fresca</label>
-            <div class="mode-seg" id="yeastModeToggle" role="group" data-i18n-aria="yeastModeAria" aria-label="Modo de la levadura">
-              <button type="button" class="seg" data-mode="auto" data-i18n="modeAuto">Auto</button>
-              <button type="button" class="seg" data-mode="manual" data-i18n="modeManual">Manual</button>
-            </div>
+            <button type="button" class="mode-link" id="yeastModeBtn">Ajustar a mano</button>
           </div>
-          <div class="stepper" id="yeastStepper">
+          <div class="yeast-auto" id="yeastAuto" role="status" aria-live="polite">
+            <span class="yeast-auto-value" id="yeastAutoValue">0,12</span>
+            <span class="yeast-auto-unit" data-i18n="yeastUnit">% harina</span>
+            <span class="yeast-auto-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.7 5.1 5.1 1.7-5.1 1.7L12 15.6l-1.7-5.1L5.2 8.8l5.1-1.7z"/></svg>
+              <span data-i18n="modeAuto">Auto</span>
+            </span>
+          </div>
+          <div class="stepper" id="yeastStepper" hidden>
             <button type="button" class="stepper-btn" onclick="stepYeast(-1)" aria-label="Reducir levadura" data-i18n-aria="restarLevadura">−</button>
             <div class="stepper-unit-wrap">
-              <input type="text" id="levadura" value="0.1" min="0" max="1" step="0.01" inputmode="decimal" aria-label="Levadura en porcentaje de la harina" data-i18n-aria="levaduraAria">
+              <input type="text" id="levadura" value="0.1" min="0.01" max="3" step="0.01" inputmode="decimal" aria-label="Levadura en porcentaje de la harina" data-i18n-aria="levaduraAria">
               <span class="unit-tag" data-i18n="yeastUnit">% harina</span>
             </div>
             <button type="button" class="stepper-btn" onclick="stepYeast(1)" aria-label="Añadir levadura" data-i18n-aria="sumarLevadura">+</button>
           </div>
-          <p class="param-hint" id="yeastHint" data-i18n="yeastAutoHint">Se ajusta según la temperatura ambiente.</p>
+          <p class="ctx-warn ctx-warn--info" id="warnHighYeast" role="status" hidden>
+            <span id="warnHighYeastText" data-i18n="warnHighYeast"></span>
+          </p>
+          <p class="param-hint" id="yeastHint" data-i18n="yeastAutoHint">Calculada automáticamente según el tiempo y la temperatura.</p>
         </div>
       </div>
 
@@ -251,8 +362,16 @@
 
         <div class="progress-container">
           <div class="progress-bar" id="progressBar" role="img" aria-label="Proporción de la mezcla de harinas" data-i18n-aria="mixBarAria"></div>
+          <div class="flour-strength" id="flourStrength">
+            <span class="flour-strength-label" data-i18n="flourStrengthLabel">Fuerza de la mezcla</span>
+            <span class="flour-strength-value" id="flourStrengthValue">—</span>
+          </div>
           <p id="progressStatus" class="progress-status" role="status"></p>
         </div>
+
+        <p class="ctx-warn" id="flourWarn" role="status" hidden>
+          <span id="flourWarnText"></span>
+        </p>
 
         <div id="flourRowsContainer"></div>
 
@@ -336,11 +455,16 @@
         <p class="yeast-alt">
           <span data-i18n="yeastAltPre">o</span> <span id="totalLevaduraSeca">0 g</span> <span data-i18n="yeastAltSuf">de levadura seca</span>
         </p>
+
+        <div class="result-ferment" id="resultFerment">
+          <span class="result-ferment-title" data-i18n="recipeFermentation">Fermentación</span>
+          <div class="result-ferment-body" id="resultFermentBody"></div>
+        </div>
       </div>
 
       <div class="disabled-overlay" id="disabledOverlay" style="display:none;">
         <strong data-i18n="disabledTitle">Cálculo deshabilitado</strong>
-        <span data-i18n="disabledText">Corrige el porcentaje de harinas para ver el desglose.</span>
+        <span data-i18n="disabledText">Corrige los parámetros marcados para ver el desglose.</span>
       </div>
 
       <!-- Copiar / Compartir receta -->
@@ -392,7 +516,7 @@
   </div>
 
   <div class="panel" style="margin-top: 20px;">
-    <details class="accordion">
+    <details class="accordion" id="fermentTips">
       <summary class="accordion-summary">
         <span class="section-num section-icon" aria-hidden="true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -411,14 +535,6 @@
           </ul>
         </li>
         <li style="margin-bottom: 10px;" data-i18n="fermentLiNevera">Antes de meter la masa en la nevera, déjala fermentar al menos una hora a temperatura ambiente para que la levadura se active.</li>
-        <li style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
-          <span data-i18n-html="fermentLi4"><b>¿Tienes prisa?</b> Si necesitas acortar el tiempo de fermentación (aunque no lo recomiendo, merece la pena esperar), aumenta la levadura multiplicando el resultado de la calculadora según las horas:</span>
-          <div class="rush-list">
-            <div class="rush-row"><span>8-10 h</span><span class="rush-mult">x3</span></div>
-            <div class="rush-row"><span>6 h</span><span class="rush-mult">x5</span></div>
-            <div class="rush-row"><span>4 h</span><span class="rush-mult">x8</span></div>
-          </div>
-        </li>
       </ul>
       </div>
     </details>
@@ -598,9 +714,13 @@
     <div class="ms-stat"><span class="ms-label" data-i18n="summarySalt">Sal</span><span class="ms-val" id="ms-sal">0 g</span></div>
     <div class="ms-stat"><span class="ms-label" data-i18n="summaryYeast">Levadura</span><span class="ms-val" id="ms-lev">0 g</span></div>
   </div>
-  <span class="ms-blocked" data-i18n="summaryBlocked">Corrige el % de harinas</span>
+  <span class="ms-blocked" data-i18n="summaryBlocked">Corrige los parámetros marcados</span>
   <svg class="ms-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
 </div>
+
+<!-- Marca de agua de entorno de pruebas: decorativa, solo visible en .beta-mode
+     (y solo en escritorio; en móvil bastaría el badge y chocaría con la barra fija). -->
+<div class="beta-watermark" aria-hidden="true">BETA · PRUEBAS</div>
 
 <!-- Módulos JS. Orden importante: i18n define window.PizzaI18N y units define
      window.PizzaUnits; de ambos dependen calculator y app. -->

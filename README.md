@@ -10,6 +10,21 @@ solo HTML, CSS y JavaScript estáticos. Funciona offline y se puede instalar en
 el móvil o el escritorio.
 
 🌐 Producción: https://calculatupizza.com
+🧪 Beta (pruebas): rama `beta` (despliegue de vista previa en Cloudflare Pages)
+
+## Entornos
+
+| Entorno | Rama | Hosts | Indexable | PWA instalable |
+|---------|------|-------|-----------|----------------|
+| Producción | `main` | `calculatupizza.com`, `www.calculatupizza.com` | Sí | Sí (con service worker) |
+| Beta | `beta` | `*.pages.dev` y `beta.calculatupizza.com` (si se configura) | No (`noindex`) | No (sin service worker; siempre desde el navegador) |
+
+La app detecta el entorno por **hostname en tiempo de ejecución** (script en el
+`<head>` de `index.html`): en cualquier host que no sea producción añade la clase
+`beta-mode` al `<html>` y una etiqueta `robots: noindex`. Por eso el distintivo
+**BETA**, la marca de agua y la desactivación de la instalación (no se registra el
+service worker) solo actúan fuera de producción, y este código puede fusionarse a
+`main` sin activarse nunca en `calculatupizza.com`.
 
 ## Estructura del proyecto
 
@@ -90,7 +105,9 @@ python -m http.server 8000
 1. Edita el HTML, CSS o JS correspondiente.
 2. Sube el número de versión de la caché en [`pizza/sw.js`](pizza/sw.js)
    (`CACHE_NAME`, p. ej. `pizza-calc-v4` → `pizza-calc-v5`) para que los usuarios
-   reciban el aviso de actualización.
+   reciban el aviso de actualización. Mantén sincronizada la versión que muestra
+   el distintivo BETA: `.beta-badge__ver` en [`pizza/index.html`](pizza/index.html)
+   (p. ej. `v47`).
 3. Despliega el contenido de `pizza/`.
 
 ## Créditos

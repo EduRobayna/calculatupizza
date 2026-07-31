@@ -6,7 +6,8 @@
 //   · Sal:      el campo es "% del agua"; canónico g/L = % × 10 (D.saltPctToGL).
 //              Auto = 4 %  (40 g/L, bloqueada);  Manual = el % que ponga el usuario.
 //   · Levadura: el campo es "% de la harina"; canónico g/kg = % × 10.
-//              Auto = tabla por temperatura (D.yeastPerKgFlour); Manual = valor fijo.
+//              Auto = fórmula continua (horas + temperatura, D.yeastPerKgFlour);
+//              Manual = valor fijo.
 //   · Peso:     canónico SIEMPRE en gramos; en imperial la entrada es oz (U.ozToG).
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -17,24 +18,18 @@ const OZ = 1 / 28.349523125;
 function closeTo(a, b, tol = 1e-9, m) {
   assert.ok(Math.abs(a - b) <= tol, `${m || ''} esperado≈${b}, obtenido ${a} (tol ${tol})`);
 }
-function round2(x) { return Math.round(x * 100) / 100; }
-
-// Tabla de referencia (la que aportó el usuario): g por kg de harina.
-const YEAST_REF = [
-  { temp: 17, fresh: 1.3, dry: 0.43 }, { temp: 18, fresh: 1.0, dry: 0.33 }, { temp: 19, fresh: 0.9, dry: 0.30 },
-  { temp: 20, fresh: 0.7, dry: 0.23 }, { temp: 21, fresh: 0.6, dry: 0.20 }, { temp: 22, fresh: 0.5, dry: 0.17 },
-  { temp: 23, fresh: 0.4, dry: 0.13 }, { temp: 24, fresh: 0.3, dry: 0.10 }, { temp: 25, fresh: 0.2, dry: 0.07 },
-];
 
 // Resuelve los valores canónicos igual que la app y calcula la receta.
 //   salMode: 'auto'|'manual', saltPct: % del agua (solo si manual)
 //   yeastMode: 'auto'|'manual', yeastPct: % de la harina (solo si manual)
+//   hours: horas de fermentación (por defecto 24, como la app)
 //   pesoOz: si se da, el peso entra en onzas (imperial) y se convierte a gramos.
 function appCompute(o) {
   const salGL = (o.salMode === 'auto') ? D.saltPctToGL(4) : D.saltPctToGL(o.saltPct);
   const pesoG = (o.pesoOz != null) ? U.ozToG(o.pesoOz) : o.pesoG;
   const input = {
     numPizzas: o.numPizzas, pesoG: pesoG, tempC: o.tempC, hidPct: o.hidPct,
+    hours: (o.hours != null ? o.hours : 24),
     salGL: salGL, flours: o.flours || [{ pct: 100 }],
   };
   if (o.yeastMode === 'manual') input.levPorKgHarina = o.yeastPct * 10; // % harina -> g/kg
@@ -63,18 +58,24 @@ test('SAL Manual respeta el % introducido (2,5 %, 6 %, 0 %)', () => {
 
 // ---------------------------------------------------------------- LEVADURA (Auto)
 
-test('LEVADURA Auto sigue la tabla por temperatura (fresca y seca = referencia)', () => {
-  for (const row of YEAST_REF) {
-    const r = appCompute(withBase({ tempC: row.temp, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
-    // ritmo g/kg de la tabla
-    closeTo(r.levaduraPorKgHarina, row.fresh, 1e-9, `g/kg fresca @${row.temp}`);
-    // fresca por kg de harina obtenida del resultado
-    closeTo(r.levaduraFresca / r.harinaTotal * 1000, row.fresh, 1e-9, `fresca/kg @${row.temp}`);
-    // seca = fresca / 3, redondeada a 2 decimales = columna "dry" de la tabla
-    assert.equal(round2(r.levaduraSeca / r.harinaTotal * 1000), row.dry, `seca/kg @${row.temp}`);
-    // relación fresca:seca = 3:1
-    closeTo(r.levaduraSeca, r.levaduraFresca / 3, 1e-12, `ratio 3:1 @${row.temp}`);
+test('LEVADURA Auto sigue la fórmula continua (horas + temperatura) y seca = fresca/3', () => {
+  for (const hours of [12, 24, 48]) {
+    for (const temp of [15, 18, 21, 25, 30]) {
+      const r = appCompute(withBase({ tempC: temp, hours, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
+      const espGkg = D.yeastPerKgFlour(hours, temp); // g/kg puros de la fórmula
+      closeTo(r.levaduraPorKgHarina, espGkg, 1e-9, `g/kg @${hours}h/${temp}C`);
+      closeTo(r.levaduraFresca / r.harinaTotal * 1000, espGkg, 1e-9, `fresca/kg @${hours}h/${temp}C`);
+      // seca = fresca / 3
+      closeTo(r.levaduraSeca, r.levaduraFresca / 3, 1e-12, `ratio 3:1 @${hours}h/${temp}C`);
+    }
   }
+  // Monotonía observable en la receta: más horas -> menos levadura; más calor -> menos.
+  const pocasH = appCompute(withBase({ tempC: 21, hours: 12, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
+  const muchasH = appCompute(withBase({ tempC: 21, hours: 48, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
+  assert.ok(pocasH.levaduraPorKgHarina > muchasH.levaduraPorKgHarina, 'menos horas -> más levadura');
+  const frio = appCompute(withBase({ tempC: 18, hours: 24, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
+  const calor = appCompute(withBase({ tempC: 25, hours: 24, salMode: 'auto', yeastMode: 'auto', flours: [{ pct: 100 }] }));
+  assert.ok(frio.levaduraPorKgHarina > calor.levaduraPorKgHarina, 'menos calor -> más levadura');
 });
 
 // ---------------------------------------------------------------- LEVADURA (Manual)
@@ -89,10 +90,11 @@ test('LEVADURA Manual (% de harina) fija la cantidad y NO depende de la temperat
   closeTo(r17.levaduraSeca, r17.levaduraFresca / 3, 1e-12, 'seca = fresca/3 (manual)');
 });
 
-test('LEVADURA Manual 0,1 % equivale a Auto a 18 °C (ambos 1,0 g/kg)', () => {
-  const auto18 = appCompute(withBase({ tempC: 18, salMode: 'auto', yeastMode: 'auto' }));
-  const man01 = appCompute(withBase({ tempC: 18, salMode: 'auto', yeastMode: 'manual', yeastPct: 0.1 }));
-  assert.deepEqual(auto18, man01);
+test('LEVADURA Manual con el % de la fórmula equivale a Auto (misma temperatura y horas)', () => {
+  const autoPct = D.yeastFreshPct(24, 18); // % de harina que da la fórmula a 24 h / 18 °C
+  const auto18 = appCompute(withBase({ tempC: 18, hours: 24, salMode: 'auto', yeastMode: 'auto' }));
+  const manEq = appCompute(withBase({ tempC: 18, hours: 24, salMode: 'auto', yeastMode: 'manual', yeastPct: autoPct }));
+  assert.deepEqual(auto18, manEq);
 });
 
 // ---------------------------------------------------------------- MÉTRICO vs IMPERIAL

@@ -8,6 +8,12 @@
   const iosInstallBanner = document.getElementById('iosInstallBanner');
   const I18N = window.PizzaI18N;
 
+  // Entorno beta: en la beta NO ofrecemos instalar la PWA — queremos que los
+  // testers la usen desde el navegador (siempre la última versión, sin una beta
+  // "clavada" en el dispositivo). 'beta-mode' lo pone el script del <head> solo
+  // fuera de producción, así que en calculatupizza.com todo sigue igual.
+  const esBeta = document.documentElement.classList.contains('beta-mode');
+
   // El anillo de foco de teclado ahora lo gestiona :focus-visible en el CSS.
 
   // Idioma ES / EN
@@ -185,7 +191,7 @@
   if (isStandalone) {
     btnInstalar.style.display = 'none';
     if(iosInstallBanner) iosInstallBanner.style.display = 'none';
-  } else {
+  } else if (!esBeta) {
     if (isIos && iosInstallBanner) {
       iosInstallBanner.style.display = 'block';
     }
@@ -194,7 +200,7 @@
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (!isStandalone && !isIos) {
+    if (!isStandalone && !isIos && !esBeta) {
       btnInstalar.style.display = 'block';
     }
   });
@@ -213,7 +219,20 @@
     }
   });
 
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && esBeta) {
+    // Beta: NO registramos service worker. Sin SW la beta no es "instalable"
+    // (el navegador no ofrece instalar) y los testers reciben siempre la última
+    // versión desde la red, sin caché que despiste. Además limpiamos cualquier
+    // SW/caché que quedara de una visita anterior a la beta. No fuerza recargas
+    // (ver histórico del SW) y en producción no entra aquí, así que la PWA
+    // instalable de calculatupizza.com queda intacta al fusionar a main.
+    navigator.serviceWorker.getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    if (window.caches && caches.keys) {
+      caches.keys().then((names) => names.forEach((n) => caches.delete(n))).catch(() => {});
+    }
+  } else if ('serviceWorker' in navigator) {
     let newWorker;
     let swRegistration;
     const updateBanner = document.getElementById('update-banner');

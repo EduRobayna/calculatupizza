@@ -10,14 +10,73 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // Levadura fresca (g) por kg de harina según la temperatura ambiente (°C).
-  const YEAST_TABLE = { 17: 1.3, 18: 1.0, 19: 0.9, 20: 0.7, 21: 0.6, 22: 0.5, 23: 0.4, 24: 0.3, 25: 0.2 };
-
   function toNum(v) { const n = parseFloat(v); return isFinite(n) ? n : 0; }
 
-  // Levadura por kg de harina para una temperatura; fuera de tabla → 1.0.
-  function yeastPerKgFlour(tempC) {
-    return YEAST_TABLE[tempC] || 1.0;
+  // Levadura fresca (% del peso de la harina) mediante un modelo predictivo térmico
+  // continuo (estilo TXCraig1) para fermentación MULTIFASE (nevera + ambiente). Dos pasos:
+  //
+  //   PASO A) Tiempo efectivo (horas equivalentes a temperatura AMBIENTE): la levadura se
+  //      ralentiza con el frío, así que las horas en nevera se descuentan al ritmo del
+  //      ambiente con un factor de decaimiento exponencial 0.82 por cada grado de diferencia:
+  //        Teff = Hambiente + Hnevera·0.82^(Tambiente − Tnevera)
+  //   PASO B) Curva de crecimiento sobre el tiempo efectivo, con un ajuste térmico global
+  //      respecto a la temperatura de referencia (21 °C):
+  //        fresca% = 0.10 · (18/Teff)^1.3 · 0.82^(Tambiente − 21)
+  //
+  // La levadura seca es fresca/3 (se aplica en computeRecipe). Topes de seguridad
+  // (clipping): la fresca nunca baja de 0.01% ni supera 3.0%. Una fase de nevera ausente/0
+  // no aporta al tiempo efectivo; Teff≤0 (0 h totales) → tope mínimo. NO se lanza excepción:
+  // en el contexto de la app el cálculo nunca debe romper la interfaz (la división por cero
+  // se resuelve devolviendo el tope mínimo de seguridad).
+  //
+  // Nota: el ambiente es el marco de referencia y la nevera se descuenta respecto a él, así
+  // que el modelo NO es simétrico entre fases (intercambiar fase/temperatura cambia Teff).
+  const YEAST_MIN_PCT = 0.01, YEAST_MAX_PCT = 3.0;
+  const YEAST_BASE_PCT = 0.10;    // tasa de levadura base: 0.10 % a la temperatura de referencia
+  const YEAST_ANCHOR_HOURS = 18;  // ventana de tiempo base (horas de referencia)
+  const YEAST_GROWTH_EXP = 1.3;   // exponente de crecimiento (curva no lineal de la levadura)
+  const YEAST_DECAY = 0.82;       // coeficiente térmico (variación metabólica por cada °C)
+  const YEAST_REF_TEMP = 21;      // temperatura de referencia (°C) sobre la que pivota el modelo
+  // Límites de tiempo TOTAL de fermentación (regla de negocio RF-LEV-02).
+  const FERM_MIN_HOURS = 2, FERM_MAX_HOURS = 96;
+
+  // PASO A — Tiempo efectivo de una fermentación, en horas equivalentes a temperatura
+  // ambiente (fase ambiente tal cual + fase nevera opcional descontada por el factor térmico).
+  function yeastEffectiveHours(ambHours, ambTemp, coldHours, coldTemp) {
+    const ambH = Math.max(0, toNum(ambHours));
+    const coldH = Math.max(0, toNum(coldHours));
+    const coldTerm = coldH > 0
+      ? coldH * Math.pow(YEAST_DECAY, toNum(ambTemp) - toNum(coldTemp))
+      : 0;
+    return ambH + coldTerm;
+  }
+  // PASO B — Levadura fresca (%) a partir del tiempo efectivo y la temperatura ambiente:
+  // curva de crecimiento + ajuste térmico global + clipping de seguridad. Teff≤0 → tope mínimo
+  // (evita la división por cero sin lanzar excepción).
+  function yeastFreshPctFromEffective(effectiveHours, ambTemp) {
+    const teff = toNum(effectiveHours);
+    if (!(teff > 0)) return YEAST_MIN_PCT;
+    const pct = YEAST_BASE_PCT
+      * Math.pow(YEAST_ANCHOR_HOURS / teff, YEAST_GROWTH_EXP)
+      * Math.pow(YEAST_DECAY, toNum(ambTemp) - YEAST_REF_TEMP);
+    return Math.min(YEAST_MAX_PCT, Math.max(YEAST_MIN_PCT, pct));
+  }
+  // Levadura fresca (%) de una fermentación completa (ambiente + nevera opcional).
+  function yeastFreshPct(ambHours, ambTemp, coldHours, coldTemp) {
+    return yeastFreshPctFromEffective(
+      yeastEffectiveHours(ambHours, ambTemp, coldHours, coldTemp), ambTemp);
+  }
+  // g de levadura fresca por kg de harina (= fresca% × 10): unidad canónica que usa el
+  // resto del cálculo (harinaDesdeMasa / computeRecipe trabajan en g/kg).
+  function yeastPerKgFlour(ambHours, ambTemp, coldHours, coldTemp) {
+    return yeastFreshPct(ambHours, ambTemp, coldHours, coldTemp) * 10;
+  }
+  // Validez del tiempo TOTAL de fermentación: 'min' (<2 h), 'max' (>96 h) u 'ok'.
+  function fermentValidity(totalHours) {
+    const t = toNum(totalHours);
+    if (t < FERM_MIN_HOURS) return 'min';
+    if (t > FERM_MAX_HOURS) return 'max';
+    return 'ok';
   }
 
   // Sal: se INTRODUCE como % del peso del agua, pero la fórmula la usa en g por
@@ -38,24 +97,27 @@
   }
 
   // Calcula la receta completa a partir de valores CANÓNICOS (métrico):
-  //   { numPizzas, pesoG (g/bola), tempC (°C), hidPct (%), salGL (g/l agua), flours:[{pct}] }
+  //   { numPizzas, pesoG (g/bola), hidPct (%), salGL (g/l agua), flours:[{pct}],
+  //     ambHours, ambTemp (fase ambiente), coldHours, coldTemp (fase nevera opcional) }
+  // Alias retro-compatibles: hours→ambHours, tempC→ambTemp (fermentación de una fase).
   // Devuelve gramos de cada componente y el desglose por harina.
   function computeRecipe(input) {
     input = input || {};
     const numPizzas = toNum(input.numPizzas);
     const pesoG = toNum(input.pesoG);
-    const tempC = Math.round(toNum(input.tempC));
+    const ambHours = (input.ambHours != null) ? input.ambHours : input.hours;
+    const ambTemp = (input.ambTemp != null) ? input.ambTemp : input.tempC;
     const h = toNum(input.hidPct) / 100;
     const salGL = toNum(input.salGL);
     const flours = Array.isArray(input.flours) ? input.flours : [];
 
     const masaTotal = numPizzas * pesoG;
-    // Levadura: por defecto según la tabla de temperatura (modo Auto). Si se pasa
-    // input.levPorKgHarina (g de levadura fresca por kg de harina, modo Manual),
-    // se usa ese valor y la temperatura deja de influir en la levadura.
+    // Levadura: por defecto según el modelo multifase (Heq de ambiente + nevera, modo
+    // Auto). Si se pasa input.levPorKgHarina (g de levadura fresca por kg de harina,
+    // modo Manual), se usa ese valor y las fases dejan de influir.
     const levPorKg = (input.levPorKgHarina != null && isFinite(input.levPorKgHarina) && toNum(input.levPorKgHarina) >= 0)
       ? toNum(input.levPorKgHarina)
-      : yeastPerKgFlour(tempC);
+      : yeastPerKgFlour(ambHours, ambTemp, input.coldHours, input.coldTemp);
     // La sal se normaliza a "gramos de sal por gramo de harina" (saltPerFlour):
     //   · % de la harina (panadero, input.salPctFlour): saltPerFlour = salPctFlour/100
     //     — un % REAL de la harina, independiente de la hidratación.
@@ -154,14 +216,105 @@
     return result;
   }
 
+  // ---- Avisos de formulación (puros, sin DOM) ----
+  // La UI (calculator.js) construye los datos, decide con estas funciones y muestra
+  // los avisos NO bloqueantes. Cubierto por tests igual que el resto de la fórmula.
+
+  // W efectivo de la mezcla: media ponderada por porcentaje SOLO de las harinas con
+  // dato de fuerza (w>0). items = [{ w, pct }]. Devuelve null si ninguna tiene dato
+  // (→ no hay aviso de compatibilidad W↔tiempo posible).
+  function effectiveW(items) {
+    let wSum = 0, pctSum = 0;
+    (items || []).forEach(function (it) {
+      const w = toNum(it && it.w), pct = toNum(it && it.pct);
+      if (w > 0) { wSum += w * pct; pctSum += pct; }
+    });
+    return pctSum > 0 ? Math.round(wSum / pctSum) : null;
+  }
+
+  // Bandas de compatibilidad fuerza (W) ↔ horas de fermentación de RELOJ (RN-02).
+  const W_BANDS = [
+    { max: 219, minH: 4, maxH: 8 },
+    { max: 259, minH: 8, maxH: 16 },
+    { max: 309, minH: 16, maxH: 30 },
+    { max: 350, minH: 24, maxH: 48 },
+    { max: Infinity, minH: 36, maxH: 72 }
+  ];
+  // Veredicto: 'weak' (harina floja para tanto tiempo · H>maxH), 'strong' (harina
+  // fuerte para tan poco tiempo · H<minH) o null (dentro de banda → sin aviso).
+  function flourTimeWarning(W, H) {
+    const w = toNum(W), h = toNum(H);
+    const band = W_BANDS.find(function (b) { return w <= b.max; });
+    if (!band) return null;
+    if (h > band.maxH) return 'weak';
+    if (h < band.minH) return 'strong';
+    return null;
+  }
+
+  // ---- Recomendaciones concretas para los avisos de compatibilidad W↔tiempo ----
+  // Banda de fuerza para un W (la primera cuyo tope no se supera; nunca null: la última
+  // tiene tope Infinity). Expone { max, minH, maxH }.
+  function flourBand(W) {
+    const w = toNum(W);
+    return W_BANDS.find(function (b) { return w <= b.max; }) || W_BANDS[W_BANDS.length - 1];
+  }
+  // Cota INFERIOR de W de la banda i (= tope de la anterior + 1; 0 para la primera).
+  function bandMinW(i) { return i <= 0 ? 0 : W_BANDS[i - 1].max + 1; }
+  // 'weak' (harina demasiado floja): W MÍNIMO de una harina cuya banda aguanta H horas
+  // estructurales (maxH >= H). null si ni la más fuerte lo aguanta (solo cabe bajar el tiempo).
+  function minWForHours(H) {
+    const h = toNum(H);
+    for (var i = 0; i < W_BANDS.length; i++) {
+      if (W_BANDS[i].maxH >= h) return bandMinW(i);
+    }
+    return null;
+  }
+  // 'strong' (harina demasiado fuerte): W MÁXIMO de una harina cuya banda necesita como
+  // mucho H horas estructurales (minH <= H). null si ni la más floja necesita tan poco.
+  function maxWForHours(H) {
+    const h = toNum(H);
+    for (var i = W_BANDS.length - 1; i >= 0; i--) {
+      if (W_BANDS[i].minH <= h) return (W_BANDS[i].max === Infinity) ? null : W_BANDS[i].max;
+    }
+    return null;
+  }
+
+  // Horas ESTRUCTURALES de desgaste del gluten mediante el coeficiente Q10 (Arrhenius):
+  // la velocidad de las proteasas se reduce a la mitad por cada 10 °C de caída (y se duplica
+  // por cada 10 °C de subida) respecto a la temperatura base de la tabla de fuerzas W (21 °C).
+  // AMBAS fases se ponderan por su propia temperatura con factor 2^((T − 21)/10): la ambiente
+  // según #temperatura y la fría (nevera/vinoteca) según su termostato. Así una cocina cálida
+  // desgasta más y una nevera fría menos. (A 21 °C el factor es 1 → cuenta 1:1; a 4 °C ≈0,31;
+  // a 30 °C ≈1,87.) Se usa SOLO para juzgar la compatibilidad fuerza (W) ↔ tiempo con
+  // flourTimeWarning; NO es tiempo de reloj (tope 96 h) ni horas equivalentes de la levadura.
+  const STRUCTURAL_BASE_TEMP = 21;
+  function structuralHours(ambientHours, ambientTempC, coldHours, coldTempC) {
+    function q10(t) { return Math.pow(2, (toNum(t) - STRUCTURAL_BASE_TEMP) / 10); }
+    return toNum(ambientHours) * q10(ambientTempC) + toNum(coldHours) * q10(coldTempC);
+  }
+
+  // Exceso de levadura (RN-01): > 1,5 % del peso de la harina (= 15 g/kg).
+  function isHighYeast(pct) { return toNum(pct) > 1.5; }
+
   return {
-    YEAST_TABLE: YEAST_TABLE,
+    yeastEffectiveHours: yeastEffectiveHours,
+    yeastFreshPctFromEffective: yeastFreshPctFromEffective,
+    yeastFreshPct: yeastFreshPct,
     yeastPerKgFlour: yeastPerKgFlour,
+    fermentValidity: fermentValidity,
     saltPctToGL: saltPctToGL,
     saltGLToPct: saltGLToPct,
     harinaDesdeMasa: harinaDesdeMasa,
     computeRecipe: computeRecipe,
     flourSum: flourSum,
-    balanceFlours: balanceFlours
+    balanceFlours: balanceFlours,
+    effectiveW: effectiveW,
+    flourTimeWarning: flourTimeWarning,
+    flourBand: flourBand,
+    minWForHours: minWForHours,
+    maxWForHours: maxWForHours,
+    structuralHours: structuralHours,
+    isHighYeast: isHighYeast,
+    W_BANDS: W_BANDS
   };
 });
