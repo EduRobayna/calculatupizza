@@ -252,6 +252,16 @@ window.stepColdTemp = function(dir) {
     if (el.tempFrioUnit) el.tempFrioUnit.textContent = U.tempUnit();
     fridgeShownF = U.isFahrenheit();
   }
+  // Reconvierte el campo de la nevera cuando la unidad EFECTIVA de temperatura cambia
+  // (p. ej. al pasar el peso a imperial con la temperatura en modo 'auto'). Usa fridgeShownF
+  // —la unidad en que se pintó por última vez— para interpretar el valor actual sin ambigüedad.
+  function syncFridgeTempUnit(){
+    if (el.tempFrio && U.isFahrenheit() !== fridgeShownF) {
+      const v = parseDecimal(el.tempFrio.value);
+      const c = isFinite(v) ? (fridgeShownF ? (v - 32) * 5 / 9 : v) : 4;
+      renderColdTempField(clampColdTempC(c));
+    }
+  }
   // Horas de la fase fría que cuentan (0 si la nevera está desactivada).
   function coldHoursActive() {
     return el.fridgeToggle.checked ? clampColdHoras(el.horasFrio.value) : 0;
@@ -612,7 +622,11 @@ window.stepColdTemp = function(dir) {
   function onPctChanged(id, rawValue, sourceEl){
     const idx = flours.findIndex(x => x.id === id);
     if (idx < 0) return;
-    applyBalanced(idx, parseDecimal(rawValue) || 0);
+    const typed = parseDecimal(rawValue) || 0;
+    applyBalanced(idx, typed);
+    // Si lo tecleado supera el tope posible (100 − bloqueadas), reflejamos el tope en el
+    // propio campo en vez de mantener el número imposible hasta perder el foco.
+    if (sourceEl && Math.round(typed) > flours[idx].pct) sourceEl.value = flours[idx].pct;
     syncFlourInputs(sourceEl);
     calcular();
   }
@@ -984,6 +998,9 @@ window.stepColdTemp = function(dir) {
 
   // Hook que se dispara tras recalcular (se asigna cuando las recetas están listas).
   let onConfigChange = null;
+  // Última receta calculada por calcular() (misma que alimenta los totales en pantalla).
+  // La reutiliza buildRecipeText() para que el texto copiado SIEMPRE cuadre con lo mostrado.
+  let lastRecipe = null;
 
   function calcular(){
     const numPaneteos = Math.max(1, parseDecimal(el.numPaneteos.value) || 0); // mínimo 1 pizza (E2)
@@ -1145,6 +1162,7 @@ window.stepColdTemp = function(dir) {
       salPctFlour: saltIsFlour() ? salPctFlour : null,
       levPorKgHarina: levPorKg, flours: flours
     });
+    lastRecipe = r; // se reutiliza en buildRecipeText (copiar/compartir)
     const pesoTotalMasa = r.masaTotal;
     const harinaTotal = r.harinaTotal;
     const aguaTotal = r.aguaTotal;
@@ -1315,6 +1333,32 @@ window.stepColdTemp = function(dir) {
   // Peso por pizza y sal actualizan primero su valor canónico (métrico) y luego recalculan.
   el.pesoPaneto.addEventListener('input', () => { pesoG = readPesoField(); calcular(); });
   el.sal.addEventListener('input', () => { if (salMode === 'manual') { applySalFromField(); } calcular(); });
+  // Peso por pizza: al salir del campo, topamos al mínimo (100 g / 3,5 oz) y redondeamos
+  // al paso de la unidad (los botones ya lo hacen; esto cubre el tecleo directo).
+  el.pesoPaneto.addEventListener('change', () => {
+    const imperial = U.isImperial();
+    const min = imperial ? 3.5 : 100;
+    let v = parseDecimal(el.pesoPaneto.value);
+    if (!isFinite(v) || v < min) v = min;
+    v = imperial ? Math.round(v * 10) / 10 : Math.round(v);
+    el.pesoPaneto.value = v;
+    pesoG = readPesoField();
+    calcular();
+  });
+  // Sal: al salir del campo, topamos al rango de la unidad activa (min/max del input) y
+  // redondeamos al paso (los botones ya lo hacen; esto cubre el tecleo directo).
+  el.sal.addEventListener('change', () => {
+    const min = parseFloat(el.sal.getAttribute('min')) || 0;
+    const max = parseFloat(el.sal.getAttribute('max')) || 10;
+    const step = parseFloat(el.sal.getAttribute('step')) || 0.1;
+    const f = step < 1 ? 10 : 1;
+    let v = parseDecimal(el.sal.value);
+    if (!isFinite(v)) v = min;
+    v = Math.round(Math.max(min, Math.min(max, v)) * f) / f;
+    el.sal.value = v;
+    applySalFromField();
+    calcular();
+  });
   // Levadura (solo editable en Manual): guarda el valor fijo y recalcula.
   el.levadura.addEventListener('input', () => {
     // El campo está en % de la harina; el canónico es g/kg (% × 10).
@@ -1396,7 +1440,7 @@ window.stepColdTemp = function(dir) {
   });
 
   // Recalcula (reformatea pesos y temperatura) al cambiar métrico ↔ imperial.
-  window.addEventListener('pizzaUnitsChange', () => { renderInputUnits(); renderParamModes(); calcular(); });
+  window.addEventListener('pizzaUnitsChange', () => { renderInputUnits(); syncFridgeTempUnit(); renderParamModes(); calcular(); });
 
   // Cambiar la base de la sal (g/L de agua ↔ % de la harina). Al conmutar se
   // conserva la sal física: la variable de la nueva base ya está sincronizada
@@ -1409,12 +1453,7 @@ window.stepColdTemp = function(dir) {
     const t = parseInt(el.temperatura.value, 10) || 18;
     el.tempValue.value = U.tempValue(t);
     if (el.tempUnit) el.tempUnit.textContent = U.tempUnit();
-    // Nevera: convierte el valor mostrado a la nueva unidad (el canónico es °C).
-    if (el.tempFrio && U.isFahrenheit() !== fridgeShownF) {
-      const v = parseDecimal(el.tempFrio.value);
-      const c = isFinite(v) ? (fridgeShownF ? (v - 32) * 5 / 9 : v) : 4;
-      renderColdTempField(clampColdTempC(c));
-    }
+    syncFridgeTempUnit(); // reconvierte la nevera si la unidad de temperatura cambió
     renderResultFerment(); // refresca las temperaturas del resumen en la nueva unidad
   });
 
@@ -2071,12 +2110,20 @@ window.stepColdTemp = function(dir) {
     const horas = clampHoras(el.horas.value);
     const coldH = coldHoursActive();
     const coldT = coldTempC();
-    const harinaT = D.computeRecipe({
-      numPizzas: parseDecimal(el.numPaneteos.value) || 0, pesoG: pesoG,
-      ambTemp: tempC, ambHours: horas, coldHours: coldH, coldTemp: coldT,
-      hidPct: parseDecimal(el.hidratacion.value),
-      salGL: salGL, salPctFlour: saltIsFlour() ? salPctFlour : null, flours: flours
-    }).harinaTotal;
+    // Reutiliza la harina ya calculada por calcular() (mismo objeto que alimenta los
+    // totales en pantalla), para que el desglose de la mezcla SIEMPRE cuadre con el
+    // "Harina total" mostrado. Fallback defensivo: recalcular con la MISMA levadura
+    // (Manual o Auto) que usa calcular(), nunca la Auto por defecto.
+    const harinaT = (lastRecipe && isFinite(lastRecipe.harinaTotal))
+      ? lastRecipe.harinaTotal
+      : D.computeRecipe({
+          numPizzas: parseDecimal(el.numPaneteos.value) || 0, pesoG: pesoG,
+          ambTemp: tempC, ambHours: horas, coldHours: coldH, coldTemp: coldT,
+          hidPct: parseDecimal(el.hidratacion.value),
+          salGL: salGL, salPctFlour: saltIsFlour() ? salPctFlour : null,
+          levPorKgHarina: (yeastMode === 'manual') ? manualYeastPerKg : autoYeastGkg(),
+          flours: flours
+        }).harinaTotal;
 
     // Línea de fermentación: solo ambiente, o nevera + ambiente si hay fase fría.
     // Conector localizado ("a"/"at") y espacio antes del grado. Ambas temperaturas se
