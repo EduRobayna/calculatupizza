@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v48</span>
+      <span class="beta-badge__ver">v49</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -110,7 +110,7 @@
     </div>
     <img src="logo-hero.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
     <h1 data-i18n-html="h1">Calculadora de <em>masa</em> de pizza napolitana</h1>
-    <p id="heroSub" class="sub clamped" data-i18n="sub">Para hacer la auténtica pizza napolitana solo necesitas cuatro ingredientes: harina, agua, sal y levadura. Si eres principiante, la calculadora te ayudará a conseguir tu propia receta siguiendo solo cuatro pasos. Si tienes más experiencia, introduce tus propios parámetros. Por defecto, está puesta una receta propia para 22-24 horas de fermentación a temperatura ambiente. ¡Manos a la masa!</p>
+    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite y sin prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">La calculadora está programada para ofrecer las cantidades exactas en cuatro pasos. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
     <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false">Leer más</button>
   </header>
 
@@ -210,6 +210,10 @@
             </div>
             <p class="ambient-rest-tip" id="ambientRestTip" data-i18n="fridgePhaseTip" hidden>Es muy recomendable dejar la masa reposar 1 o 2 horas a temperatura ambiente antes de meterla en la nevera, para que la levadura se active.</p>
           </div>
+          <p class="ctx-warn" id="ambientLongNote" role="status" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span data-i18n="ambientLongNote">Para fermentaciones de más de 24 horas, debes usar el método en frío.</span>
+          </p>
         </div>
 
         <div class="fridge-toggle">
@@ -256,16 +260,6 @@
             <span id="coldNoteText"></span>
           </p>
         </div>
-
-        <div class="ferm-total" id="fermTotal" hidden>
-          <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
-          <span class="ferm-total-value" id="fermTotalValue">—</span>
-        </div>
-
-        <p class="ferm-note" id="fermMaxNote" role="status" hidden>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span data-i18n="fermMaxNote">Has alcanzado el máximo recomendado de fermentación (96 h).</span>
-        </p>
 
         <a class="ferm-tips-link" id="fermTipsLink" href="#fermentTips" data-i18n="fermTipsLink">Ver consejos de fermentación →</a>
       </div>
@@ -503,12 +497,12 @@
       </summary>
       <div class="accordion-body">
       <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua frotándola con los dedos. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos gramos más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda algo de masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, al final.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-24 ºC.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una bola y déjala reposar media hora cubierta con un paño húmedo.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora y la masa.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos pocos gramos (1-2) más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, lo último.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-25 ºC.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una única bola y déjala reposar 20-30 minutos cubierta con un paño húmedo.</li>
         <li style="margin-bottom: 10px;" data-i18n-html="kneadLi7"><b>A fermentar.</b> Después de este reposo, arranca la fermentación. Ve a la sección «Consejos sobre la fermentación» para más ideas.</li>
       </ul>
       </div>
@@ -526,15 +520,11 @@
       </summary>
       <div class="accordion-body">
       <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos formados.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2">Si sigues mi receta, la fermentación se hace a <b>temperatura ambiente</b>. Si lo prefieres, puedes meter la masa en bloque en la nevera (4 °C) o vinoteca (15-18 °C).</li>
-        <li style="margin-bottom: 10px;"><b data-i18n="fermentLi3Head">Tiempos orientativos:</b>
-          <ul style="margin-top: 5px;">
-            <li data-i18n="fermentLi3a">En bloque: 14-18 h (invierno/nevera: 14 h | verano: 18 h).</li>
-            <li data-i18n="fermentLi3b">En bollos: 6-10 h (invierno/nevera: 10 h | verano: 6 h).</li>
-          </ul>
-        </li>
-        <li style="margin-bottom: 10px;" data-i18n="fermentLiNevera">Antes de meter la masa en la nevera, déjala fermentar al menos una hora a temperatura ambiente para que la levadura se active.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos (bolas) formados. Para una fermentación de 24 horas: 10-16 horas en bloque y 8-14 horas en bollos. Si lo prefieres, puedes hacer una breve fermentación en bloque (dos horas) y fermentar el resto del tiempo con los bollos hechos.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2"><b>Temperatura y tiempos:</b> la fermentación la puedes hacer a temperatura ambiente o mixta. La calculadora utiliza un motor matemático que adapta la cantidad exacta de levadura a tus horarios y temperatura. Tú decides cuándo quieres comer pizza (aunque recomendamos mínimo 8 horas de fermentación).</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi3"><b>Referencia visual (el volumen):</b> los tiempos son solo una guía. Durante la fermentación en bloque, la masa no necesariamente tiene que duplicar su tamaño; un crecimiento del 50% al 70% suele ser el punto óptimo antes de formar los bollos para evitar que la red de gluten se agote.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi4"><b>Protección contra el aire:</b> es vital mantener la masa herméticamente tapada (con tapa o film transparente) tanto en bloque como en bollos. Si el aire entra en contacto continuo con la masa, se formará una costra dura que arruinará la elasticidad de los bordes al estirar.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi5"><b>El test del dedo:</b> para saber si el bollo está listo para hornear, presiona ligeramente la masa con un dedo. Si la huella vuelve a su sitio lentamente y queda una ligera marca, está perfecta. Si rebota de inmediato, le falta tiempo; si se queda hundida, se ha pasado.</li>
       </ul>
       </div>
     </details>

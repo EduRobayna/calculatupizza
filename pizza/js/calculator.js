@@ -25,7 +25,7 @@ window.stepValue = function(id, delta, minVal, maxVal) {
 
 // Mínimo de horas de fermentación a temperatura ambiente: 2 h normalmente, pero 0 h si la
 // fase fría está activa (permite meter la masa directa a la nevera). Global porque lo usan
-// el onclick del stepper de #horas y clampHoras/capFermCoupling dentro de la calculadora.
+// el onclick del stepper de #horas y clampHoras dentro de la calculadora.
 window.ambHorasMin = function() {
   const fr = document.getElementById('fridgeToggle');
   return (fr && fr.checked) ? 0 : 2;
@@ -142,9 +142,7 @@ window.stepColdTemp = function(dir) {
     tempFrio: document.getElementById('tempFrio'),
     tempFrioUnit: document.getElementById('tempFrioUnit'),
     horasFrio: document.getElementById('horasFrio'),
-    fermTotal: document.getElementById('fermTotal'),
-    fermTotalValue: document.getElementById('fermTotalValue'),
-    fermMaxNote: document.getElementById('fermMaxNote'),
+    ambientLongNote: document.getElementById('ambientLongNote'),
     tempNote: document.getElementById('tempNote'),
     tempNoteText: document.getElementById('tempNoteText'),
     coldNote: document.getElementById('coldNote'),
@@ -224,7 +222,7 @@ window.stepColdTemp = function(dir) {
 
   // Fermentación en nevera (fase fría opcional). Horas [0, 96]. Temperatura [2, 18] °C:
   // el canónico es SIEMPRE °C, pero el campo se muestra/edita en la unidad activa
-  // (°C/°F). El tiempo TOTAL (ambiente + nevera) se capa a 96 h en capFermCoupling.
+  // (°C/°F). Ambiente y nevera son fases independientes (sin tope combinado).
   function clampColdHoras(v) {
     const n = parseInt(v, 10);
     if (!isFinite(n)) return 0;
@@ -266,15 +264,15 @@ window.stepColdTemp = function(dir) {
   function coldHoursActive() {
     return el.fridgeToggle.checked ? clampColdHoras(el.horasFrio.value) : 0;
   }
-  // El tiempo TOTAL de fermentación (ambiente + nevera) no puede superar 96 h. En vez
-  // de dar error, capamos el campo RECIÉN EDITADO para que no se pase (el otro campo
-  // se conserva). Usa el valor crudo para no forzar el mínimo mientras se teclea.
-  function capFermCoupling(edited) {
-    const amb = parseInt(el.horas.value, 10);
-    const cold = el.fridgeToggle.checked ? parseInt(el.horasFrio.value, 10) : 0;
-    if (!isFinite(amb) || !isFinite(cold) || amb + cold <= 96) return;
-    if (edited === 'cold') el.horasFrio.value = Math.max(0, 96 - amb);
-    else el.horas.value = Math.max(window.ambHorasMin(), 96 - cold);
+  // Umbral de horas en frío a partir del cual la temperatura de la nevera acelera
+  // demasiado la levadura y exige harina de gran fuerza (aviso coldNoteHot). Cuanto
+  // más cálida la nevera, antes se alcanza: ≥14 °C→24 h · 10-13 °C→36 h · 7-9 °C→48 h.
+  // Por debajo de 7 °C (nevera normal) no aplica este aviso.
+  function coldHotThreshold(tC) {
+    if (tC >= 14) return 24;
+    if (tC >= 10) return 36;
+    if (tC >= 7) return 48;
+    return null;
   }
   // Muestra/oculta la fase de nevera según el interruptor.
   function applyFridgeVisibility() {
@@ -451,9 +449,8 @@ window.stepColdTemp = function(dir) {
     const coldStr = U.formatNumber(coldH, 0) + ' h · ' + Math.round(U.tempValue(coldTempC())) + U.tempUnit();
     const rows = [];
     if (el.fridgeToggle.checked) {
-      rows.push([I18N.t('fridgePhaseTitle'), coldStr]);
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
-      rows.push([I18N.t('fermRowTotal'), U.formatNumber(ambH + coldH, 0) + ' h']);
+      rows.push([I18N.t('fridgePhaseTitle'), coldStr]);
     } else {
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     }
@@ -1022,15 +1019,7 @@ window.stepColdTemp = function(dir) {
       if (el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(pct, 2); // lectura visible
     }
 
-    // Lector del total (ambiente + nevera): solo con nevera (con una fase el total =
-    // ese tiempo). El total no puede pasar de 96 h: los campos se capan al editarlos.
-    if (el.fermTotal) {
-      el.fermTotal.hidden = !el.fridgeToggle.checked;
-      if (el.fermTotalValue) el.fermTotalValue.textContent = U.formatNumber(horas + coldH, 0) + ' h';
-    }
-    // Aviso suave al alcanzar el máximo recomendado (96 h), esté o no activa la nevera.
-    if (el.fermMaxNote) el.fermMaxNote.hidden = (horas + coldH) < 96;
-    // Avisos por temperatura ambiente extrema (>28 °C frenético · <17 °C casi dormido).
+    // Avisos por temperatura ambiente extrema (>28 °C frenético · 15-16 °C baja).
     if (el.tempNote) {
       let key = null;
       if (temp > 28) key = 'tempNoteHigh';
@@ -1038,13 +1027,23 @@ window.stepColdTemp = function(dir) {
       el.tempNote.hidden = !key;
       if (key && el.tempNoteText) el.tempNoteText.textContent = I18N.t(key);
     }
-    // Avisos por tiempo en frío atípico (0<t<12 h insuficiente · >72 h maduración extrema).
+    // Fermentación a temperatura ambiente demasiado larga (>24 h → conviene el método en frío).
+    if (el.ambientLongNote) el.ambientLongNote.hidden = !(horas > 24);
+    // Avisos de la fase fría (un solo hueco, por prioridad):
+    //  · tiempo insuficiente (0 < t < 12 h)
+    //  · nevera demasiado cálida para el tiempo elegido (coldNoteHot, umbral según °C)
+    //  · maduración extrema (> 72 h)
     if (el.coldNote) {
-      let key = null;
-      if (coldH > 0 && coldH < 12) key = 'coldNoteShort';
-      else if (coldH > 72) key = 'coldNoteLong';
-      el.coldNote.hidden = !key;
-      if (key && el.coldNoteText) el.coldNoteText.textContent = I18N.t(key);
+      let text = null;
+      if (coldH > 0 && coldH < 12) {
+        text = I18N.t('coldNoteShort');
+      } else {
+        const thr = coldHotThreshold(coldT);
+        if (thr != null && coldH > thr) text = I18N.t('coldNoteHot').replace('{h}', thr);
+        else if (coldH > 72) text = I18N.t('coldNoteLong');
+      }
+      el.coldNote.hidden = !text;
+      if (text && el.coldNoteText) el.coldNoteText.textContent = text;
     }
     // Consejo de reposo previo a la nevera: SOLO si se usa la fase fría Y el tiempo de
     // ambiente es corto (< 2 h). Recuerda dejar 1-2 h de ambiente antes de enfriar.
@@ -1069,8 +1068,8 @@ window.stepColdTemp = function(dir) {
         // Horas estructurales de desgaste del gluten (modelo Q10/Arrhenius: AMBAS fases se
         // ponderan por su temperatura; ver structuralHours en dough.js). EXCLUSIVO para
         // validar contra la tabla de rangos W. temp = °C ambiente (#temperatura); coldT =
-        // °C CANÓNICA de la fría (convertida desde °F). El tope de 96 h sigue siendo de
-        // RELOJ (lo garantiza capFermCoupling, sin tocar aquí).
+        // °C CANÓNICA de la fría (convertida desde °F). Ambiente y nevera son fases
+        // independientes (sin tope combinado de reloj).
         const H = D.structuralHours(horas, temp, coldH, coldT);
         const clockHours = horas + coldH; // tiempo de reloj real configurado por el usuario
         const verdict = D.flourTimeWarning(wEff, H);
@@ -1228,9 +1227,9 @@ window.stepColdTemp = function(dir) {
   [el.numPaneteos, el.temperatura, el.tempFrio, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
   });
-  // Tiempos de fermentación: al editarlos (stepper o tecleo) capamos el total a 96 h.
-  el.horas.addEventListener('input', () => { capFermCoupling('amb'); calcular(); });
-  el.horasFrio.addEventListener('input', () => { capFermCoupling('cold'); calcular(); });
+  // Tiempos de fermentación: ambiente y nevera son independientes (sin tope combinado).
+  el.horas.addEventListener('input', calcular);
+  el.horasFrio.addEventListener('input', calcular);
   // Nº de pizzas: al salir del campo, normaliza a entero ≥ 1 (E2).
   el.numPaneteos.addEventListener('change', () => {
     let v = Math.round(parseDecimal(el.numPaneteos.value) || 0);
@@ -1248,13 +1247,12 @@ window.stepColdTemp = function(dir) {
   // hacen; esto cubre el tecleo directo de un valor fuera de rango).
   el.horas.addEventListener('change', () => {
     el.horas.value = clampHoras(el.horas.value);
-    capFermCoupling('amb');
     calcular();
   });
   // Fase de nevera: tiempo y temperatura (topados al salir del campo), y el
   // interruptor que la muestra/oculta y recalcula.
   el.tempFrio.addEventListener('change', () => { renderColdTempField(coldTempC()); calcular(); });
-  el.horasFrio.addEventListener('change', () => { el.horasFrio.value = clampColdHoras(el.horasFrio.value); capFermCoupling('cold'); calcular(); });
+  el.horasFrio.addEventListener('change', () => { el.horasFrio.value = clampColdHoras(el.horasFrio.value); calcular(); });
   el.fridgeToggle.addEventListener('change', () => {
     if (el.fridgeToggle.checked) {
       // Al ACTIVAR la nevera: 4 °C (lo habitual en un frigorífico) y las horas por
@@ -1901,7 +1899,6 @@ window.stepColdTemp = function(dir) {
     el.fridgeToggle.checked = !!d.fridgeOn; // recetas antiguas -> sin nevera
     renderColdTempField(clampColdTempC(d.tempFrio));
     el.horasFrio.value = clampColdHoras(d.horasFrio);
-    capFermCoupling('cold'); // por si una receta trae un total > 96 h, reduce la nevera
     applyFridgeVisibility();
     el.hidratacion.value = clampHidratacion(d.hidratacion); // recetas antiguas < 50% se topan a 50
     salGL = d.sal;
