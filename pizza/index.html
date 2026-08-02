@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v50</span>
+      <span class="beta-badge__ver">v51</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -687,6 +687,40 @@
       </div>
       <div class="flour-picker-list" id="flourPickerList" role="listbox" aria-labelledby="flourPickerTitle"></div>
       <p class="flour-picker-empty" id="flourPickerEmpty" style="display:none;" data-i18n="flourPickerEmpty">No hay harinas que coincidan. Prueba a quitar filtros.</p>
+
+      <button type="button" id="flourAddBtn" class="flour-add-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span data-i18n="flourAddBtn">Añadir mi harina</span>
+      </button>
+
+      <!-- Formulario de harina propia (Fase 3). Oculto; comparte modal con la lista:
+           el selector alterna a modo "añadir" (.is-adding en la tarjeta). -->
+      <div class="flour-add-form" id="flourAddForm" hidden>
+        <div class="fp-add-title" id="flourAddTitle"></div>
+        <div class="fp-field">
+          <label for="flourAddName" data-i18n="flourAddNameLabel">Nombre</label>
+          <input type="text" id="flourAddName" maxlength="60" autocomplete="off" data-i18n-placeholder="flourAddNamePh" placeholder="Ej. Mi harina de fuerza">
+        </div>
+        <div class="fp-field-row">
+          <div class="fp-field">
+            <label for="flourAddType" data-i18n="flourAddTypeLabel">Tipo</label>
+            <select id="flourAddType"></select>
+          </div>
+          <div class="fp-field fp-field-w">
+            <label for="flourAddW" data-i18n="flourAddWLabel">Fuerza (W)</label>
+            <input type="text" id="flourAddW" inputmode="numeric" autocomplete="off" maxlength="4" data-i18n-placeholder="flourAddOptional" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="fp-field">
+          <label for="flourAddBrand" data-i18n="flourAddBrandLabel">Marca (opcional)</label>
+          <input type="text" id="flourAddBrand" maxlength="40" autocomplete="off" data-i18n-placeholder="flourAddBrandPh" placeholder="Ej. Mi molino">
+        </div>
+        <p class="modal-error" id="flourAddError" role="alert" hidden></p>
+        <div class="modal-actions">
+          <button type="button" id="flourAddCancel" class="btn-outline" data-i18n="flourAddCancel">Cancelar</button>
+          <button type="button" id="flourAddSave" class="btn-secondary modal-confirm" data-i18n="flourAddSave">Guardar</button>
+        </div>
+      </div>
     </div>
   </div>
 

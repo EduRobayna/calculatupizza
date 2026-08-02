@@ -103,6 +103,13 @@ window.stepColdTemp = function(dir) {
   function flourName(id){ return F.name(id, I18N.getLang()); }
   // Nombre PRINCIPAL para las etiquetas de fila/selector ("Caputo Pizzería").
   function flourMain(id){ return F.mainName(id, I18N.getLang()); }
+  // Escapa texto de control del usuario (nombres de harina propia) antes de inyectarlo
+  // vía innerHTML o dentro de un atributo. NO usar para el texto de receta (va en crudo).
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;';
+    });
+  }
   // Pills de la harina: tipo (neutra) + fuerza W (color según banda). La PALABRA de
   // banda (Alta/Media…) no se muestra —vive solo en el filtro—; el color de la pill
   // de W conserva esa pista para escanear de un vistazo.
@@ -522,7 +529,7 @@ window.stepColdTemp = function(dir) {
       row.className = 'flour-row';
       const color = COLORES_HARINA[index % COLORES_HARINA.length];
 
-      const name = flourMain(flour.flourId);
+      const name = escapeHtml(flourMain(flour.flourId));
       const tags = flourTagsHtml(flour.flourId);
       const auto = !flour.locked && unlockedCount === 1; // única libre → determinada
       const dis = (flour.locked || auto) ? 'disabled' : '';
@@ -653,6 +660,20 @@ window.stepColdTemp = function(dir) {
   const flourPickerEmpty = document.getElementById('flourPickerEmpty');
   const flourPickerCloseBtn = document.getElementById('flourPickerCloseBtn');
   const flourPickerCard = flourPickerModal ? flourPickerModal.querySelector('.flour-picker-card') : null;
+  // Formulario "Añadir mi harina" (Fase 3): comparte modal con la lista.
+  const flourAddBtn = document.getElementById('flourAddBtn');
+  const flourAddForm = document.getElementById('flourAddForm');
+  const flourAddName = document.getElementById('flourAddName');
+  const flourAddType = document.getElementById('flourAddType');
+  const flourAddW = document.getElementById('flourAddW');
+  const flourAddBrand = document.getElementById('flourAddBrand');
+  const flourAddError = document.getElementById('flourAddError');
+  const flourAddCancel = document.getElementById('flourAddCancel');
+  const flourAddSave = document.getElementById('flourAddSave');
+  const flourAddTitle = document.getElementById('flourAddTitle');
+  let pickerMode = 'list';
+  let pendingDeleteId = null; // harina de usuario pendiente de confirmar borrado (en línea)
+  let editingId = null;       // id de harina propia en edición (null = alta nueva)
 
   // Plegado de filtros: el bloque arranca SIEMPRE cerrado al abrir el selector
   // (más espacio para la lista). El botón lo despliega dentro de esa sesión.
@@ -744,6 +765,8 @@ window.stepColdTemp = function(dir) {
       .filter(f => f.id === currentId || !usedByOthers.has(f.id));
 
     flourPickerList.innerHTML = '';
+    // Si la harina en confirmación ya no está en los resultados (búsqueda/filtro), cancela.
+    if (pendingDeleteId && !results.some(f => f.id === pendingDeleteId)) pendingDeleteId = null;
     results.forEach(f => {
       const selected = f.id === currentId;
       const opt = document.createElement('button');
@@ -754,12 +777,54 @@ window.stepColdTemp = function(dir) {
       opt.dataset.flour = f.id;
       opt.innerHTML = `
         <span class="flour-option-labels">
-          <span class="flour-option-main">${flourMain(f.id)}</span>
+          <span class="flour-option-main">${escapeHtml(flourMain(f.id))}</span>
           <span class="flour-tags">${flourTagsHtml(f.id)}</span>
         </span>
         <svg class="flour-option-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
       opt.addEventListener('click', () => selectFlour(f.id));
-      flourPickerList.appendChild(opt);
+      // Las harinas del usuario van envueltas en una fila con botón de borrar; y si están
+      // pendientes de confirmar, la fila muestra el confirmador en línea (¿Borrar? No/Sí).
+      if (F.isUserFlour(f.id)) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'flour-option-row';
+        if (pendingDeleteId === f.id) {
+          rowEl.classList.add('flour-option-confirm');
+          const msg = document.createElement('span');
+          msg.className = 'fp-del-msg';
+          msg.textContent = I18N.t('flourDeleteConfirm');
+          const cancel = document.createElement('button');
+          cancel.type = 'button'; cancel.className = 'fp-del-cancel';
+          cancel.textContent = I18N.t('flourAddCancel');
+          cancel.addEventListener('click', cancelDeleteUserFlour);
+          const conf = document.createElement('button');
+          conf.type = 'button'; conf.className = 'fp-del-confirm';
+          conf.textContent = I18N.t('flourDeleteConfirmOk');
+          conf.addEventListener('click', () => performDeleteUserFlour(f.id));
+          rowEl.appendChild(msg); rowEl.appendChild(cancel); rowEl.appendChild(conf);
+        } else {
+          if (selected) rowEl.classList.add('is-selected'); // recuadro de selección a nivel de fila
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.className = 'flour-option-edit';
+          edit.setAttribute('aria-label', I18N.t('flourEditAria'));
+          edit.title = I18N.t('flourEditAria');
+          edit.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>';
+          edit.addEventListener('click', (e) => { e.stopPropagation(); openEditForm(f.id); });
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'flour-option-del';
+          del.setAttribute('aria-label', I18N.t('flourDeleteAria'));
+          del.title = I18N.t('flourDeleteAria');
+          del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+          del.addEventListener('click', (e) => { e.stopPropagation(); requestDeleteUserFlour(f.id); });
+          rowEl.appendChild(opt);
+          rowEl.appendChild(edit);
+          rowEl.appendChild(del);
+        }
+        flourPickerList.appendChild(rowEl);
+      } else {
+        flourPickerList.appendChild(opt);
+      }
     });
 
     const n = results.length;
@@ -791,6 +856,11 @@ window.stepColdTemp = function(dir) {
 
   function openFlourPicker(rowId){
     picker = { rowId: rowId, query: '', brand: null, type: null, band: null };
+    pickerMode = 'list';
+    pendingDeleteId = null;
+    editingId = null;
+    if (flourPickerCard) flourPickerCard.classList.remove('is-adding');
+    if (flourAddForm) flourAddForm.hidden = true;
     if (flourSearch) flourSearch.value = '';
     renderFlourFilters();
     renderFlourPickerList();
@@ -828,10 +898,138 @@ window.stepColdTemp = function(dir) {
     if (t) t.focus();
   }
 
+  // ---- Añadir / editar / borrar harina propia (Fase 3): el selector alterna a modo form ----
+  function populateAddTypeSelect(){
+    if (!flourAddType) return;
+    const lang = I18N.getLang();
+    const prev = flourAddType.value;
+    flourAddType.innerHTML = '';
+    const ph = document.createElement('option'); // placeholder: el tipo es obligatorio
+    ph.value = ''; ph.disabled = true; ph.textContent = I18N.t('flourAddTypePlaceholder');
+    flourAddType.appendChild(ph);
+    F.types().forEach(function (ty) {
+      const o = document.createElement('option');
+      o.value = ty; o.textContent = F.typeLabel(ty, lang);
+      flourAddType.appendChild(o);
+    });
+    flourAddType.value = prev; // conserva la selección si se recarga por cambio de idioma
+  }
+  function hideAddError(){ if (flourAddError) { flourAddError.hidden = true; flourAddError.textContent = ''; } }
+  function showAddError(msg){ if (flourAddError) { flourAddError.textContent = msg; flourAddError.hidden = false; } }
+  function clearAddForm(){
+    if (flourAddName) flourAddName.value = '';
+    if (flourAddW) flourAddW.value = '';
+    if (flourAddBrand) flourAddBrand.value = '';
+    if (flourAddType) flourAddType.value = '';
+  }
+  function updateAddTitle(){
+    if (flourAddTitle) flourAddTitle.textContent = I18N.t(editingId ? 'flourEditTitle' : 'flourAddBtn');
+  }
+  function setPickerMode(mode){
+    pickerMode = mode;
+    pendingDeleteId = null;
+    const adding = mode === 'add';
+    if (flourPickerCard) flourPickerCard.classList.toggle('is-adding', adding);
+    if (flourAddForm) flourAddForm.hidden = !adding;
+    if (adding) {
+      hideAddError();
+      populateAddTypeSelect();
+      updateAddTitle();
+      setTimeout(function () { if (flourAddName) flourAddName.focus(); }, 40);
+    } else {
+      editingId = null;
+      renderFlourPickerList(); // restaura la lista al volver
+    }
+  }
+  function openAddForm(){
+    editingId = null;
+    clearAddForm();
+    setPickerMode('add');
+    if (flourAddType) flourAddType.value = ''; // muestra el placeholder de tipo
+  }
+  function openEditForm(id){
+    const f = F.get(id);
+    if (!f) return;
+    editingId = id;
+    setPickerMode('add'); // conmuta modo + puebla el select de tipo
+    if (flourAddName) flourAddName.value = F.mainName(id, I18N.getLang());
+    if (flourAddType) flourAddType.value = f.type || '';
+    if (flourAddW) flourAddW.value = f.wMin ? String(f.wMin) : '';
+    if (flourAddBrand) flourAddBrand.value = f.brand || '';
+    setTimeout(function () { if (flourAddName) { flourAddName.focus(); flourAddName.select(); } }, 45);
+  }
+  // ¿Ya existe otra harina propia con ese nombre base? (evita duplicados tipo dos "as").
+  function userFlourNameExists(name, exceptId){
+    const n = name.trim().toLowerCase();
+    return F.userFlours().some(function (uf) {
+      return uf.id !== exceptId && F.mainName(uf.id, I18N.getLang()).trim().toLowerCase() === n;
+    });
+  }
+  function submitAddFlour(){
+    const name = (flourAddName ? flourAddName.value : '').trim();
+    if (!name) { showAddError(I18N.t('flourAddNameRequired')); if (flourAddName) flourAddName.focus(); return; }
+    if (userFlourNameExists(name, editingId)) { showAddError(I18N.t('flourAddNameDup')); if (flourAddName) { flourAddName.focus(); flourAddName.select(); } return; }
+    const type = flourAddType ? flourAddType.value : '';
+    if (!type) { showAddError(I18N.t('flourAddTypeRequired')); if (flourAddType) flourAddType.focus(); return; }
+    let w = 0;
+    const wRaw = (flourAddW ? flourAddW.value : '').trim();
+    if (wRaw) {
+      if (!/^\d+$/.test(wRaw)) { showAddError(I18N.t('flourAddWError')); if (flourAddW) flourAddW.focus(); return; }
+      w = parseInt(wRaw, 10);
+      if (w < 80 || w > 450) { showAddError(I18N.t('flourAddWError')); if (flourAddW) flourAddW.focus(); return; }
+    }
+    const brand = flourAddBrand ? flourAddBrand.value : '';
+    if (editingId) {
+      F.updateUserFlour(editingId, { name: name, type: type, w: w, brand: brand });
+      editingId = null;
+      setPickerMode('list');
+      renderFlours(); // refresca las filas que la usen + recalcula (calcular())
+    } else {
+      const id = F.addUserFlour({ name: name, type: type, w: w, brand: brand });
+      if (!id) { showAddError(I18N.t('flourAddNameRequired')); return; }
+      setPickerMode('list');
+      selectFlour(id); // la asigna a la fila actual y cierra el selector
+    }
+  }
+  function requestDeleteUserFlour(id){ pendingDeleteId = id; renderFlourPickerList(); }
+  function cancelDeleteUserFlour(){
+    const id = pendingDeleteId;
+    pendingDeleteId = null;
+    renderFlourPickerList();
+    // Devuelve el foco a la papelera de esa harina (accesibilidad).
+    const opt = flourPickerList.querySelector('.flour-option[data-flour="' + id + '"]');
+    const row = opt ? opt.closest('.flour-option-row') : null;
+    const del = row ? row.querySelector('.flour-option-del') : null;
+    if (del) del.focus();
+  }
+  function performDeleteUserFlour(id){
+    pendingDeleteId = null;
+    F.removeUserFlour(id); // fuera del catálogo primero: así firstUnused no la devuelve
+    let affected = false;
+    flours.forEach(function (r) {
+      if (r.flourId === id) {
+        const used = new Set(flours.filter(function (x) { return x !== r; }).map(function (x) { return x.flourId; }));
+        r.flourId = F.firstUnused(used); // evita id colgado o duplicado con otra fila
+        affected = true;
+      }
+    });
+    renderFlourFilters();       // las marcas/tipos pueden cambiar si era la única con ese valor
+    updateFiltersActiveCount();
+    renderFlourPickerList();
+    if (affected) renderFlours(); // refresca las filas de fuera y recalcula (calcular())
+    showToast(I18N.t('flourDeletedToast'));
+  }
+
   // Cableado único de los controles propios del modal (no por fila).
   if (flourPickerModal) {
     if (flourPickerCloseBtn) flourPickerCloseBtn.addEventListener('click', closeFlourPicker);
-    flourPickerModal.addEventListener('click', (e) => { if (e.target === flourPickerModal) closeFlourPicker(); });
+    flourPickerModal.addEventListener('click', (e) => { if (e.target === flourPickerModal && pickerMode !== 'add') closeFlourPicker(); });
+    // Formulario "Añadir mi harina".
+    if (flourAddBtn) flourAddBtn.addEventListener('click', openAddForm);
+    if (flourAddCancel) flourAddCancel.addEventListener('click', () => setPickerMode('list'));
+    if (flourAddSave) flourAddSave.addEventListener('click', submitAddFlour);
+    if (flourAddName) flourAddName.addEventListener('input', hideAddError);
+    if (flourAddW) flourAddW.addEventListener('input', hideAddError);
     if (flourFiltersToggle) {
       flourFiltersToggle.addEventListener('click', () => {
         filtersCollapsed = !filtersCollapsed;
@@ -854,9 +1052,23 @@ window.stepColdTemp = function(dir) {
         searchTimer = setTimeout(() => { picker.query = flourSearch.value; renderFlourPickerList(); }, 120);
       });
     }
-    // Teclado: Escape cierra; flechas mueven entre buscador y opciones; Tab atrapado.
+    // Teclado: Escape cierra (o vuelve de "añadir" a la lista); Tab atrapado en ambos
+    // modos; las flechas navegan la lista solo en modo lista.
     flourPickerModal.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); closeFlourPicker(); return; }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (pickerMode === 'add') setPickerMode('list'); else closeFlourPicker();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const f = getFocusables(flourPickerModal);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        return;
+      }
+      if (pickerMode === 'add') return; // en el formulario, teclas normales
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         const opts = pickerOptions(); const cur = opts.indexOf(document.activeElement);
@@ -865,17 +1077,13 @@ window.stepColdTemp = function(dir) {
         e.preventDefault();
         const opts = pickerOptions(); const cur = opts.indexOf(document.activeElement);
         if (cur <= 0) { if (flourSearch) flourSearch.focus(); } else focusPickerOption(cur - 1);
-      } else if (e.key === 'Tab') {
-        const f = getFocusables(flourPickerModal);
-        if (!f.length) return;
-        const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     });
     // Reaplica textos traducidos si cambia el idioma con el modal abierto.
     window.addEventListener('pizzaLangChange', () => {
-      if (flourPickerModal.style.display === 'flex') { renderFlourFilters(); renderFlourPickerList(); }
+      if (flourPickerModal.style.display !== 'flex') return;
+      if (pickerMode === 'add') { populateAddTypeSelect(); updateAddTitle(); }
+      else { renderFlourFilters(); renderFlourPickerList(); }
     });
   }
 
@@ -1104,7 +1312,7 @@ window.stepColdTemp = function(dir) {
     el.progressBar.innerHTML = flours.map((f, i) => {
       if(f.pct <= 0) return '';
       const color = COLORES_HARINA[i % COLORES_HARINA.length];
-      return `<div class="progress-segment" style="width: ${f.pct}%; background: ${color};" title="${flourName(f.flourId)} · ${f.pct}%"></div>`;
+      return `<div class="progress-segment" style="width: ${f.pct}%; background: ${color};" title="${escapeHtml(flourName(f.flourId))} · ${f.pct}%"></div>`;
     }).join('');
 
     // La app fuerza el 100% de forma reactiva, así que no anunciamos "equilibrado":
@@ -1172,7 +1380,7 @@ window.stepColdTemp = function(dir) {
       const gramos = harinaTotal * (f.pct / 100);
       const color = COLORES_HARINA[idx % COLORES_HARINA.length];
       return `<div class="flour-sub">
-        <span class="fname"><span class="swatch" style="background:${color}"></span><span class="fname-text">${flourName(f.flourId)}</span></span>
+        <span class="fname"><span class="swatch" style="background:${color}"></span><span class="fname-text">${escapeHtml(flourName(f.flourId))}</span></span>
         <span class="fpct">${U.formatNumber(f.pct, 1)}%</span>
         <span class="fval">${U.formatWeight(gramos)}</span>
       </div>`;
@@ -1951,10 +2159,21 @@ window.stepColdTemp = function(dir) {
 
   // ---- Exportar / Importar recetas (JSON) ----
   function recipesToJSON() {
+    const recipes = getSavedRecipes();
+    // Embebe las harinas de usuario referenciadas por esas recetas, para que el import las
+    // recree (con su id) en otro dispositivo; si no, caerían a la por defecto.
+    const usedUser = new Set();
+    recipes.forEach(function (r) {
+      if (r.data && Array.isArray(r.data.flours)) {
+        r.data.flours.forEach(function (fl) { if (F.isUserFlour(fl.flourId)) usedUser.add(fl.flourId); });
+      }
+    });
+    const userFlours = F.userFlours().filter(function (uf) { return usedUser.has(uf.id); });
     return JSON.stringify({
-      app: 'calculatupizza', type: 'recipes', version: 1,
+      app: 'calculatupizza', type: 'recipes', version: 2,
       exportedAt: new Date().toISOString(),
-      recipes: getSavedRecipes()
+      userFlours: userFlours,
+      recipes: recipes
     }, null, 2);
   }
 
@@ -2037,6 +2256,10 @@ window.stepColdTemp = function(dir) {
     const incoming = Array.isArray(parsed) ? parsed
       : (parsed && Array.isArray(parsed.recipes) ? parsed.recipes : null);
     if (!incoming) return -1;
+    // Recrea PRIMERO las harinas de usuario embebidas (preservan su id), para que las
+    // recetas que las referencian las resuelvan y las seleccionen (migrateRef comprueba
+    // existencia). Sin este paso caerían a la por defecto.
+    if (parsed && Array.isArray(parsed.userFlours)) F.importUserFlours(parsed.userFlours);
 
     const list = getSavedRecipes();
     const ids = new Set(list.map(r => String(r.id)));

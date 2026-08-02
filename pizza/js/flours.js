@@ -28,7 +28,7 @@
   // IMPORTANTE — no cambies ni reutilices los `id` de las 8 harinas listadas en
   // LEGACY_INDEX_TO_ID (las 6 Caputo históricas + las 2 de supermercado): las
   // recetas antiguas las referencian por ahí. Añadir harinas nuevas es libre.
-  const FLOURS = [
+  const BASE_FLOURS = [
     // -- Caputo (Mulino Caputo) --
     { id: 'caputo-manitoba-oro', brand: 'Caputo', line: 'Manitoba Oro', type: '0', wMin: 370, wMax: 390,
       name: { es: 'Caputo Manitoba Oro (Tipo 0)', en: 'Caputo Manitoba Oro (Type 0)' } },
@@ -164,12 +164,48 @@
     return (s == null ? '' : String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   }
 
-  // Índice por id + cadena de búsqueda precomputada (marca + línea + tipo + nombres).
+  // ---- Harinas añadidas por el usuario (Fase 3) ----------------------------------
+  // Se guardan en localStorage y se fusionan DELANTE del catálogo base (aparecen
+  // arriba en el selector). Su id lleva el prefijo "user:" para distinguirlas (para
+  // borrarlas y para que nunca choquen con un id del catálogo). El resto de la app no
+  // se entera: buscador, filtros y avisos leen por esta misma capa.
+  const USER_KEY = 'edu_pizza_user_flours_v1';
+  const KNOWN_TYPES = ['00', '0', 'Tipo 1', 'Tipo 2', 'Integrale', 'Fuerza', 'Común'];
+  function isUserFlour(id) { return typeof id === 'string' && id.indexOf('user:') === 0; }
+  // Sanea una harina de usuario venida de localStorage (o descarta la inválida).
+  function normalizeUserFlour(f) {
+    if (!f || typeof f !== 'object' || !isUserFlour(f.id) || !f.name) return null;
+    const es = String(f.name.es || '').slice(0, 80);
+    if (!es) return null;
+    const wMin = (typeof f.wMin === 'number' && isFinite(f.wMin) && f.wMin > 0) ? Math.round(f.wMin) : 0;
+    const wMax = (typeof f.wMax === 'number' && isFinite(f.wMax) && f.wMax > 0) ? Math.round(f.wMax) : wMin;
+    const type = (KNOWN_TYPES.indexOf(f.type) !== -1) ? f.type : '';
+    return { id: f.id, brand: String(f.brand || '').slice(0, 40), line: '', type: type,
+             wMin: wMin, wMax: wMax, name: { es: es, en: String(f.name.en || es).slice(0, 80) }, user: true };
+  }
+  let userFlours = [];
+  try {
+    const rawStored = localStorage.getItem(USER_KEY);
+    if (rawStored) {
+      const arr = JSON.parse(rawStored);
+      if (Array.isArray(arr)) userFlours = arr.map(normalizeUserFlour).filter(Boolean);
+    }
+  } catch (e) { userFlours = []; }
+  function saveUserFlours() { try { localStorage.setItem(USER_KEY, JSON.stringify(userFlours)); } catch (e) {} }
+
+  // Catálogo EFECTIVO = harinas del usuario (delante) + base. Índice por id + cadena de
+  // búsqueda precomputada; se reconstruye cada vez que el usuario añade o borra una.
+  let FLOURS = [];
   const byId = new Map();
-  FLOURS.forEach(function (f) {
-    f._search = norm([f.brand, f.line, f.type, f.name.es, f.name.en].join(' '));
-    byId.set(f.id, f);
-  });
+  function rebuild() {
+    FLOURS = userFlours.concat(BASE_FLOURS);
+    byId.clear();
+    FLOURS.forEach(function (f) {
+      f._search = norm([f.brand, f.line, f.type, f.name.es, f.name.en].join(' '));
+      byId.set(f.id, f);
+    });
+  }
+  rebuild();
 
   // Cadena de fuerza para mostrar: rango "W300/320", valor único "W410", o "" sin dato.
   function w(id) {
@@ -284,7 +320,11 @@
   // `catalogId`) a un id de texto. Base de la migración retrocompatible.
   function migrateRef(f) {
     if (!f || typeof f !== 'object') return DEFAULT_ID;
-    if (typeof f.flourId === 'string' && f.flourId) return f.flourId;
+    // flourId (nuevo): se acepta SOLO si la harina existe en el catálogo efectivo (base +
+    // usuario). Una referencia a una harina propia borrada, o de otro dispositivo / receta
+    // compartida, cae limpia a la por defecto en vez de quedar colgada (nombre por defecto
+    // pero W=0 y un id roto que se propagaría al re-guardar).
+    if (typeof f.flourId === 'string' && f.flourId) return byId.has(f.flourId) ? f.flourId : DEFAULT_ID;
     const ci = f.catalogId;
     if (typeof ci === 'number' && ci >= 0 && ci < LEGACY_INDEX_TO_ID.length) return LEGACY_INDEX_TO_ID[ci];
     return DEFAULT_ID;
@@ -299,11 +339,99 @@
     return DEFAULT_ID;
   }
 
+  // ---- API de harinas del usuario (Fase 3) ----
+  // Id robusto y prácticamente irrepetible: UUID del navegador si existe; si no, mucha
+  // aleatoriedad. Además reintenta hasta que NO choque con ningún id ya presente, así una
+  // harina propia nueva jamás pisa otra existente (ni local ni recién importada).
+  function genUserFlourId() {
+    function rnd() {
+      try {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+          const a = new Uint8Array(12); crypto.getRandomValues(a);
+          return Array.prototype.map.call(a, function (b) { return (b + 256).toString(16).slice(1); }).join('');
+        }
+      } catch (e) {}
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+    }
+    let id;
+    do { id = 'user:' + rnd(); } while (byId.has(id));
+    return id;
+  }
+  // Crea una harina propia: name (obligatorio), type (token de KNOWN_TYPES u ''),
+  // w (número; 0/omitido = sin dato de fuerza), brand (opcional). El tipo se hornea
+  // en el nombre bilingüe con su etiqueta localizada, así mainName/subLabel funcionan
+  // igual que con el catálogo. Devuelve el id nuevo (o null si el nombre está vacío).
+  function addUserFlour(data) {
+    data = data || {};
+    const raw = String(data.name == null ? '' : data.name).trim().slice(0, 60);
+    if (!raw) return null;
+    const type = (KNOWN_TYPES.indexOf(data.type) !== -1) ? data.type : '';
+    const wnum = (typeof data.w === 'number' && isFinite(data.w) && data.w > 0) ? Math.round(data.w) : 0;
+    const brand = String(data.brand == null ? '' : data.brand).trim().slice(0, 40);
+    const id = genUserFlourId();
+    const sfxEs = type ? (' (' + typeLabel(type, 'es') + ')') : '';
+    const sfxEn = type ? (' (' + typeLabel(type, 'en') + ')') : '';
+    userFlours.unshift({ id: id, brand: brand, line: '', type: type, wMin: wnum, wMax: wnum,
+      name: { es: raw + sfxEs, en: raw + sfxEn }, user: true });
+    saveUserFlours();
+    rebuild();
+    return id;
+  }
+  function removeUserFlour(id) {
+    const i = userFlours.findIndex(function (f) { return f.id === id; });
+    if (i === -1) return false;
+    userFlours.splice(i, 1);
+    saveUserFlours();
+    rebuild();
+    return true;
+  }
+  // Edita una harina propia EN SITIO (conserva el id, así las recetas guardadas que la
+  // referencian siguen válidas y se actualizan). Mismos límites/saneo que addUserFlour.
+  function updateUserFlour(id, data) {
+    const uf = userFlours.find(function (f) { return f.id === id; });
+    if (!uf) return false;
+    data = data || {};
+    const raw = String(data.name == null ? '' : data.name).trim().slice(0, 60);
+    if (!raw) return false;
+    const type = (KNOWN_TYPES.indexOf(data.type) !== -1) ? data.type : '';
+    const wnum = (typeof data.w === 'number' && isFinite(data.w) && data.w > 0) ? Math.round(data.w) : 0;
+    const brand = String(data.brand == null ? '' : data.brand).trim().slice(0, 40);
+    const sfxEs = type ? (' (' + typeLabel(type, 'es') + ')') : '';
+    const sfxEn = type ? (' (' + typeLabel(type, 'en') + ')') : '';
+    uf.brand = brand; uf.type = type; uf.wMin = wnum; uf.wMax = wnum;
+    uf.name = { es: raw + sfxEs, en: raw + sfxEn };
+    saveUserFlours();
+    rebuild();
+    return true;
+  }
+  function listUserFlours() { return userFlours.slice(); }
+  // Recrea harinas de usuario embebidas en un export (Fase 3), PRESERVANDO su id para que
+  // las recetas que las referencian se resuelvan al importarlas en otro dispositivo. Solo
+  // añade las que faltan (dedup por id: si ya existe, se respeta la local). Devuelve cuántas
+  // se crearon.
+  function importUserFlours(defs) {
+    if (!Array.isArray(defs)) return 0;
+    let added = 0;
+    defs.forEach(function (raw) {
+      const nf = normalizeUserFlour(raw);
+      if (!nf || byId.has(nf.id)) return;   // inválida o ya existe (mismo id)
+      userFlours.unshift(nf);
+      byId.set(nf.id, nf);                   // dedup dentro del propio lote (rebuild lo recompone)
+      added++;
+    });
+    if (added > 0) { saveUserFlours(); rebuild(); }
+    return added;
+  }
+
   const api = {
     all: all, get: get, name: name, mainName: mainName, subLabel: subLabel,
     typeLabel: typeLabel, w: w, wValue: wValue, band: band, bandsOrder: BANDS,
     brands: brands, types: types, search: search,
     migrateRef: migrateRef, firstUnused: firstUnused,
+    isUserFlour: isUserFlour, addUserFlour: addUserFlour,
+    updateUserFlour: updateUserFlour, removeUserFlour: removeUserFlour,
+    userFlours: listUserFlours, importUserFlours: importUserFlours,
     DEFAULT_ID: DEFAULT_ID, LEGACY_INDEX_TO_ID: LEGACY_INDEX_TO_ID
   };
 

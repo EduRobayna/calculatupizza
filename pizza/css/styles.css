@@ -415,6 +415,59 @@ html[data-theme="dark"] .fp-band--muyalta{ background: rgba(193,67,46,0.30); col
 @keyframes fpSheetUp{ from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce){ .flour-picker-card{ animation: none; } }
 
+/* --- Harina propia (Fase 3): botón de añadir, formulario y borrado en la lista --- */
+.flour-add-btn{ display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin-top:12px; padding:11px 12px; flex-shrink:0; background:transparent; border:1px dashed var(--border); border-radius:10px; color:var(--text); font-family:var(--font-body); font-size:14px; font-weight:600; cursor:pointer; transition:background-color .12s, border-color .12s; }
+.flour-add-btn:hover{ background:var(--tint-b); border-color:var(--basilico); }
+.flour-add-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:1px; }
+/* Modo "añadir": se oculta la exploración; quedan cabecera + formulario. */
+.flour-picker-card.is-adding .flour-picker-search,
+.flour-picker-card.is-adding .flour-filters-toggle,
+.flour-picker-card.is-adding #flourFilters,
+.flour-picker-card.is-adding .flour-picker-countrow,
+.flour-picker-card.is-adding #flourPickerList,
+.flour-picker-card.is-adding #flourPickerEmpty,
+.flour-picker-card.is-adding #flourAddBtn{ display:none !important; }
+/* El formulario solo se muestra en modo "añadir" (.is-adding); si no, manda su
+   atributo [hidden]. OJO: no poner display en la regla base o vencería a [hidden]. */
+.flour-add-form{ margin-top:16px; flex-direction:column; gap:14px; flex:1 1 auto; min-height:0; overflow-y:auto; }
+.flour-picker-card.is-adding .flour-add-form{ display:flex; }
+.fp-add-title{ font-family:var(--font-display); font-size:17px; font-weight:600; color:var(--heading); }
+.fp-field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+.fp-field label{ font-size:12.5px; font-weight:600; color:var(--text-soft); }
+.fp-field input, .fp-field select{ width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2, var(--surface)); color:var(--text); font-family:var(--font-body); font-size:15px; }
+.fp-field input:focus-visible, .fp-field select:focus-visible{ outline:2px solid var(--pomodoro); outline-offset:1px; border-color:var(--pomodoro); }
+.fp-field-row{ display:flex; gap:12px; }
+.fp-field-row .fp-field{ flex:1; }
+.fp-field-w{ max-width:130px; }
+/* Fila de una harina del usuario: opción (flex:1) + papelera. El separador y el fondo
+   (hover/selección) van en la FILA, no en la opción, para que la línea llegue de lado a
+   lado y la papelera quede DENTRO del recuadro de selección (no huérfana fuera). */
+.flour-option-row{ display:flex; align-items:stretch; border-bottom:1px solid var(--border); transition:background-color .1s; }
+.flour-option-row:last-child{ border-bottom:none; }
+.flour-option-row .flour-option{ flex:1; min-width:0; border-bottom:none; }
+/* La opción dentro de una fila NO pinta su fondo/recuadro: manda la fila (conserva el
+   foco de teclado tint-b para accesibilidad). */
+.flour-option-row .flour-option:hover{ background:transparent; }
+.flour-option-row .flour-option.is-selected{ background:transparent; box-shadow:none; }
+.flour-option-row:hover{ background:var(--tint-b); }
+.flour-option-row.is-selected{ background:rgba(193,67,46,0.07); box-shadow:inset 0 0 0 1.5px rgba(193,67,46,0.45); }
+.flour-option-row.is-selected:hover{ background:rgba(193,67,46,0.12); }
+html[data-theme="dark"] .flour-option-row.is-selected{ background:rgba(193,67,46,0.16); }
+html[data-theme="dark"] .flour-option-row.is-selected:hover{ background:rgba(193,67,46,0.22); }
+.flour-option-edit, .flour-option-del{ flex-shrink:0; display:flex; align-items:center; justify-content:center; width:42px; background:transparent; border:none; color:var(--text-soft); cursor:pointer; transition:background-color .12s, color .12s; }
+.flour-option-edit:hover{ background:var(--tint-b); color:var(--text); }
+.flour-option-del:hover{ background:rgba(193,67,46,0.14); color:var(--pomodoro); }
+.flour-option-edit:focus-visible, .flour-option-del:focus-visible{ outline:2px solid var(--focus); outline-offset:-3px; border-radius:8px; }
+/* Confirmación de borrado EN LÍNEA (evita apilar modales sobre el selector). */
+.flour-option-confirm{ align-items:center; gap:8px; padding:9px 12px; background:rgba(193,67,46,0.06); }
+html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); }
+.flour-option-confirm .fp-del-msg{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:600; color:var(--text); }
+.flour-option-confirm button{ flex-shrink:0; padding:7px 13px; border-radius:8px; font-family:var(--font-body); font-size:13px; font-weight:600; cursor:pointer; }
+.fp-del-cancel{ border:1px solid var(--border); background:transparent; color:var(--text); }
+.fp-del-cancel:hover{ background:var(--tint-b); }
+.fp-del-confirm{ border:1px solid var(--pomodoro); background:var(--pomodoro); color:#fff; }
+.fp-del-confirm:hover{ background:var(--pomodoro-dark); border-color:var(--pomodoro-dark); }
+
 /* Controles a la derecha: bloque unificado [− % + │ candado] y borrar aparte. */
 .flour-controls { display: flex; align-items: center; flex-shrink: 0; }
 
