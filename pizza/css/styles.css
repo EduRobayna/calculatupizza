@@ -335,15 +335,6 @@ html[data-theme="dark"] .flour-option.is-selected:hover { background: rgba(193,6
 .flour-option-check { flex-shrink: 0; color: var(--pomodoro); opacity: 0; }
 .flour-option.is-selected .flour-option-check { opacity: 1; }
 
-/* Aviso de novedad (una sola vez) en la sección de harinas. */
-.flour-news{ display: flex; align-items: flex-start; gap: 10px; background: rgba(92,125,79,0.10); border: 1px solid rgba(92,125,79,0.28); border-radius: 12px; padding: 11px 12px 11px 14px; margin-bottom: 14px; }
-.flour-news-icon{ flex-shrink: 0; color: var(--basilico); margin-top: 1px; }
-.flour-news-text{ flex: 1; min-width: 0; font-size: 13px; line-height: 1.4; color: var(--text); }
-.flour-news-close{ flex-shrink: 0; background: transparent; border: none; cursor: pointer; color: var(--text-soft); padding: 3px; border-radius: 6px; line-height: 0; transition: background-color .12s, color .12s; }
-.flour-news-close:hover{ background: var(--tint-b); color: var(--text); }
-.flour-news-close:focus-visible{ outline: 2px solid var(--focus); outline-offset: 1px; }
-html[data-theme="dark"] .flour-news{ background: rgba(92,125,79,0.16); border-color: rgba(92,125,79,0.38); }
-
 /* ---- Selector de harina (modal buscador + filtros) ---- */
 /* Se escopa bajo #flourPickerModal (id) para ganar en especificidad a las reglas
    base .modal-card, que están más abajo en el archivo (si no, el orden de fuente
@@ -736,6 +727,11 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
 .modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
 /* Pista de validación del modal (p. ej. nombre duplicado) */
 .modal-error{ font-size: 12.5px; line-height: 1.4; color: var(--pomodoro); margin: 8px 2px 0; }
+/* Popup de novedades 2.0 */
+.whatsnew-card{ max-width: 440px; max-height: 85vh; overflow-y: auto; }
+.whatsnew-list{ list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 11px; }
+.whatsnew-list li{ font-size: 13.5px; line-height: 1.55; color: var(--text-soft); }
+.whatsnew-list li b{ color: var(--heading); }
 /* Botones deshabilitados (acciones del modal) */
 .btn-outline:disabled, .btn-secondary:disabled{ opacity: 0.45; cursor: not-allowed; }
 

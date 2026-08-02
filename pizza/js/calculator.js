@@ -143,6 +143,8 @@ window.stepColdTemp = function(dir) {
     tempFrioUnit: document.getElementById('tempFrioUnit'),
     horasFrio: document.getElementById('horasFrio'),
     ambientLongNote: document.getElementById('ambientLongNote'),
+    fermTotal: document.getElementById('fermTotal'),
+    fermTotalValue: document.getElementById('fermTotalValue'),
     tempNote: document.getElementById('tempNote'),
     tempNoteText: document.getElementById('tempNoteText'),
     coldNote: document.getElementById('coldNote'),
@@ -211,9 +213,9 @@ window.stepColdTemp = function(dir) {
 
   // Horas de fermentación a temperatura ambiente. Máximo 96 h; el MÍNIMO es dinámico
   // (ambHorasMin): 2 h normalmente, pero 0 h si la fase fría está activa (se permite meter
-  // la masa directa a la nevera). Un valor no válido cae a 28 h, la referencia por defecto
-  // (a 18 °C reproduce ≈0,10% de levadura fresca, la napolitana clásica de siempre).
-  const HORAS_MAX = 96, HORAS_DEFAULT = 28;
+  // la masa directa a la nevera). Un valor no válido cae a 24 h, la referencia por defecto
+  // (24 h a 23 °C, la napolitana clásica de siempre).
+  const HORAS_MAX = 96, HORAS_DEFAULT = 24;
   function clampHoras(v) {
     const n = parseInt(v, 10);
     if (!isFinite(n)) return HORAS_DEFAULT;
@@ -302,8 +304,8 @@ window.stepColdTemp = function(dir) {
   const defaultSettings = {
     numPaneteos: 6,
     pesoPaneto: 280,
-    temperatura: 18,
-    horas: 28,
+    temperatura: 23,
+    horas: 24,
     fridgeOn: false,   // fermentación mixta (nevera) desactivada por defecto
     tempFrio: 4,       // °C de la nevera (fase fría)
     horasFrio: 24,     // horas en nevera (fase fría)
@@ -788,7 +790,6 @@ window.stepColdTemp = function(dir) {
   }
 
   function openFlourPicker(rowId){
-    dismissFlourNews(); // al abrir el selector, la novedad ya se ha "descubierto"
     picker = { rowId: rowId, query: '', brand: null, type: null, band: null };
     if (flourSearch) flourSearch.value = '';
     renderFlourFilters();
@@ -877,29 +878,6 @@ window.stepColdTemp = function(dir) {
       if (flourPickerModal.style.display === 'flex') { renderFlourFilters(); renderFlourPickerList(); }
     });
   }
-
-  // ---- Aviso de novedad (una sola vez): catálogo de harinas ampliado + buscador ----
-  // Se muestra hasta que el usuario lo cierra (×) o abre el selector por primera vez;
-  // la marca se persiste en localStorage (clave versionada por si se re-anuncia algo).
-  const flourNews = document.getElementById('flourNewsBanner');
-  const flourNewsClose = document.getElementById('flourNewsClose');
-  const FLOUR_NEWS_KEY = 'edu_pizza_news_flourdb_v1';
-  let flourNewsActive = false;
-  function dismissFlourNews(){
-    if (!flourNewsActive) return;
-    flourNewsActive = false;
-    if (flourNews) flourNews.style.display = 'none';
-    try { localStorage.setItem(FLOUR_NEWS_KEY, '1'); } catch (e) {}
-  }
-  (function initFlourNews(){
-    if (!flourNews) return;
-    let seen = false;
-    try { seen = localStorage.getItem(FLOUR_NEWS_KEY) === '1'; } catch (e) {}
-    if (seen) return;
-    flourNewsActive = true;
-    flourNews.style.display = 'flex';
-    if (flourNewsClose) flourNewsClose.addEventListener('click', dismissFlourNews);
-  })();
 
   function attachFlourEvents() {
     // Disparador del selector: abre el modal de harinas para esta fila.
@@ -1019,6 +997,13 @@ window.stepColdTemp = function(dir) {
       if (el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(pct, 2); // lectura visible
     }
 
+    // Lector del tiempo total de fermentación (ambiente + nevera): solo con la nevera activa
+    // (con una sola fase el total = ese tiempo). Ayuda a decidir el tiempo de nevera viendo
+    // el total al vuelo. Ya no hay tope de 96 h: ambiente y nevera son fases independientes.
+    if (el.fermTotal) {
+      el.fermTotal.hidden = !el.fridgeToggle.checked;
+      if (el.fermTotalValue) el.fermTotalValue.textContent = U.formatNumber(horas + coldH, 0) + ' h';
+    }
     // Avisos por temperatura ambiente extrema (>28 °C frenético · 15-16 °C baja).
     if (el.tempNote) {
       let key = null;
@@ -1145,15 +1130,29 @@ window.stepColdTemp = function(dir) {
       el.resultsBadge.textContent = I18N.t('resultsBadgeBlocked');
       el.resultsBadge.style.background = 'rgba(193,67,46,0.25)';
       el.resultsBadge.style.borderColor = 'rgba(193,67,46,0.5)';
+      el.resultsBadge.style.color = '';
       if (mobileSummary) mobileSummary.classList.add('blocked');
       return;
     }
 
     el.resultsBody.style.display = 'block';
     el.disabledOverlay.style.display = 'none';
-    el.resultsBadge.textContent = I18N.t('resultsBadgeReady');
-    el.resultsBadge.style.background = 'rgba(255,255,255,0.08)';
-    el.resultsBadge.style.borderColor = 'rgba(255,255,255,0.14)';
+    // Badge de resultados: si hay algún aviso NO bloqueante activo (temperatura, tiempo,
+    // nevera, exceso de levadura o compatibilidad harina↔tiempo) lo señalamos con "Con
+    // avisos" (informativo, en ámbar; no impide ver ni copiar la receta). Sin avisos: "Listo".
+    const hasWarnings = [el.tempNote, el.ambientLongNote, el.coldNote, el.warnHighYeast, el.flourWarn]
+      .some(e => e && !e.hidden);
+    if (hasWarnings) {
+      el.resultsBadge.textContent = I18N.t('resultsBadgeWarn');
+      el.resultsBadge.style.background = 'rgba(224,158,74,0.18)';
+      el.resultsBadge.style.borderColor = 'rgba(224,158,74,0.55)';
+      el.resultsBadge.style.color = '#f2c27f';
+    } else {
+      el.resultsBadge.textContent = I18N.t('resultsBadgeReady');
+      el.resultsBadge.style.background = 'rgba(255,255,255,0.08)';
+      el.resultsBadge.style.borderColor = 'rgba(255,255,255,0.14)';
+      el.resultsBadge.style.color = '';
+    }
 
     const r = D.computeRecipe({
       numPizzas: numPaneteos, pesoG: pesoPaneto, tempC: temp,
@@ -1435,6 +1434,7 @@ window.stepColdTemp = function(dir) {
     renderFlours();
     refreshRecipesUI();
     if (loadRecipeModal.style.display === 'flex') renderRecipeList();
+    calcular(); // re-traduce avisos y el badge de resultados (Con avisos / Listo) al nuevo idioma
   });
 
   // Recalcula (reformatea pesos y temperatura) al cambiar métrico ↔ imperial.
@@ -2198,5 +2198,33 @@ ${flours.map(f => `- ${flourName(f.flourId)}: ${U.formatWeight(harinaT * (f.pct/
       }
     });
   }
+
+  // ---- Popup de novedades 2.0: se muestra una sola vez por usuario (localStorage,
+  // clave por dominio, así probarlo en la beta NO lo silencia en producción). Reutiliza
+  // openModal/closeModal (focus-trap + bloqueo de scroll). Los textos los rellena
+  // applyStaticDom vía data-i18n, aunque el modal se abra antes de esa pasada. ----
+  (function initWhatsNew(){
+    const modal = document.getElementById('whatsNewModal');
+    if (!modal) return;
+    const KEY = 'edu_pizza_whatsnew_v2';
+    let seen = false;
+    try { seen = localStorage.getItem(KEY) === '1'; } catch (e) {}
+    if (seen) return;
+    const onBackdrop = (e) => { if (e.target === modal) dismiss(); };
+    const onKey = (e) => onModalKeydown(e, modal, dismiss);
+    function dismiss(){
+      try { localStorage.setItem(KEY, '1'); } catch (e) {}
+      modal.removeEventListener('click', onBackdrop);
+      modal.removeEventListener('keydown', onKey);
+      closeModal(modal);
+    }
+    const closeX = document.getElementById('whatsNewCloseX');
+    const okBtn = document.getElementById('whatsNewOkBtn');
+    if (closeX) closeX.addEventListener('click', dismiss);
+    if (okBtn) okBtn.addEventListener('click', dismiss);
+    modal.addEventListener('click', onBackdrop);
+    modal.addEventListener('keydown', onKey);
+    openModal(modal, okBtn);
+  })();
 
 })();
