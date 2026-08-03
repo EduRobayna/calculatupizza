@@ -1818,6 +1818,26 @@ window.stepColdTemp = function(dir) {
     });
   })();
 
+  // Consejos (amasado / fermentación): al ABRIR uno, lo llevamos arriba con el mismo scroll
+  // suave que los pasos. Son independientes (no se cierra nada encima), así que no hace falta
+  // compensar salto. Solo al abrir por el usuario (no en la carga ni al abrir por el enlace
+  // "Ver consejos", que ya hace su propio scroll).
+  (function initTipsScroll(){
+    const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('details.accordion').forEach(function (acc) {
+      const head = acc.querySelector('.accordion-summary');
+      let userToggled = false;
+      if (head) head.addEventListener('click', function () { userToggled = true; });
+      acc.addEventListener('toggle', function () {
+        const wasUser = userToggled; userToggled = false;
+        if (!acc.open || !wasUser) return;
+        requestAnimationFrame(function () {
+          acc.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+        });
+      });
+    });
+  })();
+
   // Interruptor de avisos (Configuración): activa/desactiva los banners no bloqueantes.
   (function initWarningsToggle(){
     const toggle = document.getElementById('warningsToggle');

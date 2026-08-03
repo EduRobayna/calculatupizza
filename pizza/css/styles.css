@@ -120,7 +120,9 @@ h1 em{ font-style: italic; color: var(--pomodoro); }
 .card-head{ display: flex; flex-direction: column; gap: 4px; padding: 22px 28px; cursor: pointer; list-style: none; }
 .card-head::-webkit-details-marker{ display: none; }
 .card-head::marker{ content: ""; }
-.card-head:hover{ background: var(--tint-a); }
+/* Solo en dispositivos con ratón: en táctil el :hover se queda "pegado" tras el tap y la
+   cabecera quedaba de otro color que el cuerpo. (hover: hover) lo evita en móvil. */
+@media (hover: hover){ .card-head:hover{ background: var(--tint-a); } }
 .card-head:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; }
 .card-head-top{ display: flex; align-items: center; gap: 12px; }
 .card-head-top .section-title{ margin: 0; }
@@ -740,7 +742,7 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
 .btn-on-dark-ok{ background: var(--basilico) !important; border-color: var(--basilico) !important; color: #fff !important; }
 
 /* Desplegable de consejos (fermentación): <details>/<summary> con estilo propio */
-.accordion{ width: 100%; }
+.accordion{ width: 100%; scroll-margin-top: 14px; }
 .accordion-summary{
   display: flex;
   align-items: center;
@@ -754,7 +756,7 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
 }
 .accordion-summary::-webkit-details-marker{ display: none; }
 .accordion-summary::marker{ content: ""; }
-.accordion-summary:hover{ background: var(--tint-a); }
+@media (hover: hover){ .accordion-summary:hover{ background: var(--tint-a); } }
 .accordion-summary:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; border-radius: var(--radius); }
 .accordion-summary .section-title{ margin: 0; }
 .accordion-chevron{
@@ -763,7 +765,7 @@ footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02e
   color: var(--text-soft);
   transition: transform 0.22s ease, color 0.12s ease;
 }
-.accordion-summary:hover .accordion-chevron{ color: var(--text); }
+@media (hover: hover){ .accordion-summary:hover .accordion-chevron{ color: var(--text); } }
 .accordion[open] .accordion-chevron{ transform: rotate(180deg); }
 .accordion-body{ padding: 0 28px 26px; }
 .accordion[open] .accordion-body{ animation: accordionReveal 0.28s ease; }
