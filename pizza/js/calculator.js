@@ -290,7 +290,7 @@ window.stepColdTemp = function(dir) {
     if (el.warnHighYeast && !el.warnHighYeast.hidden) fermShorts.push(I18N.t('warnShortYeast'));
     if (el.summaryFerm){
       const atW = I18N.t('fermAt');
-      const sep = '<span class="ferm-sum-sep" aria-hidden="true"></span>';
+      const sep = '<span class="card-sum-sep" aria-hidden="true"></span>';
       const parts = ['<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>'];
       if (el.fridgeToggle && el.fridgeToggle.checked){
         parts.push('<span class="ferm-sum-phase">' + U.formatNumber(coldH, 0) + ' h ' + atW + ' ' + U.tempValue(coldT) + U.tempUnit() + '</span>');
@@ -311,6 +311,7 @@ window.stepColdTemp = function(dir) {
       const salTxt = U.formatNumber(parseDecimal(el.sal.value) || 0) + (saltIsFlour() ? '%' : ' g/L');
       el.summaryParams.innerHTML =
         '<span class="card-sum-item">' + ICON_WATER + hid + '</span>' +
+        '<span class="card-sum-sep" aria-hidden="true"></span>' +
         '<span class="card-sum-item">' + ICON_SALT + salTxt + '</span>';
     }
     if (el.summaryFlour){
@@ -1655,11 +1656,14 @@ window.stepColdTemp = function(dir) {
   // Núcleo del mantener-pulsado: repite `action` con aceleración mientras se
   // mantiene pulsado (ratón/táctil) y atiende Enter/Espacio para accesibilidad.
   function bindHoldRepeatAction(btn, action){
-    let startTimer = null, repeatTimer = null;
-    function stop(){ clearTimeout(startTimer); clearTimeout(repeatTimer); startTimer = repeatTimer = null; }
-    function start(){
-      if (btn.disabled) return;  // en modo Auto / harina bloqueada los +/- están inertes
-      action();                 // primer paso inmediato
+    let startTimer = null, repeatTimer = null, holdTimer = null;
+    let downX = 0, downY = 0, moved = false, repeating = false, active = false;
+    const MOVE_CANCEL = 10; // px: si el dedo se mueve más, es un scroll (no una pulsación)
+    function clearAll(){ clearTimeout(startTimer); clearTimeout(repeatTimer); clearTimeout(holdTimer); startTimer = repeatTimer = holdTimer = null; }
+    // Primer paso + repetición acelerada mientras se mantiene pulsado.
+    function beginHold(){
+      action();
+      repeating = true;
       let delay = 130;
       startTimer = setTimeout(function rep(){
         action();
@@ -1667,8 +1671,34 @@ window.stepColdTemp = function(dir) {
         repeatTimer = setTimeout(rep, delay);
       }, 420);
     }
-    btn.addEventListener('pointerdown', (e) => { if (e.button && e.button !== 0) return; e.preventDefault(); start(); });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+    btn.addEventListener('pointerdown', (e) => {
+      if ((e.button && e.button !== 0) || btn.disabled) return; // en Auto/harina bloqueada, inertes
+      active = true; moved = false; repeating = false; downX = e.clientX; downY = e.clientY;
+      if (e.pointerType === 'mouse') {
+        // Ratón: no se hace scroll arrastrando sobre el botón → paso inmediato.
+        e.preventDefault();
+        beginHold();
+      } else {
+        // Táctil/lápiz: NO sumamos aún ni bloqueamos el scroll (sin preventDefault). El tap
+        // simple suma en pointerup; el mantener-pulsado arranca tras el retardo de hold. Si el
+        // dedo se desplaza (scroll) o el navegador cancela el puntero, no se suma nada.
+        holdTimer = setTimeout(function(){ if (active && !moved) beginHold(); }, 400);
+      }
+    });
+    btn.addEventListener('pointermove', (e) => {
+      if (!active || moved) return;
+      if (Math.abs(e.clientX - downX) > MOVE_CANCEL || Math.abs(e.clientY - downY) > MOVE_CANCEL) {
+        moved = true; active = false; clearAll();   // es un scroll: cancela todo
+      }
+    });
+    btn.addEventListener('pointerup', (e) => {
+      if (!active) { clearAll(); return; }
+      active = false;
+      const touchTap = (e.pointerType !== 'mouse') && !moved && !repeating;
+      clearAll();
+      if (touchTap) action();   // tap táctil limpio (sin scroll) → un solo paso
+    });
+    ['pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, function(){ active = false; clearAll(); }));
     btn.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !btn.disabled) { e.preventDefault(); action(); } });
   }
   // Botones con onclick inline (steppers de pizzas/peso/hidratación/sal/levadura):
@@ -1824,13 +1854,21 @@ window.stepColdTemp = function(dir) {
   // "Ver consejos", que ya hace su propio scroll).
   (function initTipsScroll(){
     const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('details.accordion').forEach(function (acc) {
+    const accs = Array.prototype.slice.call(document.querySelectorAll('details.accordion'));
+    accs.forEach(function (acc) {
       const head = acc.querySelector('.accordion-summary');
       let userToggled = false;
       if (head) head.addEventListener('click', function () { userToggled = true; });
       acc.addEventListener('toggle', function () {
         const wasUser = userToggled; userToggled = false;
-        if (!acc.open || !wasUser) return;
+        if (!acc.open) return;
+        // Posición ANTES de cerrar el resto (para compensar el salto, igual que los pasos).
+        const beforeTop = wasUser ? acc.getBoundingClientRect().top : 0;
+        // Solo un consejo abierto a la vez: cerramos los demás.
+        accs.forEach(function (other) { if (other !== acc && other.open) other.open = false; });
+        if (!wasUser) return;   // nunca en la carga ni al abrir por el enlace "Ver consejos"
+        const afterTop = acc.getBoundingClientRect().top;
+        if (afterTop !== beforeTop) window.scrollBy({ top: afterTop - beforeTop, left: 0, behavior: 'auto' });
         requestAnimationFrame(function () {
           acc.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
         });

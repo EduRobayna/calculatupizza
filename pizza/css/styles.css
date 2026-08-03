@@ -135,7 +135,8 @@ h1 em{ font-style: italic; color: var(--pomodoro); }
 .card-sum-item{ display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 /* Fases de fermentación en el resumen: "24 h a 23 °C │ 24 h a 4 °C" */
 .ferm-sum-phase{ display: inline-flex; align-items: center; white-space: nowrap; }
-.ferm-sum-sep{ display: inline-block; width: 1px; height: 12px; background: currentColor; opacity: 0.3; margin: 0 3px; align-self: center; }
+/* Separador vertical entre elementos de un resumen colapsado (fermentación y parámetros). */
+.card-sum-sep{ display: inline-block; width: 1px; height: 12px; background: currentColor; opacity: 0.3; margin: 0 3px; align-self: center; }
 /* Aviso resumido en la tarjeta colapsada (ámbar, en su propia línea) */
 .card-sum-warns{ display: flex; flex-wrap: wrap; gap: 4px 10px; width: 100%; margin-top: 2px; }
 .card-sum-warn{ display: inline-flex; align-items: center; gap: 5px; color: #b0872a; font-weight: 600; }
@@ -175,7 +176,7 @@ label{ display:block; font-size: 13px; font-weight: 600; letter-spacing: 0; colo
 .stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
 .stepper[hidden] { display: none; } /* el atributo hidden debe ganar al display:flex */
 .stepper:has(input:focus-visible) { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
-.stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; }
+.stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; touch-action: manipulation; }
 .stepper-btn:hover { background: var(--tint-b); }
 /* Sin scale aquí: los +/− no tienen esquinas redondeadas y al encogerse
    asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
