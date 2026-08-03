@@ -166,9 +166,8 @@ window.stepColdTemp = function(dir) {
     levadura: document.getElementById('levadura'),
     salStepper: document.getElementById('salStepper'),
     yeastStepper: document.getElementById('yeastStepper'),
-    yeastAuto: document.getElementById('yeastAuto'),
-    yeastAutoValue: document.getElementById('yeastAutoValue'),
-    yeastModeBtn: document.getElementById('yeastModeBtn'),
+    yeastModeChip: document.getElementById('yeastModeChip'),
+    yeastEditBtn: document.getElementById('yeastEditBtn'),
     salHint: document.getElementById('salHint'),
     yeastHint: document.getElementById('yeastHint'),
     hydrationInfo: document.getElementById('hydrationInfo'),
@@ -196,17 +195,137 @@ window.stepColdTemp = function(dir) {
     progressBar: document.getElementById('progressBar'),
     progressStatus: document.getElementById('progressStatus'),
     addFlourBtn: document.getElementById('addFlourBtn'),
-    resetBtn: document.getElementById('resetBtn')
+    resetBtn: document.getElementById('resetBtn'),
+    cardTanda: document.getElementById('cardTanda'),
+    cardFerm: document.getElementById('cardFerm'),
+    cardParams: document.getElementById('cardParams'),
+    cardFlour: document.getElementById('cardFlour'),
+    summaryTanda: document.getElementById('summaryTanda'),
+    summaryFerm: document.getElementById('summaryFerm'),
+    summaryParams: document.getElementById('summaryParams'),
+    summaryFlour: document.getElementById('summaryFlour')
   };
 
   // Barra-resumen fija (solo móvil)
   const mobileSummary = document.getElementById('mobileSummary');
   const ms = {
+    total: document.getElementById('ms-total'),
     harina: document.getElementById('ms-harina'),
     agua: document.getElementById('ms-agua'),
     sal: document.getElementById('ms-sal'),
     lev: document.getElementById('ms-lev')
   };
+
+  // Preferencia global (Configuración → Avisos): mostrar/ocultar los banners de aviso
+  // no bloqueantes. Se guarda aparte de la receta (es una preferencia de interfaz).
+  const WARN_KEY = 'edu_pizza_warnings_v1';
+  let warningsEnabled = true;
+  try { warningsEnabled = localStorage.getItem(WARN_KEY) !== 'off'; } catch (e) {}
+
+  // Micro-interacción: reinicia y relanza la animación "result-pop" del total.
+  // Se llama solo cuando el número cambia de verdad (no en cada tecla), y nunca
+  // en la primera pintura (masaInitialized). prefers-reduced-motion la anula en CSS.
+  let masaInitialized = false;
+  function pulseRecalc(node){
+    if (!node) return;
+    node.classList.remove('recalc');
+    void node.offsetWidth; // fuerza reflow para poder relanzar la animación
+    node.classList.add('recalc');
+  }
+  // Fija el texto de una cifra de la barra fija y la hace "latir" solo si cambió
+  // (y no es la primera pintura).
+  function setMsVal(node, text, firstRun){
+    if (!node) return;
+    if (node.textContent !== text) {
+      node.textContent = text;
+      if (!firstRun) pulseRecalc(node);
+    }
+  }
+  // Iconos (línea) para el resumen de la tarjeta "Parámetros de la masa".
+  const ICON_WATER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"></path></svg>';
+  const ICON_SALT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8a1 1 0 0 0 1-1.08L16.3 9H7.7l-.7 10.92A1 1 0 0 0 8 21Z"></path><path d="M8.5 9V6a3.5 3.5 0 0 1 7 0v3"></path></svg>';
+  const ICON_YEAST = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="14" r="4"></circle><circle cx="16.5" cy="8.5" r="2.5"></circle><circle cx="17" cy="16" r="1.5"></circle></svg>';
+  const WARN_MINI = '<svg class="cs-warn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  const ICON_SPARK = '<svg class="cs-auto-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.7 5.1 5.1 1.7-5.1 1.7L12 15.6l-1.7-5.1L5.2 8.8l5.1-1.7z"/></svg>';
+  // Chips de aviso resumido para la tarjeta colapsada (ámbar).
+  function warnChipsHtml(shorts){
+    if (!shorts || !shorts.length) return '';
+    return '<span class="card-sum-warns">' + shorts.map(function (s) {
+      return '<span class="card-sum-warn">' + WARN_MINI + escapeHtml(s) + '</span>';
+    }).join('') + '</span>';
+  }
+
+  // Muestra el punto de aviso de una tarjeta si alguno de sus avisos está visible.
+  function setCardDot(card, notes){
+    if (!card) return;
+    const dot = card.querySelector('.card-warn-dot');
+    if (!dot) return;
+    dot.hidden = !notes.some(n => n && !n.hidden);
+  }
+
+  // Resúmenes de las tarjetas colapsadas (se ven al plegar) + puntos de aviso.
+  // Se llama al final de calcular(), así reflejan siempre el estado actual.
+  function updateCards(){
+    if (el.summaryTanda){
+      const n = Math.max(1, parseDecimal(el.numPaneteos.value) || 0);
+      el.summaryTanda.textContent = n + ' ' + I18N.t('recipePizzas').toLowerCase() + ' ' +
+        I18N.t('recipeOf') + ' ' + U.formatWeight(pesoG);
+    }
+    // Valores para el resumen de Fermentación y los avisos resumidos.
+    const temp = parseInt(el.temperatura.value, 10);
+    const horas = clampHoras(el.horas.value);
+    const coldH = coldHoursActive();
+    const coldT = coldTempC();
+    // Avisos resumidos activos de la tarjeta Fermentación (mismos criterios que calcular()).
+    const fermShorts = [];
+    if (el.tempNote && !el.tempNote.hidden) fermShorts.push(I18N.t(temp > 28 ? 'warnShortTempHigh' : 'warnShortTempLow'));
+    if (el.ambientLongNote && !el.ambientLongNote.hidden) fermShorts.push(I18N.t('warnShortAmbientLong'));
+    if (el.coldNote && !el.coldNote.hidden) {
+      let ck = 'warnShortColdLong';
+      if (coldH > 0 && coldH < 12) ck = 'warnShortColdShort';
+      else { const thr = coldHotThreshold(coldT); if (thr != null && coldH > thr) ck = 'warnShortColdHot'; }
+      fermShorts.push(I18N.t(ck));
+    }
+    // La levadura vive ahora en Fermentación, así que su aviso también resume aquí.
+    if (el.warnHighYeast && !el.warnHighYeast.hidden) fermShorts.push(I18N.t('warnShortYeast'));
+    if (el.summaryFerm){
+      const atW = I18N.t('fermAt');
+      const sep = '<span class="ferm-sum-sep" aria-hidden="true"></span>';
+      const parts = ['<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>'];
+      if (el.fridgeToggle && el.fridgeToggle.checked){
+        parts.push('<span class="ferm-sum-phase">' + U.formatNumber(coldH, 0) + ' h ' + atW + ' ' + U.tempValue(coldT) + U.tempUnit() + '</span>');
+      }
+      // La levadura va con el MISMO estilo que las fases (texto + mismo separador vertical),
+      // y una chispa ✦ verde como único indicador de "automático" (sin píldora ni icono
+      // propio, para que la fila tenga la misma estructura de principio a fin).
+      const yv = U.formatNumber(parseDecimal(el.levadura.value) || 0, 2) + '%';
+      const magic = (yeastMode === 'auto')
+        ? '<span class="ferm-sum-magic" title="' + I18N.t('modeAuto') + '">' + ICON_SPARK + '</span>' : '';
+      parts.push('<span class="ferm-sum-phase ferm-sum-yeast">' + ICON_YEAST + '<span>' + yv + '</span>' + magic + '</span>');
+      el.summaryFerm.innerHTML = parts.join(sep) + warnChipsHtml(fermShorts);
+    }
+    if (el.summaryParams){
+      const hid = U.formatNumber(parseDecimal(el.hidratacion.value) || 0, 1) + '%';
+      // Unidad mínima en el resumen: la base ("agua"/"harina") se sobreentiende por el
+      // icono, igual que hidratación y levadura no la explicitan. % harina → "%", g/L → "g/L".
+      const salTxt = U.formatNumber(parseDecimal(el.sal.value) || 0) + (saltIsFlour() ? '%' : ' g/L');
+      el.summaryParams.innerHTML =
+        '<span class="card-sum-item">' + ICON_WATER + hid + '</span>' +
+        '<span class="card-sum-item">' + ICON_SALT + salTxt + '</span>';
+    }
+    if (el.summaryFlour){
+      const w = el.flourStrengthValue ? el.flourStrengthValue.textContent : '';
+      const label = (flours.length === 1)
+        ? flourName(flours[0].flourId)
+        : (flours.length + ' ' + I18N.t('flourCountWord'));
+      const flShorts = (el.flourWarn && !el.flourWarn.hidden) ? [I18N.t('warnShortFlour')] : [];
+      el.summaryFlour.innerHTML = '<span class="card-sum-item">' + escapeHtml(label) +
+        (w && w !== '—' ? ' · ' + escapeHtml(w) : '') + '</span>' + warnChipsHtml(flShorts);
+    }
+    setCardDot(el.cardFerm, [el.tempNote, el.ambientLongNote, el.coldNote, el.warnHighYeast]);
+    setCardDot(el.cardParams, []);
+    setCardDot(el.cardFlour, [el.flourWarn]);
+  }
 
   // Rango de hidratación: la napolitana clásica vive en 55,5%+, pero permitimos
   // bajar hasta el 50% (masa densa, por debajo del estándar). La barra (50%→85%+)
@@ -480,13 +599,19 @@ window.stepColdTemp = function(dir) {
     const shownGkg = yeastAuto ? autoYeastGkg() : manualYeastPerKg;
     const shownPct = round2(shownGkg / 10);
     el.levadura.value = shownPct;
-    // En Auto se muestra el valor calculado como lectura (sin controles); en Manual,
-    // el stepper editable. El botón alterna entre ambos (sin toggle Auto/Manual).
-    if (el.yeastAuto) el.yeastAuto.hidden = !yeastAuto;
-    if (el.yeastStepper) el.yeastStepper.hidden = yeastAuto;
-    if (yeastAuto && el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(shownPct, 2);
+    // Control único: el stepper está SIEMPRE visible. En Auto se bloquea (valor calculado
+    // de solo lectura); en Manual se desbloquea para editarlo. El lápiz alterna el modo.
     lockStepper(el.yeastStepper, el.levadura, yeastAuto);
-    if (el.yeastModeBtn) el.yeastModeBtn.textContent = I18N.t(yeastAuto ? 'yeastAdjustManual' : 'yeastUseAuto');
+    if (el.yeastModeChip) el.yeastModeChip.hidden = !yeastAuto;
+    if (el.yeastEditBtn) {
+      // OJO: el atributo [hidden] NO oculta un <svg> inline (es SVGElement, no HTMLElement),
+      // así que alternamos con style.display, que gana siempre.
+      const p = el.yeastEditBtn.querySelector('.ye-ico-pencil');
+      const a = el.yeastEditBtn.querySelector('.ye-ico-auto');
+      if (p) p.style.display = yeastAuto ? '' : 'none'; // en Auto: lápiz (tomar el control)
+      if (a) a.style.display = yeastAuto ? 'none' : ''; // en Manual: magia (volver al automático)
+      el.yeastEditBtn.setAttribute('aria-label', I18N.t(yeastAuto ? 'yeastAdjustManual' : 'yeastUseAuto'));
+    }
     if (el.yeastHint) el.yeastHint.textContent = I18N.t(yeastAuto ? 'yeastAutoHint' : 'yeastManualHint');
   }
   renderParamModes();
@@ -1201,8 +1326,7 @@ window.stepColdTemp = function(dir) {
     const levPorKg = (yeastMode === 'manual') ? manualYeastPerKg : D.yeastPerKgFlour(horas, temp, coldH, coldT);
     if (yeastMode === 'auto') {
       const pct = round2(levPorKg / 10);
-      el.levadura.value = pct; // mantiene el input sincronizado (oculto en Auto)
-      if (el.yeastAutoValue) el.yeastAutoValue.textContent = U.formatNumber(pct, 2); // lectura visible
+      el.levadura.value = pct; // el input (bloqueado) ES la lectura visible del valor Auto
     }
 
     // Lector del tiempo total de fermentación (ambiente + nevera): solo con la nevera activa
@@ -1327,6 +1451,15 @@ window.stepColdTemp = function(dir) {
         : I18N.t('mixExcess').replace('{n}', delta);
     }
 
+    // Preferencia global (Configuración → Avisos): si están desactivados, ocultamos
+    // todos los banners de aviso NO bloqueantes; con ello desaparecen también el badge
+    // "Con avisos", los resúmenes de aviso de las tarjetas y los puntos ámbar. El aviso
+    // de harina ≠ 100% NO es un aviso opcional (es un bloqueo): se mantiene siempre.
+    if (!warningsEnabled) {
+      [el.tempNote, el.ambientLongNote, el.coldNote, el.warnHighYeast, el.flourWarn]
+        .forEach(function (e) { if (e) e.hidden = true; });
+    }
+
     el.warningBanner.classList.toggle('show', !esValidoHarina);
 
     // Se bloquea el resultado solo si la mezcla de harinas no suma 100%. El tiempo de
@@ -1386,7 +1519,14 @@ window.stepColdTemp = function(dir) {
       </div>`;
     }).join('');
 
-    el.totalMasa.textContent = U.formatWeight(pesoTotalMasa);
+    // firstRun: en la primera pintura no animamos nada (ni el titular ni la barra
+    // fija), solo cuando el usuario cambia algo. Se marca al final de calcular().
+    const firstRun = !masaInitialized;
+    const masaText = U.formatWeight(pesoTotalMasa);
+    if (el.totalMasa.textContent !== masaText) {
+      el.totalMasa.textContent = masaText;
+      if (!firstRun) pulseRecalc(el.totalMasa);
+    }
     el.totalHarina.textContent = U.formatWeight(harinaTotal);
     el.totalAgua.textContent = U.formatWeight(aguaTotal);
     el.totalSal.textContent = U.formatWeight(salTotal);
@@ -1424,11 +1564,16 @@ window.stepColdTemp = function(dir) {
 
     if (mobileSummary) {
       mobileSummary.classList.remove('blocked');
-      ms.harina.textContent = U.formatWeight(harinaTotal);
-      ms.agua.textContent = U.formatWeight(aguaTotal);
-      ms.sal.textContent = U.formatWeight(salTotal);
-      ms.lev.textContent = U.formatWeightPrecise(levaduraTotal);
+      // En móvil, la barra fija ES la superficie de resultado que se ve al ajustar,
+      // así que el "latido" al recalcular vive aquí (no en el titular, que queda al pie).
+      setMsVal(ms.total, U.formatWeight(pesoTotalMasa), firstRun);
+      setMsVal(ms.harina, U.formatWeight(harinaTotal), firstRun);
+      setMsVal(ms.agua, U.formatWeight(aguaTotal), firstRun);
+      setMsVal(ms.sal, U.formatWeight(salTotal), firstRun);
+      setMsVal(ms.lev, U.formatWeightPrecise(levaduraTotal), firstRun);
     }
+    masaInitialized = true;
+    updateCards();
   }
 
   [el.numPaneteos, el.temperatura, el.tempFrio, el.hidratacion].forEach(input => {
@@ -1591,8 +1736,8 @@ window.stepColdTemp = function(dir) {
     renderParamModes();
     calcular();
   }
-  // Botón contextual único: en Auto → "Ajustar a mano"; en Manual → "Volver al automático".
-  if (el.yeastModeBtn) el.yeastModeBtn.addEventListener('click', () => {
+  // Lápiz (Auto) / volver (Manual): alterna entre cálculo automático y ajuste manual.
+  if (el.yeastEditBtn) el.yeastEditBtn.addEventListener('click', () => {
     setYeastMode(yeastMode === 'auto' ? 'manual' : 'auto');
   });
 
@@ -1633,6 +1778,69 @@ window.stepColdTemp = function(dir) {
     window.addEventListener('resize', updateSummaryVisibility);
     updateSummaryVisibility();
   }
+
+  // ---- Tarjetas plegables (01-04): estado por defecto responsive + persistencia ----
+  // Por defecto: escritorio = todas abiertas (atributo open del HTML); móvil (primera
+  // visita, sin preferencia guardada) = solo Fermentación. Los cambios se recuerdan.
+  (function initCards(){
+    const CARDS_KEY = 'edu_pizza_open_card_v1';
+    const cardMap = { tanda: el.cardTanda, ferm: el.cardFerm, params: el.cardParams, flour: el.cardFlour };
+    const keys = Object.keys(cardMap);
+    // Acordeón guiado: solo una tarjeta abierta a la vez. Por defecto, el paso 1.
+    function openOnly(which){ keys.forEach(k => { if (cardMap[k]) cardMap[k].open = (k === which); }); }
+    let stored = null;
+    try { stored = localStorage.getItem(CARDS_KEY); } catch (e) {}
+    openOnly(cardMap[stored] ? stored : 'tanda');
+    const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let userToggled = false; // true solo si el usuario abre/cierra (clic o teclado en la cabecera)
+    keys.forEach(k => {
+      const c = cardMap[k];
+      if (!c) return;
+      const head = c.querySelector('.card-head');
+      if (head) head.addEventListener('click', () => { userToggled = true; });
+      c.addEventListener('toggle', () => {
+        const wasUser = userToggled; userToggled = false;
+        if (!c.open) return;   // solo actuamos al ABRIR: cerramos las demás (paso a paso)
+        // Posición de esta tarjeta ANTES de colapsar las demás (para compensar el salto).
+        const beforeTop = wasUser ? c.getBoundingClientRect().top : 0;
+        keys.forEach(j => { if (j !== k && cardMap[j] && cardMap[j].open) cardMap[j].open = false; });
+        try { localStorage.setItem(CARDS_KEY, k); } catch (e) {}
+        if (!wasUser) return;   // nunca en la carga inicial
+        // Al cerrar una tarjeta que estaba ARRIBA, el contenido se encoge y esta tarjeta
+        // "salta" hacia arriba de golpe. Compensamos ese salto al instante (la dejamos donde
+        // estaba a la vista) y LUEGO hacemos el scroll suave hasta arriba: transición natural.
+        const afterTop = c.getBoundingClientRect().top; // fuerza reflow: layout ya definitivo
+        if (afterTop !== beforeTop) window.scrollBy({ top: afterTop - beforeTop, left: 0, behavior: 'auto' });
+        requestAnimationFrame(function () {
+          c.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+        });
+      });
+    });
+  })();
+
+  // Interruptor de avisos (Configuración): activa/desactiva los banners no bloqueantes.
+  (function initWarningsToggle(){
+    const toggle = document.getElementById('warningsToggle');
+    if (!toggle) return;
+    const opts = toggle.querySelectorAll('.seg-opt');
+    function sync(){
+      opts.forEach(function (b) {
+        const on = (b.getAttribute('data-warnings') === (warningsEnabled ? 'on' : 'off'));
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    }
+    opts.forEach(function (b) {
+      b.addEventListener('click', function () {
+        warningsEnabled = (b.getAttribute('data-warnings') === 'on');
+        try { localStorage.setItem(WARN_KEY, warningsEnabled ? 'on' : 'off'); } catch (e) {}
+        sync();
+        calcular();
+      });
+    });
+    sync();
+  })();
+
 
   // Vuelve a pintar las harinas y los textos calculados cuando cambia el idioma
   window.addEventListener('pizzaLangChange', () => {

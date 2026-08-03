@@ -110,12 +110,64 @@ h1 em{ font-style: italic; color: var(--pomodoro); }
 .section{ padding: 34px 28px; border-bottom: 1px solid var(--border); }
 .section:last-child{ border-bottom:none; }
 .section-head{ display:flex; align-items:baseline; gap: 12px; margin-bottom: 18px; }
-.section-num{ font-family: var(--font-mono); font-size: 12px; color: var(--pomodoro); background: rgba(193,67,46,0.08); border: 1px solid rgba(193,67,46,0.25); border-radius: 999px; padding: 3px 9px; letter-spacing: 0.06em; }
+.section-num{ font-family: var(--font-mono); font-size: 12px; color: var(--pomodoro); background: rgba(193,67,46,0.08); border: 1px solid rgba(193,67,46,0.25); border-radius: 999px; padding: 3px 9px; letter-spacing: 0.06em; box-shadow: 0 1px 3px rgba(193,67,46,0.12); }
 .section-num.section-icon{ display:inline-flex; align-items:center; justify-content:center; width: 26px; height: 26px; padding: 0; }
 .section-title{ font-family: var(--font-display); font-size: 19px; font-weight: 600; color: var(--heading); margin:0; }
 .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ===== Tarjetas plegables del formulario (bloques 01-04) ===== */
+.section.card{ padding: 0; }
+.card-head{ display: flex; flex-direction: column; gap: 4px; padding: 22px 28px; cursor: pointer; list-style: none; }
+.card-head::-webkit-details-marker{ display: none; }
+.card-head::marker{ content: ""; }
+.card-head:hover{ background: var(--tint-a); }
+.card-head:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; }
+.card-head-top{ display: flex; align-items: center; gap: 12px; }
+.card-head-top .section-title{ margin: 0; }
+.card-chevron{ margin-left: auto; flex-shrink: 0; color: var(--text-soft); transition: transform 0.25s ease; }
+.card[open] .card-chevron{ transform: rotate(180deg); }
+.card-summary{ margin-left: 38px; font-size: 13px; color: var(--text-soft); display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; line-height: 1.3; }
+.card-summary:empty{ display: none; }
+.card[open] .card-summary{ display: none; }
+.card-summary svg{ width: 14px; height: 14px; opacity: 0.85; flex-shrink: 0; }
+.card-sum-item{ display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+/* Fases de fermentación en el resumen: "24 h a 23 °C │ 24 h a 4 °C" */
+.ferm-sum-phase{ display: inline-flex; align-items: center; white-space: nowrap; }
+.ferm-sum-sep{ display: inline-block; width: 1px; height: 12px; background: currentColor; opacity: 0.3; margin: 0 3px; align-self: center; }
+/* Aviso resumido en la tarjeta colapsada (ámbar, en su propia línea) */
+.card-sum-warns{ display: flex; flex-wrap: wrap; gap: 4px 10px; width: 100%; margin-top: 2px; }
+.card-sum-warn{ display: inline-flex; align-items: center; gap: 5px; color: #b0872a; font-weight: 600; }
+.card-sum-warn .cs-warn-ico{ width: 13px; height: 13px; flex-shrink: 0; opacity: 1; }
+html[data-theme="dark"] .card-sum-warn{ color: #d8a63c; }
+/* Indicador "Auto" de la levadura en el resumen de Fermentación */
+/* Ítem de levadura en el resumen colapsado: icono (racimos) · valor · chispa, con el mismo
+   gap entre los tres. Mantiene el estilo de texto de las fases pero con icono identificador. */
+.ferm-sum-yeast{ gap: 5px; }
+/* Chispa ✦ verde: único indicador de "levadura automática" (misma semántica que el icono de
+   magia del control). Sin píldora, para no romper la fila. */
+.ferm-sum-magic{ display: inline-flex; align-items: center; color: var(--basilico); }
+.ferm-sum-magic .cs-auto-ico{ width: 12px; height: 12px; flex-shrink: 0; opacity: 1; }
+html[data-theme="dark"] .ferm-sum-magic{ color: #8fb37e; }
+.card-body{ padding: 0 28px 28px; }
+.card[open] .card-body{ animation: accordionReveal 0.28s ease; }
+/* Punto ámbar en la cabecera de una tarjeta colapsada con aviso activo dentro. */
+.card-warn-dot{ width: 9px; height: 9px; border-radius: 50%; background: #e09e4a; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(224,158,74,0.18); }
+.card-warn-dot[hidden]{ display: none; }
+.card[open] .card-warn-dot{ display: none; }
+@media (max-width: 480px){
+  .card-head{ padding: 16px; }
+  .card-body{ padding: 0 16px 18px; }
+  .card-summary{ margin-left: 34px; }
+}
+
+/* ===== Layout apilado: cada bloque es una tarjeta separada con espacio entre ellas.
+   El panel del formulario deja de ser una tarjeta única y pasa a ser un contenedor
+   transparente; la tarjeta la lleva cada .section. ===== */
+.panel.stacked{ background: transparent; border: none; box-shadow: none; overflow: visible; display: flex; flex-direction: column; gap: 14px; }
+.panel.stacked > .section{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 3px 12px -6px rgba(36,26,21,0.18); overflow: hidden; scroll-margin-top: 14px; }
+html[data-theme="dark"] .panel.stacked > .section{ box-shadow: 0 3px 14px -6px rgba(0,0,0,0.5); }
 @media (max-width:520px){ .grid-2{ grid-template-columns: 1fr; } }
-label{ display:block; font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-soft); margin-bottom: 7px; text-transform: uppercase; }
+label{ display:block; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--text-soft); margin-bottom: 7px; }
 
 /* Stepper & Inputs */
 .stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
@@ -147,13 +199,23 @@ input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 .stepper-unit-wrap input { flex: 0 1 auto; width: 4.5ch; text-align: right; }
 
 /* Temp slider */
-.temp-row{ display:flex; align-items:center; gap: 16px; }
-.temp-readout{ display:inline-flex; align-items:baseline; justify-content:center; font-family: var(--font-mono); font-size: 28px; font-weight: 600; color: var(--pomodoro-dark); min-width: 78px; text-align:center; background: var(--surface-3); border-radius: 12px; padding: 8px 6px; border: 1.5px solid var(--border); }
+/* Readout de temperatura: compacto y con el MISMO lenguaje que steppers/inputs
+   (--surface-2, borde 1.5px, radio 10px). Vive en la fila del título (.param-head). */
+/* Readout de temperatura: prominente y alargado, a la derecha del título. Es el
+   único indicador del valor (ya no hay burbuja sobre el thumb). */
+.temp-readout{ display:inline-flex; align-items:baseline; justify-content:center; gap: 2px; font-family: var(--font-mono); font-size: 21px; font-weight: 700; color: var(--pomodoro-dark); background: var(--surface-2); border-radius: 12px; padding: 7px 18px; min-width: 104px; border: 1.5px solid var(--border); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+.temp-readout #tempUnit{ font-size: 0.68em; font-weight: 600; opacity: 0.85; }
+.temp-slider-wrap{ margin-top: 6px; }
+.temp-slider-wrap input[type="range"]{ width: 100%; display: block; }
 .temp-readout:focus-within{ border-color: var(--pomodoro); box-shadow: 0 0 0 2px rgba(193,67,46,0.18); }
 .temp-input{ font: inherit; color: inherit; background: transparent; border: none; width: 1.7em; text-align: right; padding: 0; margin: 0; -moz-appearance: textfield; }
 .temp-input:focus{ outline: none; }
 /* Fermentación mixta: interruptor de nevera + fase fría + error de tiempo total */
-.fridge-toggle { margin-top: 18px; }
+/* Fase con temperatura controlada: bloque que integra el interruptor de activación
+   con sus dos campos (temperatura + tiempo) para que se vea que van de la mano. */
+.controlled-phase { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); overflow: hidden; transition: border-color .18s ease; }
+.controlled-phase:has(#fridgeToggle:checked) { border-color: rgba(193,67,46,0.4); }
+.controlled-phase-toggle { display: flex; width: 100%; align-items: center; gap: 10px; padding: 13px 14px; }
 .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
 .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .switch-track { position: relative; flex-shrink: 0; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-3); border: 1.5px solid var(--border); transition: background .18s ease, border-color .18s ease; }
@@ -163,27 +225,35 @@ input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
 .switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px rgba(193,67,46,0.3); }
 .switch-text { font-size: 14px; font-weight: 600; color: var(--text); }
 .fridge-phase[hidden] { display: none; }
-/* Fase fría como tarjeta agrupada */
-.phase-card { margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-3); }
-.phase-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-soft); }
-.phase-card-icon { display: inline-flex; color: #4a90d9; }
-html[data-theme="dark"] .phase-card-icon { color: #7fb0d9; }
-.phase-card .param + .param { margin-top: 14px; }
+.fridge-phase { padding: 0 14px 14px; }
+/* Lista de dispositivos de la fase controlada (separador superior que la une al toggle). */
+.cp-devices { margin: 0 0 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-soft); }
+/* Temperatura y tiempo agrupados: lado a lado cuando hay sitio (tablet/PC) y apilados
+   en móvil estrecho (dos steppers a la vez quedan apretados y los botones dejan de ser
+   cómodos de tocar). Siguen agrupados dentro de la tarjeta de la fase controlada. */
+.cp-fields { gap: 12px; }
+/* En el grid, el segundo campo no debe llevar el margin-top de ".param + .param"
+   (si no, Tiempo queda descalonado respecto a Temperatura). */
+.cp-fields .param + .param { margin-top: 0; }
 .phase-tip { position: relative; margin: 14px 0 2px; padding-left: 24px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
 .phase-tip::before { content: '💡'; position: absolute; left: 0; top: 0; font-size: 13px; }
 /* Lector del tiempo TOTAL de fermentación */
 /* Recuadro inferior "Fermentación total": separado del bloque de fases con más margen,
    borde propio y un filete superior que actúa de divisor. */
-.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 24px; padding: 12px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; }
+/* Lector ligero del tiempo total, dentro de la fase controlada: sin recuadro, solo
+   un filete superior y texto tenue (menos peso visual que la levadura calculada). */
+.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .ferm-total[hidden] { display: none; }
-.ferm-total-label { font-size: 12.5px; font-weight: 600; color: var(--text-soft); }
-.ferm-total-value { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--heading); }
+.ferm-total-label { font-size: 12px; font-weight: 600; color: var(--text-soft); }
+.ferm-total-value { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-soft); }
 /* Aviso suave (informativo, no error) al llegar al máximo recomendado de fermentación */
 .ferm-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
 .ferm-note[hidden] { display: none; }
 .ferm-note svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
 html[data-theme="dark"] .ferm-note svg { color: #d8a63c; }
 /* Aviso contextual (caja ámbar) para temperaturas extremas y tiempos de frío atípicos */
+/* Aviso contextual: banner completo (icono + texto) siempre visible cuando está
+   activo, para que tenga fuerza. */
 .ctx-warn { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(176,135,42,0.12); font-size: 12px; line-height: 1.45; color: var(--text); }
 .ctx-warn[hidden] { display: none; }
 .ctx-warn svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
@@ -191,23 +261,33 @@ html[data-theme="dark"] .ctx-warn { background: rgba(216,166,60,0.14); }
 html[data-theme="dark"] .ctx-warn svg { color: #d8a63c; }
 /* Variante informativa (azul suave) para la nota 💡 de exceso de levadura */
 .ctx-warn--info { background: rgba(56,120,190,0.12); }
+.ctx-warn--info svg { color: #3878be; }
 html[data-theme="dark"] .ctx-warn--info { background: rgba(96,160,230,0.16); }
+html[data-theme="dark"] .ctx-warn--info svg { color: #7fb0e6; }
 /* Enlace a los consejos de fermentación (abre el bloque de abajo) */
 .ferm-tips-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--pomodoro); text-decoration: none; }
 .ferm-tips-link:hover { text-decoration: underline; }
-/* Levadura en modo Auto: valor calculado, de solo lectura (sin controles) */
-.yeast-auto { display: flex; align-items: baseline; gap: 8px; padding: 11px 14px; background: var(--surface-3); border: 1.5px solid var(--border); border-radius: 12px; }
-.yeast-auto[hidden] { display: none; }
-.yeast-auto-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--heading); line-height: 1; }
-.yeast-auto-unit { font-size: 12px; color: var(--text-soft); }
-.yeast-auto-badge { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--basilico); background: rgba(92,125,79,0.14); border-radius: 999px; padding: 4px 10px; }
-html[data-theme="dark"] .yeast-auto-badge { color: #90b384; background: rgba(144,179,132,0.16); }
+/* Levadura = control ÚNICO que se transforma (no dos cajas que se intercambian):
+   en Auto el stepper sale "bloqueado" (valor calculado en fuerte, ± atenuados) con un
+   chip verde "Auto" y un lápiz para tomar el control; en Manual se desbloquea y el lápiz
+   pasa a ser "volver al automático". Así el valor NO salta de sitio al cambiar de modo. */
+.yeast-mode-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--basilico); background: rgba(92,125,79,0.14); border-radius: 999px; padding: 4px 10px; }
+.yeast-mode-chip svg { width: 12px; height: 12px; }
+.yeast-mode-chip[hidden] { display: none; }
+html[data-theme="dark"] .yeast-mode-chip { color: #90b384; background: rgba(144,179,132,0.16); }
+/* "Botón de acción" a la derecha del stepper de levadura: lápiz (→ manual) / volver (→ auto). */
+.yeast-edit-btn { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 48px; height: 44px; padding: 0 14px; border: none; border-left: 1.5px solid var(--border); background: transparent; color: var(--pomodoro); cursor: pointer; transition: background 0.08s; }
+.yeast-edit-btn:hover { background: var(--tint-a); }
+.yeast-edit-btn:active { background: var(--tint-b); }
+.yeast-edit-btn svg { width: 18px; height: 18px; }
+.yeast-edit-btn:focus-visible { outline: 2px solid var(--pomodoro); outline-offset: -2px; }
+/* is-locked pone pointer-events:none en TODO el stepper (modo Auto): reactivamos SOLO el
+   lápiz para poder pasar a manual, y dejamos el valor en fuerte (no atenuado) porque es
+   el resultado que importa. */
+.yeast-stepper.is-locked .yeast-edit-btn { pointer-events: auto; opacity: 1; color: var(--pomodoro); }
+.yeast-stepper.is-locked input:disabled { color: var(--heading); -webkit-text-fill-color: var(--heading); }
 /* Subtítulo de sección (p. ej. "La levadura se ajusta según el tiempo y la temperatura") */
 .section-sub { margin: -4px 0 6px; font-size: 13px; line-height: 1.45; color: var(--text-soft); }
-/* Botón-enlace para alternar Auto/Manual de la levadura (una sola acción contextual) */
-.mode-link { background: none; border: none; padding: 4px 6px; margin: -4px -6px; color: var(--pomodoro); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; white-space: nowrap; }
-.mode-link:hover { text-decoration: underline; }
-.mode-link:focus-visible { outline: 2px solid var(--pomodoro); outline-offset: 1px; }
 /* Gradiente frío → calor acorde a la temperatura (17 °C frío → 25 °C calor):
    azul → teal → ámbar → rojo de marca.
    El input es ALTO (28px) para que toda la zona sea agarrable —antes medía 8px
@@ -227,6 +307,9 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
 /* ===== Parámetros de la masa: bloque apilado + Auto/Manual ===== */
 .param + .param { margin-top: 18px; }
 .param-hours { margin-top: 18px; } /* separa el tiempo de fermentación del slider de temperatura */
+/* La levadura es el RESULTADO de los ajustes de fermentación: la separamos del resto
+   del bloque con un divisor y aire (si no, queda pegada a la fase controlada). */
+.param-yeast { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
 .param-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 8px; }
 .param-head label { margin-bottom: 0; }
 .param-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 8px 2px 0; }
@@ -573,10 +656,10 @@ html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); 
 .btn-secondary:active { transform: scale(0.96); }
 
 /* Pie del panel: acción global de restablecer, discreta hasta que se busca. */
-.panel-footer{ display:flex; justify-content:center; padding: 18px 28px; }
-.btn-reset{ display:inline-flex; align-items:center; gap:7px; background:transparent; border:none; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 9px 16px; border-radius: 9px; cursor:pointer; transition: color 0.1s, background 0.1s, transform 0.08s; }
-.btn-reset svg{ opacity: 0.8; }
-.btn-reset:hover{ color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+.recipe-reset-row{ margin-top: 12px; }
+.btn-reset{ display:inline-flex; align-items:center; gap:7px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 9px 15px; border-radius: 9px; cursor:pointer; transition: color 0.12s, background 0.12s, border-color 0.12s, transform 0.08s; }
+.btn-reset svg{ opacity: 0.85; }
+.btn-reset:hover{ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.06); }
 .btn-reset:hover svg{ opacity: 1; }
 .btn-reset:active{ transform: scale(0.97); }
 
@@ -590,7 +673,11 @@ html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); 
 .results-title{ font-family: var(--font-display); font-size: 21px; font-weight:600; margin:0; }
 .results-badge{ font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 4px 10px; color: var(--farina-2); }
 .headline-stat{ display:flex; align-items:baseline; gap:10px; }
-.headline-number{ font-family: var(--font-mono); font-size: 44px; font-weight:700; letter-spacing: -0.02em; line-height: 1; }
+.headline-number{ font-family: var(--font-mono); font-size: 44px; font-weight:700; letter-spacing: -0.02em; line-height: 1; transform-origin: left center; }
+/* Micro-interacción: el total "late" brevemente al recalcular (ver pulseRecalc en
+   calculator.js). La regla global de prefers-reduced-motion la neutraliza. */
+@keyframes result-pop{ 0%{ transform: scale(1); } 35%{ transform: scale(1.05); } 100%{ transform: scale(1); } }
+.headline-number.recalc{ animation: result-pop 0.38s cubic-bezier(0.34,1.4,0.64,1); }
 .headline-label{ font-size: 13px; color: rgba(243,234,217,0.65); }
 .headline-context{ margin: 6px 0 0; font-family: var(--font-mono); font-size: 12.5px; color: rgba(243,234,217,0.5); }
 
@@ -853,15 +940,24 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
      para no apretarse contra el logo centrado ni salirse por la derecha. */
   .hero-controls{ position: static; width: 100%; justify-content: flex-end; margin-bottom: 2px; }
 }
+/* Hero compacto en móvil: reduce logo, márgenes y tamaño de título para que la
+   herramienta quede más arriba. El hero de escritorio no se toca. */
+@media (max-width: 600px){
+  header.hero{ padding: 10px 4px 22px; margin-bottom: 24px; gap: 6px; }
+  .hero-logo{ width: 60px; margin-bottom: 8px; }
+  h1{ font-size: clamp(24px, 7vw, 32px); }
+  .sub{ margin-top: 10px; font-size: 14px; line-height: 1.55; }
+  .sub-toggle{ margin-top: 4px; }
+}
 
 /* ===== Barra-resumen fija (solo móvil) ===== */
 .mobile-summary{ display: none; }
 @media (max-width: 900px){
   .mobile-summary{
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
-    display: flex; align-items: center; gap: 12px;
+    display: flex; flex-direction: column; gap: 8px;
     background: var(--forno); color: var(--farina);
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 9px 16px calc(9px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid rgba(255,255,255,0.12);
     box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.45);
     transform: translateY(120%);
@@ -870,13 +966,22 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
   }
   .mobile-summary.show{ transform: translateY(0); }
 }
-.ms-stats{ display: flex; flex: 1; gap: 10px; justify-content: space-between; min-width: 0; }
+/* Fila 1: masa total (destacada) + chevron. Fila 2: los cuatro ingredientes. */
+.ms-main{ display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ms-total{ display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ms-total-label{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
+.ms-total-val{ font-family: var(--font-mono); font-size: 18px; font-weight: 800; white-space: nowrap; display: inline-block; transform-origin: left center; }
+.ms-stats{ display: flex; gap: 10px; justify-content: space-between; min-width: 0; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.10); }
 .ms-stat{ display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.ms-label{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
-.ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; }
-.ms-blocked{ display: none; flex: 1; font-size: 13px; font-weight: 600; color: #f0a44e; }
+.ms-label{ font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
+.ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; display: inline-block; transform-origin: left center; }
+/* Latido de las cifras de la barra fija al recalcular (móvil). La regla global de
+   prefers-reduced-motion lo neutraliza. */
+@keyframes ms-pop{ 0%{ transform: scale(1); } 40%{ transform: scale(1.14); } 100%{ transform: scale(1); } }
+.ms-val.recalc, .ms-total-val.recalc{ animation: ms-pop 0.32s ease; }
+.ms-blocked{ display: none; font-size: 13px; font-weight: 600; color: #f0a44e; padding: 4px 0; }
 .ms-chevron{ flex-shrink: 0; opacity: 0.75; }
-.mobile-summary.blocked .ms-stats{ display: none; }
+.mobile-summary.blocked .ms-main, .mobile-summary.blocked .ms-stats{ display: none; }
 .mobile-summary.blocked .ms-blocked{ display: block; }
 
 /* ===== Foco de teclado ===== */
