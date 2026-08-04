@@ -36,7 +36,7 @@ window.stepPeso = function(dir) {
   const input = document.getElementById('pesoPaneto');
   const imperial = window.PizzaUnits && window.PizzaUnits.isImperial();
   const step = imperial ? 0.5 : 10;
-  const min = imperial ? 3.5 : 100;
+  const min = imperial ? 1.8 : 50;   // mínimo seguro (mini pizza); 50 g ≈ 1,8 oz
   let v = (parseDecimal(input.value) || 0) + dir * step;
   v = imperial ? Math.round(v * 10) / 10 : Math.round(v);
   if (v < min) v = min;
@@ -550,10 +550,10 @@ window.stepColdTemp = function(dir) {
     // Peso por pizza: g (métrico) u oz (imperial).
     if (imperial){
       el.pesoPaneto.value = Math.round(U.gToOz(pesoG) * 10) / 10;
-      el.pesoPaneto.step = '0.5'; el.pesoPaneto.min = '3.5';
+      el.pesoPaneto.step = '0.5'; el.pesoPaneto.min = '1.8';
     } else {
       el.pesoPaneto.value = Math.round(pesoG);
-      el.pesoPaneto.step = '10'; el.pesoPaneto.min = '100';
+      el.pesoPaneto.step = '10'; el.pesoPaneto.min = '50';
     }
     if (pesoUnitEl) pesoUnitEl.textContent = U.weightUnit();
     renderSaltField();
@@ -724,7 +724,8 @@ window.stepColdTemp = function(dir) {
     HYD_CLASSES.forEach(c => el.hydrationInfo.classList.remove(c));
     el.hydrationInfo.classList.add('hyd-info--' + cls);
     el.hydrationInfoHead.textContent = I18N.t('hyd' + key + 'Head');
-    el.hydrationInfoText.textContent = I18N.t('hyd' + key + 'Body');
+    // El cuerpo lleva marcado de confianza (<em>cornicione</em>), por eso innerHTML.
+    el.hydrationInfoText.innerHTML = I18N.t('hyd' + key + 'Body');
     // Marcador sobre la escala 50→85%: posición proporcional (topada a los extremos).
     if (el.hydMarker) {
       const p = Math.max(0, Math.min(100, (pct - 50) / 35 * 100));
@@ -1714,11 +1715,11 @@ window.stepColdTemp = function(dir) {
   // Peso por pizza y sal actualizan primero su valor canónico (métrico) y luego recalculan.
   el.pesoPaneto.addEventListener('input', () => { pesoG = readPesoField(); calcular(); });
   el.sal.addEventListener('input', () => { if (salMode === 'manual') { applySalFromField(); } calcular(); });
-  // Peso por pizza: al salir del campo, topamos al mínimo (100 g / 3,5 oz) y redondeamos
+  // Peso por pizza: al salir del campo, topamos al mínimo (50 g / 1,8 oz) y redondeamos
   // al paso de la unidad (los botones ya lo hacen; esto cubre el tecleo directo).
   el.pesoPaneto.addEventListener('change', () => {
     const imperial = U.isImperial();
-    const min = imperial ? 3.5 : 100;
+    const min = imperial ? 1.8 : 50;
     let v = parseDecimal(el.pesoPaneto.value);
     if (!isFinite(v) || v < min) v = min;
     v = imperial ? Math.round(v * 10) / 10 : Math.round(v);
