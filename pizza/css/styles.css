@@ -285,25 +285,27 @@ html[data-theme="dark"] .ctx-warn--info svg { color: #7fb0e6; }
 /* Enlace a los consejos de fermentación (abre el bloque de abajo) */
 .ferm-tips-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--pomodoro-text); text-decoration: none; }
 .ferm-tips-link:hover { text-decoration: underline; }
-/* Levadura = control ÚNICO que se transforma (no dos cajas que se intercambian):
-   en Auto el stepper sale "bloqueado" (valor calculado en fuerte, ± atenuados) con un
-   chip verde "Auto" y un lápiz para tomar el control; en Manual se desbloquea y el lápiz
-   pasa a ser "volver al automático". Así el valor NO salta de sitio al cambiar de modo. */
-.yeast-mode-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--basilico-text); background: rgba(92,125,79,0.14); border-radius: 999px; padding: 4px 10px; }
-.yeast-mode-chip svg { width: 12px; height: 12px; }
-.yeast-mode-chip[hidden] { display: none; }
-html[data-theme="dark"] .yeast-mode-chip { background: rgba(144,179,132,0.16); }
-/* "Botón de acción" a la derecha del stepper de levadura: lápiz (→ manual) / volver (→ auto). */
-.yeast-edit-btn { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 48px; height: 44px; padding: 0 14px; border: none; border-left: 1.5px solid var(--control-border); background: transparent; color: var(--pomodoro); cursor: pointer; transition: background 0.08s; }
-.yeast-edit-btn:hover { background: var(--tint-a); }
-.yeast-edit-btn:active { background: var(--tint-b); }
-.yeast-edit-btn svg { width: 18px; height: 18px; }
-.yeast-edit-btn:focus-visible { outline: 2px solid var(--pomodoro); outline-offset: -2px; }
-/* is-locked pone pointer-events:none en TODO el stepper (modo Auto): reactivamos SOLO el
-   lápiz para poder pasar a manual, y dejamos el valor en fuerte (no atenuado) porque es
-   el resultado que importa. */
-.yeast-stepper.is-locked .yeast-edit-btn { pointer-events: auto; opacity: 1; color: var(--pomodoro); }
+/* Levadura: interruptor claro "Auto / Manual" en la cabecera (segmento activo
+   resaltado: verde = Auto, terracota = Manual) y, debajo, el stepper del valor.
+   En Auto el stepper se bloquea y muestra el valor calculado en FUERTE (no atenuado)
+   porque es el resultado que importa; en Manual se desbloquea para editarlo. */
+.yeast-mode-seg .seg { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.yeast-mode-seg .seg svg { width: 13px; height: 13px; flex-shrink: 0; }
+/* Auto activo = verde (automático); Manual activo = terracota. El icono ✦ marca el
+   modo automático, coherente con el resto de la interfaz (resumen de fermentación). */
+.yeast-mode-seg #yeastSegAuto.active { background: var(--basilico); box-shadow: 0 1px 3px rgba(92,125,79,0.35); }
+.yeast-mode-seg #yeastSegManual.active { background: var(--pomodoro); box-shadow: 0 1px 3px rgba(193,67,46,0.35); }
 .yeast-stepper.is-locked input:disabled { color: var(--heading); -webkit-text-fill-color: var(--heading); }
+/* Guía de tamaños de referencia (peso por pizza) al pie del paso "Tamaño de la tanda".
+   Mini-tabla: peso alineado a la izquierda + descripción; la estándar resaltada en verde. */
+.size-guide { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.size-guide-title { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-soft); margin-bottom: 10px; }
+.size-guide-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.size-guide-item { display: flex; align-items: baseline; gap: 12px; font-size: 13.5px; }
+.size-guide-item .sg-w { flex: 0 0 auto; min-width: 82px; font-family: var(--font-mono); font-weight: 700; color: var(--heading); }
+.size-guide-item .sg-desc { color: var(--text-soft); }
+.size-guide-item.is-std .sg-w { color: var(--basilico-text); }
+.size-guide-item.is-std .sg-desc { color: var(--text); font-weight: 600; }
 /* Subtítulo de sección (p. ej. "La levadura se ajusta según el tiempo y la temperatura") */
 .section-sub { margin: -4px 0 6px; font-size: 13px; line-height: 1.45; color: var(--text-soft); }
 /* Gradiente frío → calor acorde a la temperatura (17 °C frío → 25 °C calor):

@@ -166,8 +166,8 @@ window.stepColdTemp = function(dir) {
     levadura: document.getElementById('levadura'),
     salStepper: document.getElementById('salStepper'),
     yeastStepper: document.getElementById('yeastStepper'),
-    yeastModeChip: document.getElementById('yeastModeChip'),
-    yeastEditBtn: document.getElementById('yeastEditBtn'),
+    yeastSegAuto: document.getElementById('yeastSegAuto'),
+    yeastSegManual: document.getElementById('yeastSegManual'),
     salHint: document.getElementById('salHint'),
     yeastHint: document.getElementById('yeastHint'),
     hydrationInfo: document.getElementById('hydrationInfo'),
@@ -600,18 +600,17 @@ window.stepColdTemp = function(dir) {
     const shownGkg = yeastAuto ? autoYeastGkg() : manualYeastPerKg;
     const shownPct = round2(shownGkg / 10);
     el.levadura.value = shownPct;
-    // Control único: el stepper está SIEMPRE visible. En Auto se bloquea (valor calculado
-    // de solo lectura); en Manual se desbloquea para editarlo. El lápiz alterna el modo.
+    // El stepper del valor está SIEMPRE visible: en Auto se bloquea (valor calculado,
+    // solo lectura); en Manual se desbloquea para editarlo. El interruptor Auto/Manual
+    // de la cabecera marca el modo activo (segmento resaltado).
     lockStepper(el.yeastStepper, el.levadura, yeastAuto);
-    if (el.yeastModeChip) el.yeastModeChip.hidden = !yeastAuto;
-    if (el.yeastEditBtn) {
-      // OJO: el atributo [hidden] NO oculta un <svg> inline (es SVGElement, no HTMLElement),
-      // así que alternamos con style.display, que gana siempre.
-      const p = el.yeastEditBtn.querySelector('.ye-ico-pencil');
-      const a = el.yeastEditBtn.querySelector('.ye-ico-auto');
-      if (p) p.style.display = yeastAuto ? '' : 'none'; // en Auto: lápiz (tomar el control)
-      if (a) a.style.display = yeastAuto ? 'none' : ''; // en Manual: magia (volver al automático)
-      el.yeastEditBtn.setAttribute('aria-label', I18N.t(yeastAuto ? 'yeastAdjustManual' : 'yeastUseAuto'));
+    if (el.yeastSegAuto) {
+      el.yeastSegAuto.classList.toggle('active', yeastAuto);
+      el.yeastSegAuto.setAttribute('aria-pressed', String(yeastAuto));
+    }
+    if (el.yeastSegManual) {
+      el.yeastSegManual.classList.toggle('active', !yeastAuto);
+      el.yeastSegManual.setAttribute('aria-pressed', String(!yeastAuto));
     }
     if (el.yeastHint) el.yeastHint.textContent = I18N.t(yeastAuto ? 'yeastAutoHint' : 'yeastManualHint');
   }
@@ -1768,10 +1767,9 @@ window.stepColdTemp = function(dir) {
     renderParamModes();
     calcular();
   }
-  // Lápiz (Auto) / volver (Manual): alterna entre cálculo automático y ajuste manual.
-  if (el.yeastEditBtn) el.yeastEditBtn.addEventListener('click', () => {
-    setYeastMode(yeastMode === 'auto' ? 'manual' : 'auto');
-  });
+  // Interruptor Auto/Manual de la cabecera: cada segmento fija su modo.
+  if (el.yeastSegAuto) el.yeastSegAuto.addEventListener('click', () => setYeastMode('auto'));
+  if (el.yeastSegManual) el.yeastSegManual.addEventListener('click', () => setYeastMode('manual'));
 
   renderFlours();
 
@@ -1823,7 +1821,6 @@ window.stepColdTemp = function(dir) {
     let stored = null;
     try { stored = localStorage.getItem(CARDS_KEY); } catch (e) {}
     openOnly(cardMap[stored] ? stored : 'tanda');
-    const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let userToggled = false; // true solo si el usuario abre/cierra (clic o teclado en la cabecera)
     keys.forEach(k => {
       const c = cardMap[k];
@@ -1833,19 +1830,14 @@ window.stepColdTemp = function(dir) {
       c.addEventListener('toggle', () => {
         const wasUser = userToggled; userToggled = false;
         if (!c.open) return;   // solo actuamos al ABRIR: cerramos las demás (paso a paso)
-        // Posición de esta tarjeta ANTES de colapsar las demás (para compensar el salto).
-        const beforeTop = wasUser ? c.getBoundingClientRect().top : 0;
         keys.forEach(j => { if (j !== k && cardMap[j] && cardMap[j].open) cardMap[j].open = false; });
         try { localStorage.setItem(CARDS_KEY, k); } catch (e) {}
         if (!wasUser) return;   // nunca en la carga inicial
-        // Al cerrar una tarjeta que estaba ARRIBA, el contenido se encoge y esta tarjeta
-        // "salta" hacia arriba de golpe. Compensamos ese salto al instante (la dejamos donde
-        // estaba a la vista) y LUEGO hacemos el scroll suave hasta arriba: transición natural.
-        const afterTop = c.getBoundingClientRect().top; // fuerza reflow: layout ya definitivo
-        if (afterTop !== beforeTop) window.scrollBy({ top: afterTop - beforeTop, left: 0, behavior: 'auto' });
-        requestAnimationFrame(function () {
-          c.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-        });
+        // Enfoque DIRECTO, en un único movimiento: al cerrar las demás, el contenido de
+        // arriba se encoge; en vez de compensar el salto y LUEGO animar (dos fases que
+        // chocaban con el reflujo y se sentían raras), reposicionamos la tarjeta abierta
+        // pegada arriba de una sola vez (instantáneo, tras el reflow ya definitivo).
+        c.scrollIntoView({ block: 'start' });
       });
     });
   })();
@@ -1855,7 +1847,6 @@ window.stepColdTemp = function(dir) {
   // compensar salto. Solo al abrir por el usuario (no en la carga ni al abrir por el enlace
   // "Ver consejos", que ya hace su propio scroll).
   (function initTipsScroll(){
-    const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const accs = Array.prototype.slice.call(document.querySelectorAll('details.accordion'));
     accs.forEach(function (acc) {
       const head = acc.querySelector('.accordion-summary');
@@ -1864,16 +1855,11 @@ window.stepColdTemp = function(dir) {
       acc.addEventListener('toggle', function () {
         const wasUser = userToggled; userToggled = false;
         if (!acc.open) return;
-        // Posición ANTES de cerrar el resto (para compensar el salto, igual que los pasos).
-        const beforeTop = wasUser ? acc.getBoundingClientRect().top : 0;
         // Solo un consejo abierto a la vez: cerramos los demás.
         accs.forEach(function (other) { if (other !== acc && other.open) other.open = false; });
         if (!wasUser) return;   // nunca en la carga ni al abrir por el enlace "Ver consejos"
-        const afterTop = acc.getBoundingClientRect().top;
-        if (afterTop !== beforeTop) window.scrollBy({ top: afterTop - beforeTop, left: 0, behavior: 'auto' });
-        requestAnimationFrame(function () {
-          acc.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
-        });
+        // Enfoque directo, en un único movimiento (igual que los pasos).
+        acc.scrollIntoView({ block: 'start' });
       });
     });
   })();

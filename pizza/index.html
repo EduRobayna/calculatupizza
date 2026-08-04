@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v59</span>
+      <span class="beta-badge__ver">v60</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -184,12 +184,20 @@
             <div class="stepper">
               <button type="button" class="stepper-btn" onclick="stepPeso(-1)" aria-label="Reducir peso por pizza" data-i18n-aria="restar10g">−</button>
               <div class="stepper-unit-wrap">
-                <input type="text" id="pesoPaneto" value="280" min="100" step="10" inputmode="decimal" aria-label="Peso por pizza" data-i18n-aria="pesoPizzaAria">
+                <input type="text" id="pesoPaneto" value="280" min="50" step="10" inputmode="decimal" aria-label="Peso por pizza" data-i18n-aria="pesoPizzaAria">
                 <span class="unit-tag" id="pesoUnit">g</span>
               </div>
               <button type="button" class="stepper-btn" onclick="stepPeso(1)" aria-label="Aumentar peso por pizza" data-i18n-aria="sumar10g">+</button>
             </div>
           </div>
+        </div>
+        <div class="size-guide">
+          <span class="size-guide-title" data-i18n="sizeGuideTitle">Tamaños de referencia</span>
+          <ul class="size-guide-list">
+            <li class="size-guide-item"><span class="sg-w">180 g</span><span class="sg-desc" data-i18n="sizeGuideSmall">Napolitana pequeña</span></li>
+            <li class="size-guide-item is-std"><span class="sg-w">250–280 g</span><span class="sg-desc" data-i18n="sizeGuideStd">Napolitana estándar</span></li>
+            <li class="size-guide-item"><span class="sg-w">300 g</span><span class="sg-desc" data-i18n="sizeGuideLarge">Napolitana grande</span></li>
+          </ul>
         </div>
         </div>
       </details>
@@ -288,10 +296,13 @@
         <div class="param param-yeast">
           <div class="param-head">
             <label for="levadura" data-i18n="levaduraLabel">Levadura fresca</label>
-            <span class="yeast-mode-chip" id="yeastModeChip" role="status" aria-live="polite">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.7 5.1 5.1 1.7-5.1 1.7L12 15.6l-1.7-5.1L5.2 8.8l5.1-1.7z"/></svg>
-              <span data-i18n="modeAuto">Auto</span>
-            </span>
+            <div class="mode-seg yeast-mode-seg" role="group" data-i18n-aria="yeastModeAria" aria-label="Modo de la levadura (automático o manual)">
+              <button type="button" class="seg" id="yeastSegAuto">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.7 5.1 5.1 1.7-5.1 1.7L12 15.6l-1.7-5.1L5.2 8.8l5.1-1.7z"/></svg>
+                <span data-i18n="modeAuto">Auto</span>
+              </button>
+              <button type="button" class="seg" id="yeastSegManual" data-i18n="modeManual">Manual</button>
+            </div>
           </div>
           <div class="stepper yeast-stepper" id="yeastStepper">
             <button type="button" class="stepper-btn" onclick="stepYeast(-1)" aria-label="Reducir levadura" data-i18n-aria="restarLevadura">−</button>
@@ -300,10 +311,6 @@
               <span class="unit-tag" data-i18n="yeastUnit">% harina</span>
             </div>
             <button type="button" class="stepper-btn" onclick="stepYeast(1)" aria-label="Añadir levadura" data-i18n-aria="sumarLevadura">+</button>
-            <button type="button" class="yeast-edit-btn" id="yeastEditBtn" aria-label="Ajustar a mano">
-              <svg class="ye-ico-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-              <svg class="ye-ico-auto" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M12 2l1.7 5.1 5.1 1.7-5.1 1.7L12 15.6l-1.7-5.1L5.2 8.8l5.1-1.7z"/></svg>
-            </button>
           </div>
           <p class="ctx-warn ctx-warn--info" id="warnHighYeast" role="status" hidden>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
