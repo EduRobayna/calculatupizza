@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v60</span>
+      <span class="beta-badge__ver">v61</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -670,17 +670,19 @@
        openModal/closeModal (focus-trap + bloqueo de scroll). -->
   <div id="whatsNewModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle">
     <div class="modal-card whatsnew-card" tabindex="-1">
-      <div class="settings-head">
-        <h3 class="modal-title" id="whatsNewTitle" data-i18n="whatsNewTitle">Novedades de la versión 2.0</h3>
+      <div class="whatsnew-head">
+        <span class="whatsnew-badge" aria-hidden="true">2.0</span>
+        <h3 class="modal-title" id="whatsNewTitle" data-i18n="whatsNewTitle">Novedades</h3>
+        <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Esto es lo nuevo:</p>
       </div>
-      <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Estas son las novedades de la versión 2.0:</p>
       <ul class="whatsnew-list">
-        <li data-i18n-html="whatsNewLi1">🍕 <b>Fermentación por fases.</b> Combina temperatura ambiente con nevera, vinoteca o fermentadora, cada fase con su tiempo y su temperatura.</li>
-        <li data-i18n-html="whatsNewLi2">🧠 <b>Levadura automática.</b> Un motor matemático calcula la cantidad exacta de levadura según tus horas y tu temperatura.</li>
-        <li data-i18n-html="whatsNewLi3">💡 <b>Avisos inteligentes.</b> Te avisa si la temperatura, el tiempo o la fuerza de la harina no encajan, con recomendaciones concretas.</li>
-        <li data-i18n-html="whatsNewLi4">🔍 <b>Muchas más harinas.</b> Base de datos ampliada con buscador y filtros por marca, tipo y fuerza (W). Y ahora puedes añadir y guardar tus propias harinas.</li>
-        <li data-i18n-html="whatsNewLi5">💧 <b>Guía de hidratación.</b> Consejos según el porcentaje de agua que elijas, con escala visual.</li>
-        <li data-i18n-html="whatsNewLi6">📖 <b>Consejos revisados.</b> Amasado y fermentación explicados paso a paso, y ahora también en inglés.</li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🍕</span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Fermentación por fases.</b> Combina temperatura ambiente con nevera, vinoteca o fermentadora, cada fase con su tiempo y su temperatura.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🫧</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Levadura automática.</b> Un motor matemático calcula la cantidad exacta según tus horas y temperatura, o la ajustas tú a mano.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">💧</span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Guía de hidratación.</b> Consejos según el porcentaje de agua que elijas, con una escala visual de estilo napolitano.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🌾</span><span class="wn-text" data-i18n-html="whatsNewLi4"><b>Muchas más harinas.</b> Base de datos ampliada con buscador y filtros por marca, tipo y fuerza (W). Y puedes añadir y guardar las tuyas.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">📚</span><span class="wn-text" data-i18n-html="whatsNewLi5"><b>Mis recetas.</b> Guarda tus masas y vuelve a ellas cuando quieras: búscalas, edítalas, compártelas e impórtalas o expórtalas.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">💡</span><span class="wn-text" data-i18n-html="whatsNewLi6"><b>Avisos inteligentes.</b> Te avisa si la temperatura, el tiempo o la fuerza de la harina no encajan, con recomendaciones concretas.</span></li>
+        <li class="wn-item"><span class="wn-ico" aria-hidden="true">📖</span><span class="wn-text" data-i18n-html="whatsNewLi7"><b>Consejos paso a paso.</b> Amasado y fermentación explicados con detalle, y ahora también en inglés.</span></li>
       </ul>
       <div class="modal-actions">
         <button type="button" id="whatsNewOkBtn" class="btn-secondary modal-confirm" data-i18n="whatsNewCta">¡Empezar!</button>
