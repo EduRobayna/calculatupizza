@@ -346,7 +346,9 @@ input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
    (verde/ámbar/naranja/rojo) y el marcador indica dónde cae el valor actual. */
 .hyd-scale { margin-top: 12px; }
 .hyd-scale-track { position: relative; height: 8px; border-radius: 4px;
-  background: linear-gradient(90deg, #c1432e 0 15.7%, #5c7d4f 15.7% 37.1%, #c69214 37.1% 57.1%, #c2622e 57.1% 85.7%, #9c3423 85.7% 100%); }
+  /* Escala divergente: rojo (50%) → verde de la napolitana clásica (meseta 55-62%)
+     → cálidos (contemporánea) → rojo al final (alta, exigente). */
+  background: linear-gradient(90deg, #c1432e 0%, #5c7d4f 14.3%, #5c7d4f 37.1%, #c69214 47%, #c2622e 63%, #9c3423 100%); }
 .hyd-scale-marker { position: absolute; top: 50%; left: 0; width: 3px; height: 16px; border-radius: 2px;
   background: var(--heading); box-shadow: 0 0 0 1.5px var(--surface); transform: translate(-50%, -50%); transition: left .2s ease; }
 .hyd-scale-ends { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-soft); }

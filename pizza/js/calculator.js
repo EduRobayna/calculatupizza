@@ -706,22 +706,23 @@ window.stepColdTemp = function(dir) {
     return U.formatNumber(valor / harina * 100, decimales) + '%';
   }
 
-  // Caja informativa bajo la hidratación: color de fondo/borde + texto según el
-  // rango del %. Bandas contiguas (sin huecos): <55,5 rojo (densa, bajo estándar) ·
-  // 55,5–<63 verde (napolitana clásica) · 63–<70 amarillo (media) ·
-  // 70–80 naranja (alta) · >80 rojo oscuro (extrema).
+  // Caja informativa bajo la hidratación: color y texto según la banda del %.
+  // Escala divergente centrada en el verde de la napolitana clásica (55-62):
+  //   <55 rojo (muy baja, bajo estándar) · 55–<60 verde (baja, clásica) ·
+  //   60–<63 verde (media, clásica) · 63–<70 ámbar (media-alta, contemporánea) ·
+  //   ≥70 rojo (alta, contemporánea). El gradiente de la barra sigue el mismo patrón.
   const HYD_CLASSES = ['hyd-info--dense', 'hyd-info--green', 'hyd-info--yellow', 'hyd-info--orange', 'hyd-info--red'];
   function updateHydrationInfo(){
     if (!el.hydrationInfo) return;
     const pct = parseDecimal(el.hidratacion.value) || 0;
-    let key;
-    if (pct > 80) key = 'Red';
-    else if (pct >= 70) key = 'Orange';
-    else if (pct >= 63) key = 'Yellow';
-    else if (pct >= 55.5) key = 'Green';
-    else key = 'Dense';
+    let cls, key;
+    if (pct < 55)      { cls = 'dense';  key = 'MuyBaja'; }
+    else if (pct < 60) { cls = 'green';  key = 'Baja'; }
+    else if (pct < 63) { cls = 'green';  key = 'Media'; }
+    else if (pct < 70) { cls = 'yellow'; key = 'MediaAlta'; }
+    else               { cls = 'red';    key = 'Alta'; }
     HYD_CLASSES.forEach(c => el.hydrationInfo.classList.remove(c));
-    el.hydrationInfo.classList.add('hyd-info--' + key.toLowerCase());
+    el.hydrationInfo.classList.add('hyd-info--' + cls);
     el.hydrationInfoHead.textContent = I18N.t('hyd' + key + 'Head');
     el.hydrationInfoText.textContent = I18N.t('hyd' + key + 'Body');
     // Marcador sobre la escala 50→85%: posición proporcional (topada a los extremos).
