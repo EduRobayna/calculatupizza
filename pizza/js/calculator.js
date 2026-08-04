@@ -579,7 +579,7 @@ window.stepColdTemp = function(dir) {
     const rows = [];
     if (el.fridgeToggle.checked) {
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
-      rows.push([I18N.t('fridgePhaseTitle'), coldStr]);
+      rows.push([I18N.t('fermControlledLabel'), coldStr]);
     } else {
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     }
@@ -2611,31 +2611,41 @@ window.stepColdTemp = function(dir) {
           flours: flours
         }).harinaTotal;
 
-    // Línea de fermentación: solo ambiente, o nevera + ambiente si hay fase fría.
-    // Conector localizado ("a"/"at") y espacio antes del grado. Ambas temperaturas se
-    // muestran en la unidad activa (°C/°F).
-    const at = I18N.t('recipeAt');
-    const ambTempStr = U.tempValue(tempC) + ' ' + U.tempUnit();
-    const coldTempStr = Math.round(U.tempValue(coldT)) + ' ' + U.tempUnit();
-    const fermLine = coldH > 0
-      ? `${U.formatNumber(coldH, 0)} h ${at} ${coldTempStr} (${I18N.t('recipeFridge')}) + ${U.formatNumber(horas, 0)} h ${at} ${ambTempStr}`
-      : `${U.formatNumber(horas, 0)} h ${at} ${ambTempStr}`;
+    // Formato compacto y vertical para WhatsApp/redes: cabecera con la web, la fórmula (%)
+    // arriba y las cantidades (g) abajo. Pesos pegados a la unidad ("340g") y grados sin
+    // espacio ("15°C"); sin markdown (que en algunas apps se ve literal).
+    const noSp = (s) => (s || '').replace(/\s+/g, '');
+    const wU = U.weightUnit();
+    const tU = U.tempUnit();
+    const ambTemp = U.tempValue(tempC) + tU;
+    const coldTemp = Math.round(U.tempValue(coldT)) + tU;
+    const salFormula = U.formatNumber(el.sal.value) + (saltIsFlour() ? '%' : ' g/L');
+    const ferm = coldH > 0
+      ? U.formatNumber(coldH, 0) + 'h (' + coldTemp + ') + ' + U.formatNumber(horas, 0) + 'h (' + ambTemp + ')'
+      : U.formatNumber(horas, 0) + 'h (' + ambTemp + ')';
 
-    return `${I18N.t('recipeHeader')}
-
-${I18N.t('recipePizzas')}: ${U.formatNumber(el.numPaneteos.value, 0)} × ${U.formatNumber(el.pesoPaneto.value)} ${U.weightUnit()}
-${I18N.t('recipeFermentation')}: ${fermLine}
-${I18N.t('recipeHydration')}: ${U.formatNumber(el.hidratacion.value)}%
-${I18N.t('recipeSalt')}: ${U.formatNumber(el.sal.value)} ${saltIsFlour() ? I18N.t('salUnitFlour') : I18N.t('salUnitGL')}
-
-${I18N.t('recipeTotals')}
-- ${I18N.t('recipeTotalFlour')}: ${el.totalHarina.textContent}
-- ${I18N.t('recipeWater')}: ${el.totalAgua.textContent}
-- ${I18N.t('recipeSalt2')}: ${el.totalSal.textContent}
-- ${I18N.t('recipeFreshYeast')}: ${el.totalLevadura.textContent} ${I18N.t('recipeDryYeast').replace('{n}', el.totalLevaduraSeca.textContent)}
-
-${I18N.t('recipeFlourMix')}
-${flours.map(f => `- ${flourName(f.flourId)}: ${U.formatWeight(harinaT * (f.pct/100))} (${U.formatNumber(f.pct)}%)`).join('\n')}`;
+    const L = [];
+    L.push(I18N.t('recipeHeader') + ' | calculatupizza.com');
+    L.push('');
+    L.push('🍕 ' + U.formatNumber(el.numPaneteos.value, 0) + 'x' + U.formatNumber(el.pesoPaneto.value) + wU);
+    L.push('💧 ' + U.formatNumber(el.hidratacion.value) + '% ' + I18N.t('recipeWater') +
+           ' | 🧂 ' + salFormula + ' ' + I18N.t('recipeSalt2'));
+    L.push('⏱️ ' + ferm);
+    L.push('');
+    L.push(I18N.t('recipeIngredients'));
+    L.push('🌾 ' + noSp(el.totalHarina.textContent) + ' ' + I18N.t('recipeFlourShort'));
+    L.push('💧 ' + noSp(el.totalAgua.textContent) + ' ' + I18N.t('recipeWater'));
+    L.push('🧂 ' + noSp(el.totalSal.textContent) + ' ' + I18N.t('recipeSalt2'));
+    L.push('🫧 ' + noSp(el.totalLevadura.textContent) + ' ' + I18N.t('recipeYeastShort') +
+           ' (' + noSp(el.totalLevaduraSeca.textContent) + ' ' + I18N.t('recipeDryShort') + ')');
+    // La mezcla solo si hay más de una harina (con una sola, ya es la "Harina" de arriba).
+    if (flours.length > 1) {
+      L.push('');
+      L.push(I18N.t('recipeFloursHeader'));
+      flours.forEach((f) => L.push('🔸 ' + noSp(U.formatWeight(harinaT * (f.pct / 100))) +
+        ' (' + U.formatNumber(f.pct) + '%) ' + flourName(f.flourId)));
+    }
+    return L.join('\n');
   }
 
   // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.

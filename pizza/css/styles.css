@@ -659,12 +659,19 @@ html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); 
 .btn-secondary:active { transform: scale(0.96); }
 
 /* Pie del panel: acción global de restablecer, discreta hasta que se busca. */
-.recipe-reset-row{ margin-top: 12px; }
-.btn-reset{ display:inline-flex; align-items:center; gap:7px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 9px 15px; border-radius: 9px; cursor:pointer; transition: color 0.12s, background 0.12s, border-color 0.12s, transform 0.08s; }
-.btn-reset svg{ opacity: 0.85; }
-.btn-reset:hover{ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.06); }
-.btn-reset:hover svg{ opacity: 1; }
-.btn-reset:active{ transform: scale(0.97); }
+/* Restablecer receta: acción secundaria del bloque "Mis recetas". Va como "pie" del bloque
+   —ancho completo, sin borde y con un separador fino arriba— para que se integre en lugar de
+   flotar como una píldora suelta. Hover terracota (acción algo destructiva), solo en ratón. */
+.recipe-reset-row{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.btn-reset{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background: transparent; border: none; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 10px 12px; border-radius: 10px; cursor:pointer; transition: color 0.12s, background 0.12s, transform 0.08s; }
+.btn-reset svg{ width:14px; height:14px; opacity: 0.85; }
+.btn-reset:active{ transform: scale(0.99); }
+@media (hover: hover){
+  .btn-reset:hover{ color: var(--pomodoro); background: rgba(193,67,46,0.07); }
+  .btn-reset:hover svg{ opacity: 1; }
+}
+/* Menos aire bajo el botón de restablecer (es el último elemento del bloque "Mis recetas"). */
+.section:has(.recipe-reset-row){ padding-bottom: 16px; }
 
 .warning-banner{ display:none; margin-top: 14px; background: rgba(193,67,46,0.09); border: 1.5px solid rgba(193,67,46,0.4); color: var(--pomodoro-dark); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; align-items:flex-start; gap: 8px; }
 .warning-banner.show{ display:flex; }
@@ -721,7 +728,7 @@ html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); 
 .result-ferment-title{ display:block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--farina-2); margin-bottom: 8px; }
 .result-ferment-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding: 4px 0; font-size: 13.5px; }
 .result-ferment-row .rf-label{ color: rgba(243,234,217,0.7); }
-.result-ferment-row .rf-value{ font-family: var(--font-mono); font-weight:600; color: var(--farina); }
+.result-ferment-row .rf-value{ font-family: var(--font-mono); font-weight:600; color: var(--farina); white-space: nowrap; }
 .disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.55); font-size: 14px; }
 .disabled-overlay strong{ display:block; color: var(--pomodoro); margin-bottom:6px; font-size:15px;}
 
