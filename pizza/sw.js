@@ -17,7 +17,7 @@
 //   * El handler de fetch NUNCA relanza un error en una navegación: si no hay
 //     red ni caché, devuelve una respuesta controlada. Una promesa rechazada en
 //     respondWith se traduce en ERR_FAILED, justo lo que queremos evitar.
-const CACHE_NAME = 'pizza-calc-v56';
+const CACHE_NAME = 'pizza-calc-v57';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

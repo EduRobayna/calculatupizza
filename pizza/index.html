@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v56</span>
+      <span class="beta-badge__ver">v57</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -139,7 +139,7 @@
         <div class="recipe-actions-row">
           <button type="button" id="loadRecipeBtn" class="btn-outline recipe-load-btn" disabled>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-            <span data-i18n="loadRecipeBtnText">Cargar receta</span>
+            <span data-i18n="loadRecipeBtnText">Lista de recetas</span>
           </button>
           <button type="button" id="saveRecipeBtn" class="icon-btn-square" data-i18n-title="saveRecipeBtn" data-i18n-aria="saveRecipeBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
@@ -684,12 +684,15 @@
   <div id="loadRecipeModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="loadModalTitle">
     <div class="modal-card">
       <div class="settings-head">
-        <h3 class="modal-title" id="loadModalTitle" data-i18n="loadModalTitle">Cargar receta</h3>
+        <h3 class="modal-title" id="loadModalTitle" data-i18n="loadModalTitle">Lista de recetas</h3>
         <button type="button" id="loadRecipeCloseBtn" class="icon-btn-square" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <p class="modal-sub" data-i18n="loadModalSub">Toca una receta para cargarla en la calculadora.</p>
+      <div class="recipe-search" id="recipeSearchWrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" id="recipeSearchInput" class="recipe-search-input" data-i18n-placeholder="recipeSearchPlaceholder" placeholder="Buscar receta…" autocomplete="off" spellcheck="false">
+      </div>
       <div id="recipeListContainer" class="recipe-list"></div>
       <p id="recipeListEmpty" class="modal-sub recipe-list-empty" data-i18n="noRecipesYet" style="display:none;">Aún no tienes recetas guardadas.</p>
     </div>

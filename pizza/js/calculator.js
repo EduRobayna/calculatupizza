@@ -1936,6 +1936,8 @@ window.stepColdTemp = function(dir) {
   const loadRecipeCloseBtn = document.getElementById('loadRecipeCloseBtn');
   const recipeListContainer = document.getElementById('recipeListContainer');
   const recipeListEmpty = document.getElementById('recipeListEmpty');
+  const recipeSearchWrap = document.getElementById('recipeSearchWrap');
+  const recipeSearchInput = document.getElementById('recipeSearchInput');
   const activeRecipeLine = document.getElementById('activeRecipeLine');
   const activeRecipeNameEl = document.getElementById('activeRecipeName');
   const deleteRecipeBtn = document.getElementById('deleteRecipeBtn');
@@ -1945,6 +1947,7 @@ window.stepColdTemp = function(dir) {
   const saveRecipeCancelBtn = document.getElementById('saveRecipeCancelBtn');
   const saveRecipeConfirmBtn = document.getElementById('saveRecipeConfirmBtn');
   const saveRecipeNewBtn = document.getElementById('saveRecipeNewBtn');
+  const saveModalTitle = document.getElementById('saveModalTitle');
   const saveModalSub = document.getElementById('saveModalSub');
   const saveModalError = document.getElementById('saveModalError');
   const saveRecipeNotesInput = document.getElementById('saveRecipeNotesInput');
@@ -1955,6 +1958,10 @@ window.stepColdTemp = function(dir) {
   const importRecipesInput = document.getElementById('importRecipesInput');
   // id de la receta seleccionada al abrir el modal (para "Actualizar"); null = crear nueva
   let editingRecipeId = null;
+  // "Editar" desde la lista actualiza solo nombre+notas, sin tocar los parámetros de la masa.
+  let saveMetaOnly = false;
+  // Texto del buscador de la lista de recetas.
+  let recipeSearchQuery = '';
   // id de la receta actualmente cargada en la calculadora (la "receta activa");
   // null = ninguna receta cargada (config nueva o importada sin cargar).
   let activeRecipeId = null;
@@ -2061,45 +2068,54 @@ window.stepColdTemp = function(dir) {
     recipeNotesDisplay.style.display = notes ? '' : 'none';
   }
 
-  // Iconos (estilo trazo del resto de la app) para las stats de cada receta.
-  const RECIPE_STAT_ICON = {
-    hydration: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"/></svg>',
-    batch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 11h.01"/><path d="M11 15h.01"/><path d="M16 16h.01"/><path d="m2 16 20 6-6-20A20 20 0 0 0 2 16"/><path d="M5.71 17.11a17.04 17.04 0 0 1 11.4-11.4"/></svg>',
-    total: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.84 10.15a2 2 0 0 1-1.97 2.35H6.63a2 2 0 0 1-1.97-2.35z"/></svg>',
-    salt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8a1 1 0 0 0 1-1.08L16.3 9H7.7l-.7 10.92A1 1 0 0 0 8 21Z"/><path d="M8.5 9V6a3.5 3.5 0 0 1 7 0v3"/></svg>',
-    ferment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    yeast: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14" r="4"/><circle cx="16.5" cy="8.5" r="2.5"/><circle cx="17" cy="16" r="1.5"/></svg>',
-    flour: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg>'
-  };
-  // Añade una stat (icono + valor) a la línea meta. El texto va con textContent
-  // (a prueba de XSS); el icono es marcado estático de confianza.
-  function addRecipeStat(container, iconSvg, label, value){
-    const stat = document.createElement('span');
-    stat.className = 'recipe-meta-stat';
-    if (label) stat.title = label;
-    const ico = document.createElement('span');
-    ico.className = 'recipe-meta-ico';
-    ico.setAttribute('aria-hidden', 'true');
-    ico.innerHTML = iconSvg;
-    stat.appendChild(ico);
-    stat.appendChild(document.createTextNode(value));
-    container.appendChild(stat);
+  // Añade una celda "ETIQUETA + valor" a la rejilla de la tarjeta. En lugar de
+  // iconos ambiguos (la sal y el peso se confundían), cada dato lleva su etiqueta
+  // en versalitas, así se lee de un vistazo. `wide` = ocupa las dos columnas
+  // (para textos largos como la fermentación o el nombre de la harina).
+  function addRecipeCell(grid, label, value, wide){
+    const cell = document.createElement('span');
+    cell.className = 'rc-cell' + (wide ? ' rc-cell--wide' : '');
+    const k = document.createElement('span');
+    k.className = 'rc-k';
+    k.textContent = label;                       // textContent -> a prueba de XSS
+    const v = document.createElement('span');
+    v.className = 'rc-v';
+    v.textContent = value;
+    cell.appendChild(k);
+    cell.appendChild(v);
+    grid.appendChild(cell);
   }
 
-  // Pinta la lista de recetas dentro del modal "Cargar receta".
+  // Iconos (trazo, coherentes con el resto) para las acciones por tarjeta.
+  const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  const ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+  // Pinta la lista del modal "Lista de recetas": buscador + una tarjeta por receta
+  // con acciones (Abrir · Editar · Eliminar). El filtro es por nombre.
   function renderRecipeList() {
     if (!recipeListContainer) return;
     const list = getSavedRecipes();
     recipeListContainer.innerHTML = '';
+    // El buscador solo aparece si hay recetas que filtrar.
+    if (recipeSearchWrap) recipeSearchWrap.style.display = list.length ? '' : 'none';
     if (list.length === 0) {
+      recipeListEmpty.textContent = I18N.t('noRecipesYet');
+      recipeListEmpty.style.display = '';
+      return;
+    }
+    // Filtro por nombre (sin distinguir mayúsculas). Orden: la más reciente primero.
+    const q = recipeSearchQuery.trim().toLowerCase();
+    const filtered = list.slice().reverse().filter(r => !q || (r.name || '').toLowerCase().indexOf(q) !== -1);
+    if (filtered.length === 0) {
+      recipeListEmpty.textContent = I18N.t('recipeSearchNoResults');
       recipeListEmpty.style.display = '';
       return;
     }
     recipeListEmpty.style.display = 'none';
-    list.slice().reverse().forEach(recipe => {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'recipe-item' + (String(recipe.id) === String(activeRecipeId) ? ' active' : '');
+    filtered.forEach(recipe => {
+      const isActive = String(recipe.id) === String(activeRecipeId);
+      const item = document.createElement('div');
+      item.className = 'recipe-item' + (isActive ? ' active' : '');
       item.dataset.id = recipe.id;
 
       const nameRow = document.createElement('span');
@@ -2107,7 +2123,7 @@ window.stepColdTemp = function(dir) {
       const nameText = document.createElement('span');
       nameText.textContent = recipe.name;            // textContent -> a prueba de XSS
       nameRow.appendChild(nameText);
-      if (String(recipe.id) === String(activeRecipeId)) {
+      if (isActive) {
         const badge = document.createElement('span');
         badge.className = 'recipe-item-badge';
         badge.textContent = I18N.t('statusActive');
@@ -2118,55 +2134,45 @@ window.stepColdTemp = function(dir) {
       const d = recipe.data || {};
       const num = parseDecimal(d.numPaneteos) || 0;
       const per = parseDecimal(d.pesoPaneto) || 0;
-      const meta = document.createElement('span');
-      meta.className = 'recipe-item-meta';
-      // Etiqueta con iconos: hidratación · tanda (nº × peso) · masa total.
-      // Cada stat lleva su icono para que se entienda sin descifrar los números.
-      addRecipeStat(meta, RECIPE_STAT_ICON.hydration, I18N.t('recipeHydration'),
+      // Cuerpo de la tarjeta como rejilla etiquetada de 2 columnas: cada dato con
+      // su etiqueta, bien separado, para leerlo de un vistazo. Los datos con texto
+      // largo (fermentación, harina) ocupan la fila completa.
+      const grid = document.createElement('span');
+      grid.className = 'recipe-item-grid';
+      addRecipeCell(grid, I18N.t('recipeHydration'),
         (d.hidratacion != null ? d.hidratacion : '?') + '%');
-      addRecipeStat(meta, RECIPE_STAT_ICON.batch, I18N.t('recipeMetaBatch'),
-        (num || '?') + ' × ' + U.formatWeight(per));
-      addRecipeStat(meta, RECIPE_STAT_ICON.total, I18N.t('recipeMetaTotal'),
-        U.formatWeight(num * per));
       // Sal: en la unidad activa de Ajustes — g/L de agua (canónico) o % de la harina. El %
       // se deriva del g/L guardado y la hidratación de la receta (sal% = g/L · hid / 1000).
       const salTxt = saltIsFlour()
         ? U.formatNumber((d.sal || 0) * (d.hidratacion || 0) / 1000, 1) + '%'
         : U.formatNumber(d.sal != null ? d.sal : 0) + ' g/L';
-      addRecipeStat(meta, RECIPE_STAT_ICON.salt, I18N.t('recipeSalt2'), salTxt);
-      // Fermentación: ambiente y, si la receta la tiene, la fase controlada (nevera).
+      addRecipeCell(grid, I18N.t('recipeSalt2'), salTxt);
+      addRecipeCell(grid, I18N.t('recipeBatchShort'),
+        (num || '?') + ' × ' + U.formatWeight(per));
+      addRecipeCell(grid, I18N.t('recipeMetaTotal'), U.formatWeight(num * per));
+      // Levadura solo si es manual (en Auto la calcula la fermentación; no es un valor fijo).
+      if (d.yeastMode === 'manual') {
+        addRecipeCell(grid, I18N.t('recipeYeastShort'),
+          U.formatNumber((parseFloat(d.manualYeastPerKg) || 0) / 10, 2) + '%');
+      }
+      // Fermentación (fila completa): ambiente y, si la receta la tiene, la fase controlada.
       const fAmb = U.formatNumber(d.horas != null ? d.horas : 0, 0) + ' h · ' +
         U.tempValue(parseInt(d.temperatura, 10) || 18) + U.tempUnit();
       const fermTxt = d.fridgeOn
         ? fAmb + ' + ' + U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
           Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit()
         : fAmb;
-      addRecipeStat(meta, RECIPE_STAT_ICON.ferment, I18N.t('recipeFermentation'), fermTxt);
-      // Levadura solo si es manual (en Auto la calcula la fermentación; no es un valor fijo).
-      if (d.yeastMode === 'manual') {
-        addRecipeStat(meta, RECIPE_STAT_ICON.yeast, I18N.t('levaduraLabel'),
-          U.formatNumber((parseFloat(d.manualYeastPerKg) || 0) / 10, 2) + '%');
-      }
-      item.appendChild(meta);
-
-      // Harinas (compacto): el nombre si es una sola; el número si es mezcla. No listamos
-      // todas con su % (recargaba la tarjeta); el detalle completo se ve al cargar la receta.
+      addRecipeCell(grid, I18N.t('recipeFermentation'), fermTxt, true);
+      // Harina (fila completa): el nombre si es una sola; el número si es mezcla. El detalle
+      // completo (cada harina con su %) se ve al cargar la receta.
       const flrs = Array.isArray(d.flours) ? d.flours : [];
       if (flrs.length) {
         const flText = (flrs.length === 1)
           ? flourName(flrs[0].flourId)
           : (flrs.length + ' ' + I18N.t('flourCountWord'));
-        const flLine = document.createElement('span');
-        flLine.className = 'recipe-item-flours';
-        flLine.title = I18N.t('section4Title');
-        const flIco = document.createElement('span');
-        flIco.className = 'recipe-meta-ico';
-        flIco.setAttribute('aria-hidden', 'true');
-        flIco.innerHTML = RECIPE_STAT_ICON.flour;
-        flLine.appendChild(flIco);
-        flLine.appendChild(document.createTextNode(flText));  // textContent -> a prueba de XSS
-        item.appendChild(flLine);
+        addRecipeCell(grid, I18N.t('recipeFlourShort'), flText, true);
       }
+      item.appendChild(grid);
 
       if (recipe.notes && String(recipe.notes).trim()) {
         const notes = document.createElement('span');
@@ -2175,13 +2181,67 @@ window.stepColdTemp = function(dir) {
         item.appendChild(notes);
       }
 
-      item.addEventListener('click', () => attemptLoad(recipe.id));
+      // Barra de acciones: Abrir (principal) + Editar (nombre/notas) + Eliminar.
+      const actions = document.createElement('div');
+      actions.className = 'recipe-item-actions';
+
+      const openBtn = document.createElement('button');
+      openBtn.type = 'button';
+      openBtn.className = 'recipe-open-btn';
+      openBtn.textContent = I18N.t('recipeOpenAction');
+      openBtn.addEventListener('click', () => attemptLoad(recipe.id));
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'recipe-tool recipe-edit-btn';
+      editBtn.title = I18N.t('recipeEditAction');
+      editBtn.setAttribute('aria-label', I18N.t('recipeEditAction'));
+      editBtn.innerHTML = ICON_EDIT;
+      editBtn.addEventListener('click', () => editRecipeMeta(recipe.id));
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'recipe-tool recipe-del-btn delete';
+      delBtn.title = I18N.t('modalDelete');
+      delBtn.setAttribute('aria-label', I18N.t('modalDelete'));
+      delBtn.innerHTML = ICON_TRASH;
+      delBtn.addEventListener('click', () => deleteRecipeFromList(recipe.id));
+
+      actions.appendChild(openBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      item.appendChild(actions);
+
       recipeListContainer.appendChild(item);
     });
   }
 
+  // "Editar" desde la lista: solo nombre + notas (los parámetros de la masa se
+  // editan cargando la receta). Cierra la lista y abre el modal en modo edición;
+  // al terminar (guardar o cancelar) se vuelve a la lista.
+  function editRecipeMeta(id) {
+    const recipe = getSavedRecipes().find(r => String(r.id) === String(id));
+    if (!recipe) return;
+    closeLoadModal();
+    openSaveModal({ editMeta: recipe });
+  }
+
+  // Elimina una receta concreta desde la lista, con confirmación, y repinta.
+  async function deleteRecipeFromList(id) {
+    const recipe = getSavedRecipes().find(r => String(r.id) === String(id));
+    if (!recipe) return;
+    const ok = await showConfirm(I18N.t('confirmDeleteRecipe'), I18N.t('modalDelete'));
+    if (!ok) return;
+    setSavedRecipes(getSavedRecipes().filter(r => String(r.id) !== String(id)));
+    if (String(activeRecipeId) === String(id)) activeRecipeId = null;
+    refreshRecipesUI();
+    renderRecipeList();
+  }
+
   function openLoadModal() {
     if (getSavedRecipes().length === 0) return;
+    recipeSearchQuery = '';
+    if (recipeSearchInput) recipeSearchInput.value = '';
     renderRecipeList();
     openModal(loadRecipeModal, loadRecipeCloseBtn);
   }
@@ -2267,25 +2327,40 @@ window.stepColdTemp = function(dir) {
     }
   }
 
-  // ---- Modal "Guardar receta" (crear nueva o actualizar la seleccionada) ----
-  function openSaveModal() {
-    // La receta activa es la candidata a "Actualizar"; si no hay ninguna cargada,
-    // se guarda como nueva.
-    const seleccionada = getActiveRecipe();
-    editingRecipeId = seleccionada ? seleccionada.id : null;
+  // ---- Modal "Guardar receta": crear nueva, actualizar la activa, o (desde la
+  //      lista) editar solo el nombre y las notas de una receta concreta. ----
+  function openSaveModal(opts) {
+    opts = opts || {};
+    const editMeta = opts.editMeta || null;   // receta a editar desde la lista
+    saveMetaOnly = !!editMeta;
 
-    if (seleccionada) {
-      saveRecipeNameInput.value = seleccionada.name;
-      saveRecipeNotesInput.value = seleccionada.notes || '';
-      saveModalSub.textContent = I18N.t('saveModalSubEdit').replace('{name}', seleccionada.name);
-      saveRecipeConfirmBtn.textContent = I18N.t('modalUpdate');
-      saveRecipeNewBtn.style.display = '';
+    if (editMeta) {
+      editingRecipeId = editMeta.id;
+      saveRecipeNameInput.value = editMeta.name;
+      saveRecipeNotesInput.value = editMeta.notes || '';
+      if (saveModalTitle) saveModalTitle.textContent = I18N.t('editRecipeTitle');
+      saveModalSub.textContent = I18N.t('editRecipeSub');
+      saveRecipeConfirmBtn.textContent = I18N.t('modalSaveChanges');
+      saveRecipeNewBtn.style.display = 'none';   // no aplica al editar metadatos
     } else {
-      saveRecipeNameInput.value = '';
-      saveRecipeNotesInput.value = '';
-      saveModalSub.textContent = I18N.t('saveModalSub');
-      saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
-      saveRecipeNewBtn.style.display = 'none';
+      // La receta activa es la candidata a "Actualizar"; si no hay ninguna cargada,
+      // se guarda como nueva.
+      const seleccionada = getActiveRecipe();
+      editingRecipeId = seleccionada ? seleccionada.id : null;
+      if (saveModalTitle) saveModalTitle.textContent = I18N.t('saveModalTitle');
+      if (seleccionada) {
+        saveRecipeNameInput.value = seleccionada.name;
+        saveRecipeNotesInput.value = seleccionada.notes || '';
+        saveModalSub.textContent = I18N.t('saveModalSubEdit').replace('{name}', seleccionada.name);
+        saveRecipeConfirmBtn.textContent = I18N.t('modalUpdate');
+        saveRecipeNewBtn.style.display = '';
+      } else {
+        saveRecipeNameInput.value = '';
+        saveRecipeNotesInput.value = '';
+        saveModalSub.textContent = I18N.t('saveModalSub');
+        saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
+        saveRecipeNewBtn.style.display = 'none';
+      }
     }
     updateSaveButtons();
     // Enfocamos la tarjeta del diálogo (no el campo de nombre): así el popup se
@@ -2295,9 +2370,11 @@ window.stepColdTemp = function(dir) {
   }
   function closeSaveModal() {
     closeModal(saveRecipeModal);
+    // Si estábamos editando desde la lista, volvemos a ella al cerrar.
+    if (saveMetaOnly) { saveMetaOnly = false; openLoadModal(); }
   }
 
-  saveRecipeBtn.addEventListener('click', openSaveModal);
+  saveRecipeBtn.addEventListener('click', () => openSaveModal());
   saveRecipeCancelBtn.addEventListener('click', closeSaveModal);
   saveRecipeModal.addEventListener('click', (e) => {
     if (e.target === saveRecipeModal) closeSaveModal();
@@ -2305,7 +2382,7 @@ window.stepColdTemp = function(dir) {
   saveRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, saveRecipeModal, closeSaveModal));
   saveRecipeNameInput.addEventListener('input', updateSaveButtons);
   saveRecipeNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); guardarReceta({ overwriteId: editingRecipeId }); }
+    if (e.key === 'Enter') { e.preventDefault(); guardarReceta({ overwriteId: editingRecipeId, metaOnly: saveMetaOnly }); }
   });
 
   // ---- Modal de confirmación genérico (sustituye a window.confirm) ----
@@ -2379,6 +2456,23 @@ window.stepColdTemp = function(dir) {
     }
     const notes = saveRecipeNotesInput.value.trim().slice(0, 500);
     const list = getSavedRecipes();
+
+    // Modo "editar metadatos" (desde la lista): actualiza solo nombre y notas, sin
+    // tocar los parámetros de la masa ni cambiar cuál es la receta activa.
+    if (opts.metaOnly) {
+      const r = list.find(x => String(x.id) === String(opts.overwriteId));
+      if (r) {
+        r.name = name;
+        r.notes = notes;
+        r.updatedAt = new Date().toISOString();
+        setSavedRecipes(list);
+      }
+      closeSaveModal();       // saveMetaOnly sigue en true -> vuelve a la lista
+      refreshRecipesUI();
+      showToast(I18N.t('recipeUpdatedToast'));
+      return;
+    }
+
     const existente = opts.overwriteId != null ? list.find(r => r.id === opts.overwriteId) : null;
     let targetId;
     if (existente) {
@@ -2402,7 +2496,7 @@ window.stepColdTemp = function(dir) {
     showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
   }
 
-  saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId }));
+  saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId, metaOnly: saveMetaOnly }));
   saveRecipeNewBtn.addEventListener('click', () => guardarReceta({ overwriteId: null }));
 
   // Carga una receta por id en la calculadora y la marca como activa.
@@ -2453,6 +2547,10 @@ window.stepColdTemp = function(dir) {
   if (loadRecipeCloseBtn) loadRecipeCloseBtn.addEventListener('click', closeLoadModal);
   loadRecipeModal.addEventListener('click', (e) => { if (e.target === loadRecipeModal) closeLoadModal(); });
   loadRecipeModal.addEventListener('keydown', (e) => onModalKeydown(e, loadRecipeModal, closeLoadModal));
+  if (recipeSearchInput) recipeSearchInput.addEventListener('input', () => {
+    recipeSearchQuery = recipeSearchInput.value;
+    renderRecipeList();
+  });
 
   // "Borrar" elimina la receta activa (la cargada), tras confirmar.
   deleteRecipeBtn.addEventListener('click', async () => {
