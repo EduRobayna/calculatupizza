@@ -908,13 +908,37 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
    mostrar recuadro de foco; el foco visible va en los controles reales al tabular. */
 .modal-card:focus, .modal-card:focus-visible{ outline: none; }
 .modal-card .recipe-list { max-height: 50vh; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 10px; }
-/* Barra de scroll fina y discreta (sustituye a la nativa de escritorio); en móvil
-   los navegadores ya la ocultan salvo al desplazar. */
-.modal-card, .recipe-list{ scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
-.modal-card::-webkit-scrollbar, .recipe-list::-webkit-scrollbar{ width: 8px; height: 8px; }
-.modal-card::-webkit-scrollbar-track, .recipe-list::-webkit-scrollbar-track{ background: transparent; }
-.modal-card::-webkit-scrollbar-thumb, .recipe-list::-webkit-scrollbar-thumb{ background: var(--scroll-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
-.modal-card::-webkit-scrollbar-thumb:hover, .recipe-list::-webkit-scrollbar-thumb:hover{ background: var(--scroll-thumb-hover); background-clip: padding-box; }
+/* La tarjeta del modal usa barra fina, y SIEMPRE dentro de su relleno (24px), así
+   que no se solapa con el contenido. La página principal conserva la barra nativa
+   (reserva su hueco; nunca pisa el panel de resultado). */
+.modal-card{ scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+.modal-card::-webkit-scrollbar{ width: 8px; height: 8px; }
+.modal-card::-webkit-scrollbar-track{ background: transparent; }
+.modal-card::-webkit-scrollbar-thumb{ background: var(--scroll-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.modal-card::-webkit-scrollbar-thumb:hover{ background: var(--scroll-thumb-hover); background-clip: padding-box; }
+
+/* Contenedores con scroll SIN barra visible (listas de recetas/harinas, popups
+   altos): la barra molestaba —se solapaba con las tarjetas o se veía fea en oscuro—.
+   En su lugar un DIFUMINADO suave arriba/abajo aparece solo cuando hay más contenido
+   en esa dirección (el JS pone .more-above / .more-below según la posición de scroll). */
+.scroll-faded{ scrollbar-width: none; }
+.scroll-faded::-webkit-scrollbar{ width: 0; height: 0; }
+.scroll-faded.more-below{
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); }
+.scroll-faded.more-above:not(.more-below){
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px);
+          mask-image: linear-gradient(to bottom, transparent, #000 26px); }
+.scroll-faded.more-above.more-below{
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
+          mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent); }
+/* Popups altos (novedades, ajustes): la tarjeta NO scrollea; cabecera (título + X) y
+   botones quedan FIJOS y solo scrollea el cuerpo interior (.modal-body). Así el título
+   y la X no se mueven al desplazar, y el difuminado se funde con el fondo de la tarjeta. */
+.whatsnew-card, .settings-card{ display: flex; flex-direction: column; overflow: hidden; }
+.whatsnew-card > .whatsnew-head, .settings-card > .settings-head,
+.whatsnew-card > .modal-actions, .settings-card > .modal-actions{ flex: 0 0 auto; }
+.modal-body{ flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .modal-title{ font-family: var(--font-display); font-size: 19px; font-weight:600; color: var(--heading); margin: 0 0 6px; }
 .modal-sub{ font-size: 13.5px; color: var(--text-soft); margin: 0 0 14px; }
 .modal-actions{ display:flex; gap: 10px; margin-top: 16px; }

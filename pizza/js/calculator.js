@@ -1864,6 +1864,24 @@ window.stepColdTemp = function(dir) {
     });
   })();
 
+  // Difuminado de scroll: en los contenedores .scroll-faded (listas de recetas/harinas
+  // y popups altos) NO hay barra; un fundido arriba/abajo marca que hay más contenido
+  // en esa dirección. Se autorefresca al abrir el modal (ResizeObserver) y al cambiar
+  // el contenido (MutationObserver), además de al hacer scroll.
+  (function initScrollHints(){
+    Array.prototype.forEach.call(document.querySelectorAll('.scroll-faded'), function (elx) {
+      const update = function () {
+        const canScroll = elx.scrollHeight > elx.clientHeight + 1;
+        elx.classList.toggle('more-above', canScroll && elx.scrollTop > 1);
+        elx.classList.toggle('more-below', canScroll && (elx.scrollTop + elx.clientHeight < elx.scrollHeight - 1));
+      };
+      elx.addEventListener('scroll', update, { passive: true });
+      if (window.ResizeObserver) { try { new ResizeObserver(update).observe(elx); } catch (e) {} }
+      if (window.MutationObserver) { try { new MutationObserver(update).observe(elx, { childList: true, subtree: true }); } catch (e) {} }
+      update();
+    });
+  })();
+
   // Interruptor de avisos (Configuración): activa/desactiva los banners no bloqueantes.
   (function initWarningsToggle(){
     const toggle = document.getElementById('warningsToggle');

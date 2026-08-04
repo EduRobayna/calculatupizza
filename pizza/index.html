@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v61</span>
+      <span class="beta-badge__ver">v62</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -569,6 +569,7 @@
         </button>
       </div>
 
+      <div class="modal-body scroll-faded">
       <div class="settings-grid">
       <div class="settings-row">
         <span class="settings-row-label" data-i18n="settingsLanguage">Idioma</span>
@@ -633,6 +634,7 @@
         </div>
         <input type="file" id="importRecipesInput" accept="application/json,.json" hidden>
       </div>
+      </div>
 
       <div class="modal-actions" style="margin-top:20px;">
         <button type="button" id="settingsDoneBtn" class="btn-secondary modal-confirm" data-i18n="settingsDone">Hecho</button>
@@ -675,6 +677,7 @@
         <h3 class="modal-title" id="whatsNewTitle" data-i18n="whatsNewTitle">Novedades</h3>
         <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Esto es lo nuevo:</p>
       </div>
+      <div class="modal-body scroll-faded">
       <ul class="whatsnew-list">
         <li class="wn-item"><span class="wn-ico" aria-hidden="true">🍕</span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Fermentación por fases.</b> Combina temperatura ambiente con nevera, vinoteca o fermentadora, cada fase con su tiempo y su temperatura.</span></li>
         <li class="wn-item"><span class="wn-ico" aria-hidden="true">🫧</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Levadura automática.</b> Un motor matemático calcula la cantidad exacta según tus horas y temperatura, o la ajustas tú a mano.</span></li>
@@ -684,6 +687,7 @@
         <li class="wn-item"><span class="wn-ico" aria-hidden="true">💡</span><span class="wn-text" data-i18n-html="whatsNewLi6"><b>Avisos inteligentes.</b> Te avisa si la temperatura, el tiempo o la fuerza de la harina no encajan, con recomendaciones concretas.</span></li>
         <li class="wn-item"><span class="wn-ico" aria-hidden="true">📖</span><span class="wn-text" data-i18n-html="whatsNewLi7"><b>Consejos paso a paso.</b> Amasado y fermentación explicados con detalle, y ahora también en inglés.</span></li>
       </ul>
+      </div>
       <div class="modal-actions">
         <button type="button" id="whatsNewOkBtn" class="btn-secondary modal-confirm" data-i18n="whatsNewCta">¡Empezar!</button>
       </div>
@@ -702,7 +706,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         <input type="text" id="recipeSearchInput" class="recipe-search-input" data-i18n-placeholder="recipeSearchPlaceholder" placeholder="Buscar receta…" autocomplete="off" spellcheck="false">
       </div>
-      <div id="recipeListContainer" class="recipe-list"></div>
+      <div id="recipeListContainer" class="recipe-list scroll-faded"></div>
       <p id="recipeListEmpty" class="modal-sub recipe-list-empty" data-i18n="noRecipesYet" style="display:none;">Aún no tienes recetas guardadas.</p>
     </div>
   </div>
@@ -733,7 +737,7 @@
         <p class="flour-picker-count" id="flourPickerCount" role="status" aria-live="polite"></p>
         <button type="button" id="flourClearFilters" class="flour-clear-filters" data-i18n="flourClearFilters" style="display:none;">Limpiar filtros</button>
       </div>
-      <div class="flour-picker-list" id="flourPickerList" role="listbox" aria-labelledby="flourPickerTitle"></div>
+      <div class="flour-picker-list scroll-faded" id="flourPickerList" role="listbox" aria-labelledby="flourPickerTitle"></div>
       <p class="flour-picker-empty" id="flourPickerEmpty" style="display:none;" data-i18n="flourPickerEmpty">No hay harinas que coincidan. Prueba a quitar filtros.</p>
 
       <button type="button" id="flourAddBtn" class="flour-add-btn">
