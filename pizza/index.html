@@ -101,7 +101,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v55</span>
+      <span class="beta-badge__ver">v56</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -562,6 +562,7 @@
         </button>
       </div>
 
+      <div class="settings-grid">
       <div class="settings-row">
         <span class="settings-row-label" data-i18n="settingsLanguage">Idioma</span>
         <button type="button" id="langToggle" class="lang-toggle" aria-label="Cambiar idioma" title="Cambiar idioma">
@@ -607,6 +608,8 @@
           <button type="button" class="seg-opt" data-warnings="on" data-i18n="warningsOn">Activados</button>
           <button type="button" class="seg-opt" data-warnings="off" data-i18n="warningsOff">Desactivados</button>
         </div>
+      </div>
+
       </div>
 
       <div class="settings-section">
@@ -659,12 +662,9 @@
        clave por dominio), tanto en la beta como en producción. Reutiliza
        openModal/closeModal (focus-trap + bloqueo de scroll). -->
   <div id="whatsNewModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle">
-    <div class="modal-card whatsnew-card">
+    <div class="modal-card whatsnew-card" tabindex="-1">
       <div class="settings-head">
         <h3 class="modal-title" id="whatsNewTitle" data-i18n="whatsNewTitle">Novedades de la versión 2.0</h3>
-        <button type="button" id="whatsNewCloseX" class="icon-btn-square" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
       </div>
       <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Estas son las novedades de la versión 2.0:</p>
       <ul class="whatsnew-list">

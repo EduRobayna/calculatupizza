@@ -2065,7 +2065,11 @@ window.stepColdTemp = function(dir) {
   const RECIPE_STAT_ICON = {
     hydration: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"/></svg>',
     batch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 11h.01"/><path d="M11 15h.01"/><path d="M16 16h.01"/><path d="m2 16 20 6-6-20A20 20 0 0 0 2 16"/><path d="M5.71 17.11a17.04 17.04 0 0 1 11.4-11.4"/></svg>',
-    total: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.84 10.15a2 2 0 0 1-1.97 2.35H6.63a2 2 0 0 1-1.97-2.35z"/></svg>'
+    total: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8h11l1.84 10.15a2 2 0 0 1-1.97 2.35H6.63a2 2 0 0 1-1.97-2.35z"/></svg>',
+    salt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8a1 1 0 0 0 1-1.08L16.3 9H7.7l-.7 10.92A1 1 0 0 0 8 21Z"/><path d="M8.5 9V6a3.5 3.5 0 0 1 7 0v3"/></svg>',
+    ferment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    yeast: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14" r="4"/><circle cx="16.5" cy="8.5" r="2.5"/><circle cx="17" cy="16" r="1.5"/></svg>',
+    flour: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/></svg>'
   };
   // Añade una stat (icono + valor) a la línea meta. El texto va con textContent
   // (a prueba de XSS); el icono es marcado estático de confianza.
@@ -2124,7 +2128,45 @@ window.stepColdTemp = function(dir) {
         (num || '?') + ' × ' + U.formatWeight(per));
       addRecipeStat(meta, RECIPE_STAT_ICON.total, I18N.t('recipeMetaTotal'),
         U.formatWeight(num * per));
+      // Sal: en la unidad activa de Ajustes — g/L de agua (canónico) o % de la harina. El %
+      // se deriva del g/L guardado y la hidratación de la receta (sal% = g/L · hid / 1000).
+      const salTxt = saltIsFlour()
+        ? U.formatNumber((d.sal || 0) * (d.hidratacion || 0) / 1000, 1) + '%'
+        : U.formatNumber(d.sal != null ? d.sal : 0) + ' g/L';
+      addRecipeStat(meta, RECIPE_STAT_ICON.salt, I18N.t('recipeSalt2'), salTxt);
+      // Fermentación: ambiente y, si la receta la tiene, la fase controlada (nevera).
+      const fAmb = U.formatNumber(d.horas != null ? d.horas : 0, 0) + ' h · ' +
+        U.tempValue(parseInt(d.temperatura, 10) || 18) + U.tempUnit();
+      const fermTxt = d.fridgeOn
+        ? fAmb + ' + ' + U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
+          Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit()
+        : fAmb;
+      addRecipeStat(meta, RECIPE_STAT_ICON.ferment, I18N.t('recipeFermentation'), fermTxt);
+      // Levadura solo si es manual (en Auto la calcula la fermentación; no es un valor fijo).
+      if (d.yeastMode === 'manual') {
+        addRecipeStat(meta, RECIPE_STAT_ICON.yeast, I18N.t('levaduraLabel'),
+          U.formatNumber((parseFloat(d.manualYeastPerKg) || 0) / 10, 2) + '%');
+      }
       item.appendChild(meta);
+
+      // Harinas (compacto): el nombre si es una sola; el número si es mezcla. No listamos
+      // todas con su % (recargaba la tarjeta); el detalle completo se ve al cargar la receta.
+      const flrs = Array.isArray(d.flours) ? d.flours : [];
+      if (flrs.length) {
+        const flText = (flrs.length === 1)
+          ? flourName(flrs[0].flourId)
+          : (flrs.length + ' ' + I18N.t('flourCountWord'));
+        const flLine = document.createElement('span');
+        flLine.className = 'recipe-item-flours';
+        flLine.title = I18N.t('section4Title');
+        const flIco = document.createElement('span');
+        flIco.className = 'recipe-meta-ico';
+        flIco.setAttribute('aria-hidden', 'true');
+        flIco.innerHTML = RECIPE_STAT_ICON.flour;
+        flLine.appendChild(flIco);
+        flLine.appendChild(document.createTextNode(flText));  // textContent -> a prueba de XSS
+        item.appendChild(flLine);
+      }
 
       if (recipe.notes && String(recipe.notes).trim()) {
         const notes = document.createElement('span');
@@ -2181,7 +2223,9 @@ window.stepColdTemp = function(dir) {
     syncScrollLock();
     setTimeout(() => {
       const t = focusTarget || getFocusables(modal)[0];
-      if (t) t.focus();
+      // preventScroll: enfocar al abrir no debe desplazar el scroll interno de la tarjeta
+      // (si no, un modal alto con el foco abajo se abre mostrando el final en vez del inicio).
+      if (t) { try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); } }
     }, 50);
   }
 
@@ -2625,9 +2669,9 @@ window.stepColdTemp = function(dir) {
       : U.formatNumber(horas, 0) + 'h (' + ambTemp + ')';
 
     const L = [];
-    L.push(I18N.t('recipeHeader') + ' | calculatupizza.com');
+    L.push('🍕 ' + I18N.t('recipeHeader') + ' (calculatupizza.com)');
     L.push('');
-    L.push('🍕 ' + U.formatNumber(el.numPaneteos.value, 0) + 'x' + U.formatNumber(el.pesoPaneto.value) + wU);
+    L.push('⚪ ' + U.formatNumber(el.numPaneteos.value, 0) + 'x' + U.formatNumber(el.pesoPaneto.value) + wU);
     L.push('💧 ' + U.formatNumber(el.hidratacion.value) + '% ' + I18N.t('recipeWater') +
            ' | 🧂 ' + salFormula + ' ' + I18N.t('recipeSalt2'));
     L.push('⏱️ ' + ferm);
@@ -2717,13 +2761,13 @@ window.stepColdTemp = function(dir) {
       modal.removeEventListener('keydown', onKey);
       closeModal(modal);
     }
-    const closeX = document.getElementById('whatsNewCloseX');
     const okBtn = document.getElementById('whatsNewOkBtn');
-    if (closeX) closeX.addEventListener('click', dismiss);
     if (okBtn) okBtn.addEventListener('click', dismiss);
     modal.addEventListener('click', onBackdrop);
     modal.addEventListener('keydown', onKey);
-    openModal(modal, okBtn);
+    // Enfocamos la TARJETA (no un botón): el popup abre por arriba y sin resaltar ningún
+    // botón. "¡Empezar!", tocar el fondo y Escape cierran igual (foco atrapado en el modal).
+    openModal(modal, modal.querySelector('.modal-card'));
   })();
 
 })();

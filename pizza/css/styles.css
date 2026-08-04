@@ -845,6 +845,8 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .recipe-meta-stat{ display:inline-flex; align-items:center; gap:5px; }
 .recipe-meta-ico{ display:inline-flex; flex-shrink:0; opacity:0.7; }
 .recipe-meta-ico svg{ width:13px; height:13px; display:block; }
+.recipe-item-flours{ display:flex; align-items:flex-start; gap:6px; margin-top:2px; font-size:12px; color:var(--text-soft); line-height:1.4; word-break:break-word; }
+.recipe-item-flours .recipe-meta-ico{ margin-top:1px; }
 .recipe-item-notes{ font-size:12.5px; color:var(--text-soft); line-height:1.4; white-space:pre-wrap; word-break:break-word; }
 .recipe-list-empty{ text-align:center; padding:20px 4px; }
 
@@ -860,6 +862,9 @@ html.modal-open, html.modal-open body{ overflow: hidden; }
 /* En oscuro el modal se aclara un punto y refuerza su borde para despegarse del
    fondo (antes se confundían por ser del mismo color). */
 html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color: rgba(243,234,217,0.20); }
+/* La tarjeta es solo un "aterrizaje" de foco al abrir el modal (tabindex=-1): no debe
+   mostrar recuadro de foco; el foco visible va en los controles reales al tabular. */
+.modal-card:focus, .modal-card:focus-visible{ outline: none; }
 .modal-card .recipe-list { max-height: 50vh; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 10px; }
 /* Barra de scroll fina y discreta (sustituye a la nativa de escritorio); en móvil
    los navegadores ya la ocultan salvo al desplazar. */
@@ -897,13 +902,15 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
 .settings-toggle:active{ transform: scale(0.9); }
 
 .settings-card{ max-width: 380px; }
-/* En PC el modal de ajustes se ensancha y sus filas segmentadas se des-apilan
-   (etiqueta a la izquierda, control a la derecha): aprovecha el ancho y evita que
-   quede alto y estrecho. */
+/* En PC los ajustes van en DOS COLUMNAS: el modal queda ancho y bajo (no hay que hacer
+   scroll para verlos todos). Los dos toggles pequeños (Idioma/Tema) se emparejan arriba y
+   los cuatro segmentados forman una rejilla 2×2 debajo. En móvil siguen en una columna. */
 @media (min-width: 560px) {
-  .settings-card{ max-width: 500px; }
-  .settings-card .settings-row.stacked{ flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
-  .settings-card .settings-row.stacked .segmented{ flex: 0 0 auto; min-width: 240px; }
+  .settings-card{ max-width: 560px; }
+  .settings-grid{ display: grid; grid-template-columns: 1fr 1fr; align-items: start; column-gap: 26px; }
+  .settings-grid .settings-row{ padding: 12px 0; border-bottom: none; }
+  .settings-grid .settings-row.stacked{ flex-direction: column; align-items: stretch; gap: 8px; }
+  .settings-grid .settings-row.stacked .segmented{ width: 100%; }
 }
 .settings-head{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
 .settings-head .modal-title{ margin: 0; }
