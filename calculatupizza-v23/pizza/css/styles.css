@@ -1,0 +1,1419 @@
+:root{
+  --forno:#241a15; --forno-2:#332419; --farina:#f3ead9; --farina-2:#e8dcc4;
+  --pomodoro:#c1432e; --pomodoro-dark:#9c3423; --basilico:#5c7d4f;
+  --ink:#2a2018; --ink-soft:#5f5142; --line: rgba(42,32,24,0.14);
+  --card-shadow: 0 20px 50px -20px rgba(36,26,21,0.35);
+  --radius: 18px;
+  /* Fuentes del sistema (0 peticiones externas): serif para titulares,
+     la sans del SO para el texto y la monoespaciada del SO para las cifras. */
+  --font-display: 'Playfair Display', Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  /* Paleta categórica de harinas: tonos tierra armonizados con la marca
+     (mostaza · oliva · terracota · teal/pino · ciruela). Distinguibles entre sí
+     y legibles con texto blanco sobre los segmentos de la barra. */
+  --color-h1: #b57e1e; --color-h2: #61823f; --color-h3: #b0512f; --color-h4: #2f6f6d; --color-h5: #7d4f68;
+  /* Colores de los ingredientes del resultado (swatches). Van sobre la tarjeta
+     oscura de resultado, por eso no dependen del tema claro/oscuro. */
+  --c-harina: #e2c790; --c-agua: #7fb0d9; --c-sal: #c7c2b6; --c-levadura: var(--pomodoro);
+
+  /* Variables de superficie/texto: se invierten en modo oscuro */
+  --page-bg: var(--farina);
+  --surface: #fffdf8;
+  --surface-2: #fffefb;
+  --surface-3: var(--farina-2);
+  --surface-3-hover: #dfd1b3;
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --text-mid: #54473a; /* texto secundario con más contraste que --text-soft */
+  --border: var(--line);
+  /* Borde de CONTROLES interactivos: contraste >=3:1 con el fondo (WCAG 1.4.11).
+     Los separadores/divisores decorativos siguen usando --border (más suave). */
+  --control-border: rgba(42,32,24,0.52);
+  /* Acentos para TEXTO pequeño: más oscuros que la marca para cumplir 4.5:1
+     (WCAG 1.4.3). La marca (--pomodoro/--basilico) queda para fondos, bordes,
+     iconos y titulares grandes. */
+  --basilico-text: #4c6741;
+  --pomodoro-text: #b23c29;
+  --tint-a: rgba(42,32,24,0.03);
+  --tint-b: rgba(42,32,24,0.08);
+  --tint-c: rgba(42,32,24,0.12);
+  --scroll-thumb: rgba(42,32,24,0.28);
+  --scroll-thumb-hover: rgba(42,32,24,0.45);
+  --chip-ink: var(--forno);
+  --heading: var(--forno);
+  /* Indicador de foco: verde oliva (basilico), distinto del rojo de error/aviso. */
+  --focus: var(--basilico);
+  --focus-ring: rgba(92,125,79,0.20);
+}
+
+html[data-theme="dark"]{
+  --page-bg: #17120e;
+  --surface: #221b15;
+  --surface-2: #2a2118;
+  --surface-3: #362b20;
+  --surface-3-hover: #43352a;
+  --text: #f3ead9;
+  --text-soft: #b3a48d;
+  --text-mid: #c8bba4; /* texto secundario con más contraste que --text-soft */
+  --border: rgba(243,234,217,0.14);
+  --control-border: rgba(243,234,217,0.40);
+  --basilico-text: #90b384;
+  --pomodoro-text: #e0705a;
+  --tint-a: rgba(243,234,217,0.04);
+  --tint-b: rgba(243,234,217,0.09);
+  --tint-c: rgba(243,234,217,0.14);
+  --scroll-thumb: rgba(243,234,217,0.26);
+  --scroll-thumb-hover: rgba(243,234,217,0.42);
+  --chip-ink: var(--farina);
+  --card-shadow: 0 20px 50px -20px rgba(0,0,0,0.6);
+  --heading: var(--farina);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+html,body{ margin:0; padding:0; }
+
+/* Evita que un tap rápido o mantenido seleccione texto y saque el menú copiar/pegar,
+   en botones, labels y demás elementos puramente de interfaz. Los inputs sí se pueden seleccionar. */
+button, a.social-link, label, .section-title, .flour-index, .w-badge, .unit-tag, .temp-readout,
+.results-title, .results-badge, .headline-label, .stat-label{
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+input, select, textarea{
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+body{
+  background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(193,67,46,0.14), transparent 60%),
+              radial-gradient(ellipse 700px 600px at 100% 0%, rgba(92,125,79,0.10), transparent 55%),
+              var(--page-bg);
+  color: var(--text); font-family: var(--font-body); line-height: 1.5;
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.wrap{ max-width: 1180px; margin: 0 auto; padding: 28px 20px 40px; }
+
+header.hero{ display:flex; flex-direction:column; gap:10px; padding: 18px 4px 34px; border-bottom: 1px solid var(--border); margin-bottom: 34px; position: relative; }
+/* Contenedor de los toggles (idioma + tema). En escritorio se ancla arriba a
+   la derecha; en móvil pasa a fila propia (ver media query más abajo). */
+.hero-controls{ position: absolute; top: 18px; right: 4px; display: flex; align-items: center; gap: 8px; }
+.hero-logo { align-self: center; width: 85px; height: auto; object-fit: contain; margin-bottom: 16px; transition: transform 0.3s ease; filter: drop-shadow(0 4px 6px rgba(36,26,21,0.15)); }
+.hero-logo:hover { transform: scale(1.05) rotate(-5deg); }
+
+h1{ font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 48px); letter-spacing: -0.01em; margin: 0; color: var(--heading); text-align: center; }
+h1 em{ font-style: italic; color: var(--pomodoro); }
+.sub{ max-width: 720px; margin: 16px auto 0; color: var(--text-soft); font-size: 15px; line-height: 1.6; text-align: center; }
+/* En móvil el intro muestra solo la primera parte (.sub-more oculto) con "Leer más"
+   para no empujar la herramienta hacia abajo; en escritorio se muestra completo. */
+.sub-toggle{ display: none; align-self: center; margin-top: 8px; background: none; border: none; padding: 7px 10px; color: var(--pomodoro-text); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; }
+@media (max-width: 900px){
+  .sub.clamped .sub-more{ display: none; }
+  .sub-toggle{ display: inline-block; }
+}
+
+/* Layout y Paneles */
+.layout{ display:grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
+.panel{ background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; transition: background-color 0.25s ease, border-color 0.25s ease; }
+.section{ padding: 34px 28px; border-bottom: 1px solid var(--border); }
+.section:last-child{ border-bottom:none; }
+.section-head{ display:flex; align-items:baseline; gap: 12px; margin-bottom: 18px; }
+.section-num{ font-family: var(--font-mono); font-size: 12px; color: var(--pomodoro-text); background: rgba(193,67,46,0.08); border: 1px solid rgba(193,67,46,0.25); border-radius: 999px; padding: 3px 9px; letter-spacing: 0.06em; box-shadow: 0 1px 3px rgba(193,67,46,0.12); }
+.section-num.section-icon{ display:inline-flex; align-items:center; justify-content:center; width: 26px; height: 26px; padding: 0; }
+.section-title{ font-family: var(--font-display); font-size: 19px; font-weight: 600; color: var(--heading); margin:0; }
+.grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ===== Tarjetas plegables del formulario (bloques 01-04) ===== */
+.section.card{ padding: 0; }
+.card-head{ display: flex; flex-direction: column; gap: 4px; padding: 22px 28px; cursor: pointer; list-style: none; }
+.card-head::-webkit-details-marker{ display: none; }
+.card-head::marker{ content: ""; }
+/* Solo en dispositivos con ratón: en táctil el :hover se queda "pegado" tras el tap y la
+   cabecera quedaba de otro color que el cuerpo. (hover: hover) lo evita en móvil. */
+@media (hover: hover){ .card-head:hover{ background: var(--tint-a); } }
+.card-head:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; }
+.card-head-top{ display: flex; align-items: center; gap: 12px; }
+.card-head-top .section-title{ margin: 0; }
+.card-chevron{ margin-left: auto; flex-shrink: 0; color: var(--text-soft); transition: transform 0.25s ease; }
+.card[open] .card-chevron{ transform: rotate(180deg); }
+.card-summary{ margin-left: 38px; font-size: 13px; color: var(--text-soft); display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; line-height: 1.3; }
+.card-summary:empty{ display: none; }
+.card[open] .card-summary{ display: none; }
+.card-summary svg{ width: 14px; height: 14px; opacity: 0.85; flex-shrink: 0; }
+.card-sum-item{ display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+/* Fases de fermentación en el resumen: "24 h a 23 °C │ 24 h a 4 °C" */
+.ferm-sum-phase{ display: inline-flex; align-items: center; white-space: nowrap; }
+/* Separador vertical entre elementos de un resumen colapsado (fermentación y parámetros). */
+.card-sum-sep{ display: inline-block; width: 1px; height: 12px; background: currentColor; opacity: 0.3; margin: 0 3px; align-self: center; }
+/* Aviso resumido en la tarjeta colapsada (ámbar, en su propia línea) */
+.card-sum-warns{ display: flex; flex-wrap: wrap; gap: 4px 10px; width: 100%; margin-top: 2px; }
+.card-sum-warn{ display: inline-flex; align-items: center; gap: 5px; color: #b0872a; font-weight: 600; }
+.card-sum-warn .cs-warn-ico{ width: 13px; height: 13px; flex-shrink: 0; opacity: 1; }
+html[data-theme="dark"] .card-sum-warn{ color: #d8a63c; }
+/* Indicador "Auto" de la levadura en el resumen de Fermentación */
+/* Ítem de levadura en el resumen colapsado: icono (racimos) · valor · chispa, con el mismo
+   gap entre los tres. Mantiene el estilo de texto de las fases pero con icono identificador. */
+.ferm-sum-yeast{ gap: 5px; }
+/* Chispa ✦ verde: único indicador de "levadura automática" (misma semántica que el icono de
+   magia del control). Sin píldora, para no romper la fila. */
+.ferm-sum-magic{ display: inline-flex; align-items: center; color: var(--basilico); }
+.ferm-sum-magic .cs-auto-ico{ width: 12px; height: 12px; flex-shrink: 0; opacity: 1; }
+html[data-theme="dark"] .ferm-sum-magic{ color: #8fb37e; }
+.card-body{ padding: 0 28px 28px; }
+.card[open] .card-body{ animation: accordionReveal 0.28s ease; }
+/* Punto ámbar en la cabecera de una tarjeta colapsada con aviso activo dentro. */
+.card-warn-dot{ width: 9px; height: 9px; border-radius: 50%; background: #e09e4a; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(224,158,74,0.18); }
+.card-warn-dot[hidden]{ display: none; }
+.card[open] .card-warn-dot{ display: none; }
+@media (max-width: 480px){
+  .card-head{ padding: 16px; }
+  .card-body{ padding: 0 16px 18px; }
+  .card-summary{ margin-left: 34px; }
+}
+
+/* ===== Layout apilado: cada bloque es una tarjeta separada con espacio entre ellas.
+   El panel del formulario deja de ser una tarjeta única y pasa a ser un contenedor
+   transparente; la tarjeta la lleva cada .section. ===== */
+.panel.stacked{ background: transparent; border: none; box-shadow: none; overflow: visible; display: flex; flex-direction: column; gap: 14px; }
+.panel.stacked > .section{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 3px 12px -6px rgba(36,26,21,0.18); overflow: hidden; scroll-margin-top: 14px; }
+html[data-theme="dark"] .panel.stacked > .section{ box-shadow: 0 3px 14px -6px rgba(0,0,0,0.5); }
+@media (max-width:520px){ .grid-2{ grid-template-columns: 1fr; } }
+label{ display:block; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--text-soft); margin-bottom: 7px; }
+
+/* Stepper & Inputs */
+.stepper { display: flex; align-items: center; background: var(--surface-2); border: 1.5px solid var(--control-border); border-radius: 10px; overflow: hidden; transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+.stepper[hidden] { display: none; } /* el atributo hidden debe ganar al display:flex */
+.stepper:has(input:focus-visible) { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.stepper-btn { background: var(--tint-a); border: none; padding: 0 18px; height: 44px; min-width: 44px; font-size: 18px; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.08s, transform 0.08s; user-select: none; touch-action: manipulation; }
+.stepper-btn:hover { background: var(--tint-b); }
+/* Sin scale aquí: los +/− no tienen esquinas redondeadas y al encogerse
+   asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
+   da feedback de pulsación. */
+.stepper-btn:active { background: var(--tint-c); }
+.stepper input { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; color: var(--text); }
+.stepper input:focus { box-shadow: none; outline: none; }
+
+select, input[type="number"].plain-input, input[type="text"].plain-input { width:100%; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--control-border); background: var(--surface-2); font-family: var(--font-mono); font-size: 16px; color: var(--text); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+select{ font-family: var(--font-body); font-weight: 500; cursor: pointer; }
+select:focus, input[type="number"].plain-input:focus, input[type="text"].plain-input:focus{ outline: none; border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+input[type="number"]:disabled, input[type="text"].plain-input:disabled{ background: var(--surface-3); color: var(--text); font-weight: 600; cursor: not-allowed; }
+
+/* Ocultar spinners nativos de los inputs numéricos (Chrome, Safari, Edge, Firefox) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
+input[type="number"]{ -moz-appearance: textfield; appearance: textfield; }
+
+.unit-tag { font-family: var(--font-mono); font-size: 12px; color: var(--text-soft); pointer-events: none; white-space: nowrap; }
+/* Valor + unidad como pareja centrada dentro del stepper (peso, hidratación, sal):
+   el número se ajusta a su contenido y la unidad va justo al lado, no flotando. */
+.stepper-unit-wrap { display: flex; align-items: baseline; justify-content: center; gap: 4px; flex: 1; min-width: 0; }
+.stepper-unit-wrap input { flex: 0 1 auto; width: 4.5ch; text-align: right; }
+
+/* Temp slider */
+/* Readout de temperatura: compacto y con el MISMO lenguaje que steppers/inputs
+   (--surface-2, borde 1.5px, radio 10px). Vive en la fila del título (.param-head). */
+/* Readout de temperatura: prominente y alargado, a la derecha del título. Es el
+   único indicador del valor (ya no hay burbuja sobre el thumb). */
+.temp-readout{ display:inline-flex; align-items:baseline; justify-content:center; gap: 2px; font-family: var(--font-mono); font-size: 21px; font-weight: 700; color: var(--pomodoro-dark); background: var(--surface-2); border-radius: 12px; padding: 7px 18px; min-width: 104px; border: 1.5px solid var(--control-border); transition: border-color .15s, box-shadow .15s, background-color 0.25s ease; }
+.temp-readout #tempUnit{ font-size: 0.68em; font-weight: 600; opacity: 0.85; }
+/* En oscuro, --pomodoro-dark queda casi invisible sobre la superficie oscura
+   (2.2:1). Usamos el rojo de texto accesible (~5:1). El claro sigue en
+   --pomodoro-dark (7:1, AAA). */
+html[data-theme="dark"] .temp-readout{ color: var(--pomodoro-text); }
+.temp-slider-wrap{ margin-top: 6px; }
+.temp-slider-wrap input[type="range"]{ width: 100%; display: block; }
+.temp-readout:focus-within{ border-color: var(--pomodoro); box-shadow: 0 0 0 2px rgba(193,67,46,0.18); }
+.temp-input{ font: inherit; color: inherit; background: transparent; border: none; width: 1.7em; text-align: right; padding: 0; margin: 0; -moz-appearance: textfield; }
+.temp-input:focus{ outline: none; }
+/* Fermentación mixta: interruptor de nevera + fase fría + error de tiempo total */
+/* Fase con temperatura controlada: bloque que integra el interruptor de activación
+   con sus dos campos (temperatura + tiempo) para que se vea que van de la mano. */
+.controlled-phase { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); overflow: hidden; transition: border-color .18s ease; }
+.controlled-phase:has(#fridgeToggle:checked) { border-color: rgba(193,67,46,0.4); }
+.controlled-phase-toggle { display: flex; width: 100%; align-items: center; gap: 10px; padding: 13px 14px; }
+.switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch-track { position: relative; flex-shrink: 0; width: 40px; height: 22px; border-radius: 999px; background: var(--surface-3); border: 1.5px solid var(--control-border); transition: background .18s ease, border-color .18s ease; }
+.switch-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.35); transition: transform .18s ease; }
+.switch input:checked + .switch-track { background: var(--pomodoro); border-color: var(--pomodoro); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(18px); }
+.switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px rgba(193,67,46,0.3); }
+.switch-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.fridge-phase[hidden] { display: none; }
+.fridge-phase { padding: 0 14px 14px; }
+/* Lista de dispositivos de la fase controlada (separador superior que la une al toggle). */
+.cp-devices { margin: 0 0 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-soft); }
+/* Temperatura y tiempo agrupados: lado a lado cuando hay sitio (tablet/PC) y apilados
+   en móvil estrecho (dos steppers a la vez quedan apretados y los botones dejan de ser
+   cómodos de tocar). Siguen agrupados dentro de la tarjeta de la fase controlada. */
+.cp-fields { gap: 12px; }
+/* En el grid, el segundo campo no debe llevar el margin-top de ".param + .param"
+   (si no, Tiempo queda descalonado respecto a Temperatura). */
+.cp-fields .param + .param { margin-top: 0; }
+.phase-tip { position: relative; margin: 14px 0 2px; padding-left: 24px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
+.phase-tip::before { content: '💡'; position: absolute; left: 0; top: 0; font-size: 13px; }
+/* Lector del tiempo TOTAL de fermentación */
+/* Recuadro inferior "Fermentación total": separado del bloque de fases con más margen,
+   borde propio y un filete superior que actúa de divisor. */
+/* Lector ligero del tiempo total, dentro de la fase controlada: sin recuadro, solo
+   un filete superior y texto tenue (menos peso visual que la levadura calculada). */
+.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.ferm-total[hidden] { display: none; }
+.ferm-total-label { font-size: 12px; font-weight: 600; color: var(--text-soft); }
+.ferm-total-value { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-soft); }
+/* Aviso suave (informativo, no error) al llegar al máximo recomendado de fermentación */
+.ferm-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
+.ferm-note[hidden] { display: none; }
+.ferm-note svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
+html[data-theme="dark"] .ferm-note svg { color: #d8a63c; }
+/* Aviso contextual (caja ámbar) para temperaturas extremas y tiempos de frío atípicos */
+/* Aviso contextual: banner completo (icono + texto) siempre visible cuando está
+   activo, para que tenga fuerza. */
+.ctx-warn { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(176,135,42,0.12); font-size: 12px; line-height: 1.45; color: var(--text); }
+.ctx-warn[hidden] { display: none; }
+.ctx-warn svg { flex-shrink: 0; margin-top: 1px; color: #b0872a; }
+html[data-theme="dark"] .ctx-warn { background: rgba(216,166,60,0.14); }
+html[data-theme="dark"] .ctx-warn svg { color: #d8a63c; }
+/* Variante informativa (azul suave) para la nota 💡 de exceso de levadura */
+.ctx-warn--info { background: rgba(56,120,190,0.12); }
+.ctx-warn--info svg { color: #3878be; }
+html[data-theme="dark"] .ctx-warn--info { background: rgba(96,160,230,0.16); }
+html[data-theme="dark"] .ctx-warn--info svg { color: #7fb0e6; }
+/* Enlace a los consejos de fermentación (abre el bloque de abajo) */
+.ferm-tips-link { display: inline-block; margin-top: 14px; font-size: 13px; font-weight: 600; color: var(--pomodoro-text); text-decoration: none; }
+.ferm-tips-link:hover { text-decoration: underline; }
+/* Levadura: interruptor claro "Auto / Manual" en la cabecera (segmento activo
+   resaltado: verde = Auto, terracota = Manual) y, debajo, el stepper del valor.
+   En Auto el stepper se bloquea y muestra el valor calculado en FUERTE (no atenuado)
+   porque es el resultado que importa; en Manual se desbloquea para editarlo. */
+.yeast-mode-seg .seg { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.yeast-mode-seg .seg svg { width: 13px; height: 13px; flex-shrink: 0; }
+/* Auto activo = verde (automático); Manual activo = terracota. El icono ✦ marca el
+   modo automático, coherente con el resto de la interfaz (resumen de fermentación). */
+.yeast-mode-seg #yeastSegAuto.active { background: var(--basilico); box-shadow: 0 1px 3px rgba(92,125,79,0.35); }
+.yeast-mode-seg #yeastSegManual.active { background: var(--pomodoro); box-shadow: 0 1px 3px rgba(193,67,46,0.35); }
+.yeast-stepper.is-locked input:disabled { color: var(--heading); -webkit-text-fill-color: var(--heading); }
+/* Guía de tamaños de referencia (peso por pizza) al pie del paso "Tamaño de la tanda".
+   Mini-tabla: peso alineado a la izquierda + descripción; la estándar resaltada en verde. */
+.size-guide { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.size-guide-title { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-soft); margin-bottom: 10px; }
+.size-guide-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.size-guide-item { display: flex; align-items: baseline; gap: 12px; font-size: 13.5px; }
+.size-guide-item .sg-w { flex: 0 0 auto; min-width: 82px; font-family: var(--font-mono); font-weight: 700; color: var(--heading); }
+.size-guide-item .sg-desc { color: var(--text-soft); }
+.size-guide-item.is-std .sg-w { color: var(--basilico-text); }
+.size-guide-item.is-std .sg-desc { color: var(--text); font-weight: 600; }
+/* Subtítulo de sección (p. ej. "La levadura se ajusta según el tiempo y la temperatura") */
+.section-sub { margin: -4px 0 6px; font-size: 13px; line-height: 1.45; color: var(--text-soft); }
+/* Gradiente frío → calor acorde a la temperatura (17 °C frío → 25 °C calor):
+   azul → teal → ámbar → rojo de marca.
+   El input es ALTO (28px) para que toda la zona sea agarrable —antes medía 8px
+   y en Firefox/Linux solo se podía arrastrar esa franja, así que no "funcionaba"—
+   y el degradado se pinta en el TRACK (8px), no en el input, para que se vea fino
+   e igual en Chrome y Firefox. */
+input[type="range"]{ -webkit-appearance:none; appearance:none; flex:1; height: 28px; background: transparent; cursor: pointer; margin: 0; }
+/* WebKit / Blink */
+input[type="range"]::-webkit-slider-runnable-track{ height: 8px; border-radius: 4px; background: linear-gradient(90deg, #4a90d9 0%, #7bb8b0 33%, #e6b24d 66%, var(--pomodoro) 100%); }
+input[type="range"]::-webkit-slider-thumb{ -webkit-appearance:none; width: 26px; height:26px; border-radius:50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor:pointer; transition: transform 0.1s; margin-top: -9px; }
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
+/* Firefox */
+input[type="range"]::-moz-range-track{ height: 8px; border-radius: 4px; background: linear-gradient(90deg, #4a90d9 0%, #7bb8b0 33%, #e6b24d 66%, var(--pomodoro) 100%); }
+input[type="range"]::-moz-range-thumb{ width: 26px; height: 26px; border-radius: 50%; background: var(--forno); border: 3px solid #fff; box-shadow: 0 2px 8px rgba(36,26,21,0.4); cursor: pointer; }
+input[type="range"]::-moz-range-thumb:active { transform: scale(1.15); }
+
+/* ===== Parámetros de la masa: bloque apilado + Auto/Manual ===== */
+.param + .param { margin-top: 18px; }
+.param-hours { margin-top: 18px; } /* separa el tiempo de fermentación del slider de temperatura */
+/* La levadura es el RESULTADO de los ajustes de fermentación: la separamos del resto
+   del bloque con un divisor y aire (si no, queda pegada a la fase controlada). */
+.param-yeast { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.param-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin-bottom: 8px; }
+.param-head label { margin-bottom: 0; }
+.param-hint { font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 8px 2px 0; }
+/* Horas de ambiente: el stepper ocupa el ancho completo y el consejo de reposo va
+   SIEMPRE debajo (nunca al lado), y solo cuando el ambiente es corto (lo decide calcular). */
+.hours-row { display: block; }
+/* La hora es un entero (0-96): se centra con ancho ajustado. Los demás steppers usan
+   4.5ch/right por los decimales (63.5, 0.12…), pero aquí eso descentraba el "20 h". */
+.hours-row .stepper-unit-wrap input { width: 3ch; text-align: center; }
+.ambient-rest-tip { position: relative; margin: 10px 2px 0; padding-left: 22px; font-size: 12px; line-height: 1.4; color: var(--text-soft); }
+.ambient-rest-tip::before { content: '💡'; position: absolute; left: 0; top: 1px; font-size: 13px; }
+.ambient-rest-tip[hidden] { display: none; }
+
+/* Hidratación: escala de color con marcador (bajo el stepper) + categoría y
+   descripción. La barra muestra el espectro 55→85% en cuatro bandas
+   (verde/ámbar/naranja/rojo) y el marcador indica dónde cae el valor actual. */
+.hyd-scale { margin-top: 12px; }
+.hyd-scale-track { position: relative; height: 8px; border-radius: 4px;
+  /* Escala divergente: rojo (50%) → verde de la napolitana clásica (meseta 55-62%)
+     → cálidos (contemporánea) → rojo al final (alta, exigente). */
+  background: linear-gradient(90deg, #c1432e 0%, #5c7d4f 14.3%, #5c7d4f 37.1%, #c69214 47%, #c2622e 63%, #9c3423 100%); }
+.hyd-scale-marker { position: absolute; top: 50%; left: 0; width: 3px; height: 16px; border-radius: 2px;
+  background: var(--heading); box-shadow: 0 0 0 1.5px var(--surface); transform: translate(-50%, -50%); transition: left .2s ease; }
+.hyd-scale-ends { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-soft); }
+.hyd-info { margin-top: 10px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; line-height: 1.4; }
+.hyd-info-head { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12.5px; }
+.hyd-info-head::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.hyd-info-body { color: var(--text-soft); }
+.hyd-info--dense  .hyd-info-head { color: var(--pomodoro); }
+.hyd-info--green  .hyd-info-head { color: #5c7d4f; }
+.hyd-info--yellow .hyd-info-head { color: #8a6407; }
+.hyd-info--orange .hyd-info-head { color: #b0512f; }
+.hyd-info--red    .hyd-info-head { color: var(--pomodoro-dark); }
+html[data-theme="dark"] .hyd-info--dense  .hyd-info-head { color: #ec9d86; }
+html[data-theme="dark"] .hyd-info--green  .hyd-info-head { color: #90b384; }
+html[data-theme="dark"] .hyd-info--yellow .hyd-info-head { color: #d8a63c; }
+html[data-theme="dark"] .hyd-info--orange .hyd-info-head { color: #e18a5a; }
+html[data-theme="dark"] .hyd-info--red    .hyd-info-head { color: #e2846a; }
+
+/* Toggle segmentado Auto / Manual (claro, buen tamaño táctil) */
+.mode-seg { display: inline-flex; background: var(--surface-2); border: 1.5px solid var(--control-border); border-radius: 9px; padding: 3px; gap: 3px; flex-shrink: 0; }
+.mode-seg .seg { border: none; background: transparent; color: var(--text-soft); font-family: var(--font-body); font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; padding: 7px 15px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; }
+.mode-seg .seg:hover { color: var(--text); }
+.mode-seg .seg.active { background: var(--pomodoro); color: #fff; box-shadow: 0 1px 3px rgba(193,67,46,0.35); }
+
+/* Stepper bloqueado (modo Auto): apagado y SIN interacción (ni tap ni foco) */
+.stepper.is-locked { background: var(--surface-3); pointer-events: none; }
+.stepper.is-locked .stepper-btn { opacity: 0.35; }
+.stepper input:disabled { color: var(--text-soft); -webkit-text-fill-color: var(--text-soft); cursor: default; }
+
+/* Barra de proporción de la mezcla: píldora segmentada y fina (moderna). La app
+   fuerza el 100%, así que no hay etiqueta "equilibrado"; el hueco al final (track
+   visible) indica visualmente si alguna vez no llega a 100. */
+.progress-container { margin-bottom: 22px; }
+.progress-bar { height: 14px; background: var(--surface-3); border-radius: 999px; display: flex; gap: 2px; padding: 2px; overflow: hidden; }
+.progress-segment { height: 100%; min-width: 3px; border-radius: 999px; transition: width 0.3s ease; }
+.progress-status { margin: 10px 0 0; font-size: 12.5px; font-weight: 700; font-family: var(--font-mono); color: var(--pomodoro-text); }
+.progress-status:empty { display: none; }
+/* Fuerza (W) total de la mezcla, bajo la barra de proporción */
+.flour-strength { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 10px; font-size: 12.5px; }
+.flour-strength-label { font-weight: 600; color: var(--text-soft); }
+.flour-strength-value { font-family: var(--font-mono); font-weight: 700; color: var(--heading); }
+
+/* ===== Filas de harina (selector de dos niveles + stepper de % + acciones) ===== */
+
+/* Botón-selector: nombre completo (línea principal) + fuerza (línea técnica). */
+.flour-select { position: relative; min-width: 0; }
+.flour-select-trigger {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 10px 12px; border: 1.5px solid var(--control-border); background: var(--surface-2);
+  border-radius: 10px; cursor: pointer; color: var(--text); font-family: var(--font-body);
+  transition: border-color .12s, box-shadow .12s, background-color .12s;
+}
+.flour-select-trigger:hover { border-color: var(--surface-3-hover); }
+.flour-select-trigger:focus-visible { outline: none; border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.flour-select-labels { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+/* El nombre se ajusta por palabras (se ven completos, en 2 líneas si hace falta).
+   overflow-wrap: break-word solo parte una palabra como último recurso, nunca letra
+   a letra (además el flex-wrap de la fila garantiza una columna ancha para el nombre). */
+.flour-select-main { font-size: 14.5px; font-weight: 600; color: var(--text); line-height: 1.25; overflow-wrap: break-word; }
+
+/* Pills de tipo + fuerza W (bajo el nombre, en fila y en el selector). Dan énfasis
+   y permiten escanear de un vistazo. */
+.flour-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.flour-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; line-height: 1.4; }
+.flour-tag-type { background: var(--tint-b); color: var(--text-mid); }
+.flour-tag-w { font-family: var(--font-mono); letter-spacing: .02em; } /* color de fondo/texto vía .fp-band--* */
+/* Chevron hacia la derecha (›): señala que abre un selector aparte, no un
+   desplegable en línea (que sería un chevron hacia abajo, como un <select>). */
+.flour-select-chevron { flex-shrink: 0; color: var(--text-soft); }
+
+/* Opciones del selector de harina (lista del modal). */
+.flour-option {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 14px 12px; border: none; border-bottom: 1px solid var(--border); background: transparent; border-radius: 0;
+  cursor: pointer; color: var(--text); font-family: var(--font-body); transition: background-color .1s;
+}
+.flour-option:last-child { border-bottom: none; }
+/* Estado seleccionado: fondo translúcido del acento + borde interior sutil en el
+   mismo tono tierra/rojizo (box-shadow inset, no desplaza) → destaca de un vistazo. */
+.flour-option.is-selected { background: rgba(193,67,46,0.07); box-shadow: inset 0 0 0 1.5px rgba(193,67,46,0.45); }
+html[data-theme="dark"] .flour-option.is-selected { background: rgba(193,67,46,0.16); }
+.flour-option:hover, .flour-option:focus-visible { background: var(--tint-b); outline: none; }
+.flour-option.is-selected:hover, .flour-option.is-selected:focus-visible { background: rgba(193,67,46,0.12); }
+html[data-theme="dark"] .flour-option.is-selected:hover { background: rgba(193,67,46,0.22); }
+.flour-option-labels { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.flour-option-main { font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+.flour-option-check { flex-shrink: 0; color: var(--pomodoro); opacity: 0; }
+.flour-option.is-selected .flour-option-check { opacity: 1; }
+
+/* ---- Selector de harina (modal buscador + filtros) ---- */
+/* Se escopa bajo #flourPickerModal (id) para ganar en especificidad a las reglas
+   base .modal-card, que están más abajo en el archivo (si no, el orden de fuente
+   las haría prevalecer y el ancho/bordes del selector serían los del modal base). */
+#flourPickerModal .flour-picker-card{ max-width: 480px; display: flex; flex-direction: column; max-height: min(86vh, 780px); }
+/* La tarjeta se enfoca al abrir (para meter el foco en el diálogo sin abrir el
+   teclado); es foco programático, sin anillo visible. */
+.flour-picker-card:focus{ outline: none; }
+.flour-picker-search{ position: relative; margin-top: 14px; flex-shrink: 0; }
+.flour-picker-search svg{ position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-soft); pointer-events: none; }
+.flour-picker-search input{ width: 100%; box-sizing: border-box; padding: 11px 12px 11px 40px; border-radius: 10px; border: 1px solid var(--control-border); background: var(--surface-2, var(--surface)); color: var(--text); font-family: var(--font-body); font-size: 15px; }
+.flour-picker-search input::placeholder{ color: var(--text-soft); }
+.flour-picker-search input:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; border-color: var(--pomodoro); }
+.flour-picker-search input::-webkit-search-cancel-button{ -webkit-appearance: none; }
+
+.flour-picker-filters{ display: flex; flex-direction: column; gap: 9px; margin-top: 12px; flex-shrink: 0; }
+/* Móvil (hoja, alto limitado): los chips van en una fila con scroll horizontal
+   —compacto, se desplaza con el dedo—. Sin degradado, así el último chip
+   (Común/Supermercado/Sin dato) nunca queda cortado; el recorte por overflow ya
+   insinúa que hay más. La etiqueta queda a la izquierda. */
+.fp-filter-row{ display: flex; align-items: center; gap: 8px; }
+/* Ancho fijo dimensionado para la etiqueta más larga en cualquier idioma
+   ("STRENGTH" ≈ 58px), para que no se recorte y las columnas queden alineadas. */
+.fp-filter-label{ font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-soft); flex-shrink: 0; width: 64px; white-space: nowrap; }
+.fp-filter-chips{ display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; scrollbar-width: none; }
+.fp-filter-chips::-webkit-scrollbar{ display: none; }
+.fp-chip{ flex-shrink: 0; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--control-border); background: transparent; color: var(--text); font-family: var(--font-body); font-size: 13.5px; cursor: pointer; white-space: nowrap; transition: background-color .12s, border-color .12s, color .12s; }
+/* Escritorio (diálogo, hay alto de sobra): los chips HACEN WRAP —se ven todos, sin
+   scroll horizontal (que en ordenador no había forma de accionar)—. */
+@media (min-width: 560px){
+  .fp-filter-row{ align-items: flex-start; }
+  .fp-filter-label{ padding-top: 9px; }
+  .fp-filter-chips{ flex-wrap: wrap; overflow-x: visible; }
+}
+.fp-chip:hover{ background: var(--tint-b); }
+.fp-chip.is-active{ background: var(--pomodoro); border-color: var(--pomodoro); color: #fff; font-weight: 600; }
+/* "Todas" (sin filtro) activo por defecto: estilo NEUTRO, para reservar el acento
+   rojizo a los filtros específicos que elige el usuario y que el ojo vaya a la lista. */
+.fp-chip-all.is-active{ background: var(--surface-3); border-color: var(--surface-3-hover); color: var(--text); font-weight: 600; }
+.fp-chip:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+
+/* Botón para plegar/desplegar los filtros (da más espacio a la lista). */
+.flour-filters-toggle{ display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; margin-top: 12px; flex-shrink: 0; background: transparent; border: 1px solid var(--control-border); border-radius: 10px; padding: 7px 12px; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color .12s, border-color .12s; }
+.flour-filters-toggle:hover{ background: var(--tint-b); }
+.flour-filters-toggle:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+.fp-toggle-chevron{ color: var(--text-soft); transition: transform .2s ease; }
+.flour-filters-toggle[aria-expanded="true"] .fp-toggle-chevron{ transform: rotate(180deg); }
+/* Contador de filtros activos (visible solo cuando hay alguno). */
+.fp-active-count{ display: none; }
+.fp-active-count.show{ display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pomodoro); color: #fff; font-size: 11px; font-weight: 700; }
+.flour-picker-filters.is-collapsed{ display: none; }
+
+.flour-picker-countrow{ display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 12px 2px 6px; flex-shrink: 0; }
+.flour-picker-count{ font-size: 12px; color: var(--text-mid); }
+/* Botón "Limpiar filtros": texto sutil en color acento; solo visible con filtros activos. */
+.flour-clear-filters{ flex-shrink: 0; background: transparent; border: none; padding: 2px 2px; color: var(--pomodoro-text); font-family: var(--font-body); font-size: 12.5px; font-weight: 600; cursor: pointer; border-radius: 6px; }
+.flour-clear-filters:hover{ text-decoration: underline; }
+.flour-clear-filters:focus-visible{ outline: 2px solid var(--pomodoro); outline-offset: 1px; }
+.flour-picker-list{ display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; flex: 1 1 auto; min-height: 120px; }
+.flour-picker-empty{ text-align: center; color: var(--text-soft); padding: 22px 8px; }
+
+/* Color de la pill de fuerza W (.flour-tag-w) según su banda. Texto oscurecido
+   para cumplir contraste WCAG AA (≥4.5:1) sobre el tinte claro. */
+.fp-band--baja{ background: rgba(90,125,175,0.18); color: #34567c; }
+.fp-band--media{ background: rgba(74,124,89,0.18); color: #2d6a44; }
+.fp-band--alta{ background: rgba(214,132,52,0.20); color: #855111; }
+.fp-band--muyalta{ background: rgba(193,67,46,0.20); color: #9e3320; }
+html[data-theme="dark"] .fp-band--baja{ background: rgba(120,155,205,0.28); color: #9db8dd; }
+html[data-theme="dark"] .fp-band--media{ background: rgba(74,124,89,0.28); color: #8fce9f; }
+html[data-theme="dark"] .fp-band--alta{ background: rgba(214,132,52,0.28); color: #edb878; }
+html[data-theme="dark"] .fp-band--muyalta{ background: rgba(193,67,46,0.30); color: #f0937f; }
+
+/* Móvil: hoja inferior (bottom-sheet) a lo ancho. */
+@media (max-width: 560px){
+  #flourPickerModal{ align-items: flex-end; padding: 0; }
+  #flourPickerModal .flour-picker-card{ max-width: none; width: 100%; max-height: 90vh; border-radius: 18px 18px 0 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); animation: fpSheetUp .22s ease; }
+}
+@keyframes fpSheetUp{ from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce){ .flour-picker-card{ animation: none; } }
+
+/* --- Harina propia (Fase 3): botón de añadir, formulario y borrado en la lista --- */
+.flour-add-btn{ display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin-top:12px; padding:11px 12px; flex-shrink:0; background:transparent; border:1px dashed var(--control-border); border-radius:10px; color:var(--text); font-family:var(--font-body); font-size:14px; font-weight:600; cursor:pointer; transition:background-color .12s, border-color .12s; }
+.flour-add-btn:hover{ background:var(--tint-b); border-color:var(--basilico); }
+.flour-add-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:1px; }
+/* Modo "añadir": se oculta la exploración; quedan cabecera + formulario. */
+.flour-picker-card.is-adding .flour-picker-search,
+.flour-picker-card.is-adding .flour-filters-toggle,
+.flour-picker-card.is-adding #flourFilters,
+.flour-picker-card.is-adding .flour-picker-countrow,
+.flour-picker-card.is-adding #flourPickerList,
+.flour-picker-card.is-adding #flourPickerEmpty,
+.flour-picker-card.is-adding #flourAddBtn{ display:none !important; }
+/* El formulario solo se muestra en modo "añadir" (.is-adding); si no, manda su
+   atributo [hidden]. OJO: no poner display en la regla base o vencería a [hidden]. */
+.flour-add-form{ margin-top:16px; flex-direction:column; gap:14px; flex:1 1 auto; min-height:0; overflow-y:auto; }
+.flour-picker-card.is-adding .flour-add-form{ display:flex; }
+.fp-add-title{ font-family:var(--font-display); font-size:17px; font-weight:600; color:var(--heading); }
+.fp-field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+.fp-field label{ font-size:12.5px; font-weight:600; color:var(--text-soft); }
+.fp-field input, .fp-field select{ width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid var(--control-border); background:var(--surface-2, var(--surface)); color:var(--text); font-family:var(--font-body); font-size:15px; }
+.fp-field input:focus-visible, .fp-field select:focus-visible{ outline:2px solid var(--pomodoro); outline-offset:1px; border-color:var(--pomodoro); }
+.fp-field-row{ display:flex; gap:12px; }
+.fp-field-row .fp-field{ flex:1; }
+.fp-field-w{ max-width:130px; }
+/* Fila de una harina del usuario: opción (flex:1) + papelera. El separador y el fondo
+   (hover/selección) van en la FILA, no en la opción, para que la línea llegue de lado a
+   lado y la papelera quede DENTRO del recuadro de selección (no huérfana fuera). */
+.flour-option-row{ display:flex; align-items:stretch; border-bottom:1px solid var(--border); transition:background-color .1s; }
+.flour-option-row:last-child{ border-bottom:none; }
+.flour-option-row .flour-option{ flex:1; min-width:0; border-bottom:none; }
+/* La opción dentro de una fila NO pinta su fondo/recuadro: manda la fila (conserva el
+   foco de teclado tint-b para accesibilidad). */
+.flour-option-row .flour-option:hover{ background:transparent; }
+.flour-option-row .flour-option.is-selected{ background:transparent; box-shadow:none; }
+.flour-option-row:hover{ background:var(--tint-b); }
+.flour-option-row.is-selected{ background:rgba(193,67,46,0.07); box-shadow:inset 0 0 0 1.5px rgba(193,67,46,0.45); }
+.flour-option-row.is-selected:hover{ background:rgba(193,67,46,0.12); }
+html[data-theme="dark"] .flour-option-row.is-selected{ background:rgba(193,67,46,0.16); }
+html[data-theme="dark"] .flour-option-row.is-selected:hover{ background:rgba(193,67,46,0.22); }
+.flour-option-edit, .flour-option-del{ flex-shrink:0; display:flex; align-items:center; justify-content:center; width:42px; background:transparent; border:none; color:var(--text-soft); cursor:pointer; transition:background-color .12s, color .12s; }
+.flour-option-edit:hover{ background:var(--tint-b); color:var(--text); }
+.flour-option-del:hover{ background:rgba(193,67,46,0.14); color:var(--pomodoro); }
+.flour-option-edit:focus-visible, .flour-option-del:focus-visible{ outline:2px solid var(--focus); outline-offset:-3px; border-radius:8px; }
+/* Confirmación de borrado EN LÍNEA (evita apilar modales sobre el selector). */
+.flour-option-confirm{ align-items:center; gap:8px; padding:9px 12px; background:rgba(193,67,46,0.06); }
+html[data-theme="dark"] .flour-option-confirm{ background:rgba(193,67,46,0.12); }
+.flour-option-confirm .fp-del-msg{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:600; color:var(--text); }
+.flour-option-confirm button{ flex-shrink:0; padding:7px 13px; border-radius:8px; font-family:var(--font-body); font-size:13px; font-weight:600; cursor:pointer; }
+.fp-del-cancel{ border:1px solid var(--control-border); background:transparent; color:var(--text); }
+.fp-del-cancel:hover{ background:var(--tint-b); }
+.fp-del-confirm{ border:1px solid var(--pomodoro); background:var(--pomodoro); color:#fff; }
+.fp-del-confirm:hover{ background:var(--pomodoro-dark); border-color:var(--pomodoro-dark); }
+
+/* Controles a la derecha: bloque unificado [− % + │ candado] y borrar aparte. */
+.flour-controls { display: flex; align-items: center; flex-shrink: 0; }
+
+/* Bloque-píldora que une el ajuste del % con su candado. */
+.flour-pct-group {
+  display: flex; align-items: stretch; height: 46px; flex-shrink: 0;
+  border: 1.5px solid var(--control-border); background: var(--surface-2);
+  border-radius: 13px; overflow: hidden;
+  transition: border-color .15s, box-shadow .15s, background-color .2s;
+}
+.flour-pct-group:focus-within { border-color: var(--focus); box-shadow: 0 0 0 4px var(--focus-ring); }
+.pct-btn {
+  /* Área táctil mínima 44x44 (accesibilidad). */
+  border: none; background: transparent; color: var(--text); width: 44px; height: 44px; min-width: 44px;
+  font-size: 20px; font-weight: 600; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: center; transition: background-color .1s;
+}
+.pct-btn:hover { background: var(--tint-b); }
+.pct-btn:active { background: var(--tint-c); }
+.pct-value { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 10px; }
+.flour-pct-group .flour-pct-input {
+  /* 4.5ch para que no se corten los % con decimales (p. ej. "62.5" de recetas
+     importadas o mientras se escribe), además de enteros como "100". */
+  width: 4.5ch; text-align: center; border: none; background: transparent; padding: 0;
+  font-family: var(--font-mono); font-size: 16px; color: var(--text);
+}
+.flour-pct-group .flour-pct-input:focus { outline: none; }
+.pct-divider { width: 1.5px; background: var(--border); margin: 9px 0; flex-shrink: 0; }
+.pct-lock {
+  border: none; background: transparent; color: var(--text-soft); cursor: pointer; width: 46px;
+  display: flex; align-items: center; justify-content: center; transition: background-color .1s, color .1s;
+}
+.pct-lock:hover { background: var(--tint-b); color: var(--text); }
+.pct-lock.active-lock { color: var(--chip-ink); background: var(--surface-3); }
+/* Estado bloqueado (candado) o auto (única libre, % determinado): el bloque se
+   atenúa y los +/− quedan inertes; el candado sigue activo en ambos. */
+.flour-pct-group.is-locked, .flour-pct-group.is-auto { background: var(--surface-3); }
+.flour-pct-group.is-locked .pct-btn, .flour-pct-group.is-auto .pct-btn { opacity: 0.3; pointer-events: none; }
+.flour-pct-group.is-locked .flour-pct-input, .flour-pct-group.is-auto .flour-pct-input { color: var(--text-soft); -webkit-text-fill-color: var(--text-soft); }
+/* Borrar: mismo lenguaje que el bloque del % (caja con borde, alto y radio), pero
+   separado y con hover destructivo en rojo. Especificidad doble (.btn-icon.flour-delete)
+   para ganar a las reglas base de .btn-icon que van después en el archivo. */
+.btn-icon.flour-delete {
+  margin-left: 18px; width: 46px; height: 46px; min-width: 46px;
+  border: 1.5px solid var(--control-border); border-radius: 13px; background: var(--surface-2);
+}
+.btn-icon.flour-delete:hover { border-color: rgba(193,67,46,0.45); background: rgba(193,67,46,0.08); }
+
+/* Pista sobre el candado */
+.flour-hint { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; line-height: 1.4; color: var(--text-soft); margin: 2px 2px 0; }
+.flour-hint svg { flex-shrink: 0; margin-top: 1px; opacity: 0.7; }
+
+/* Índice de la harina: punto de color que enlaza cada fila con su segmento en la
+   barra de proporción (sustituye al número [1]/[2]/[3]). */
+.flour-index { display: flex; align-items: center; justify-content: center; }
+.flour-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+/* Filas de harina - Escritorio: punto · selector · controles en una línea, con
+   flex-wrap: si la columna del formulario es estrecha (p. ej. layout a 2 columnas
+   en pantallas medianas), los controles bajan a una 2ª línea y el NOMBRE ocupa la
+   1ª a ancho completo, en vez de comprimirse hasta partirse. */
+@media (min-width: 560px) {
+  .flour-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-bottom: 12px; }
+  .flour-index { flex: 0 0 auto; }
+  .flour-select { flex: 1 1 170px; }
+}
+
+/* Filas de harina - Móvil (tarjeta: selector arriba, controles abajo) */
+@media (max-width: 559px) {
+  .flour-row {
+    display: grid; grid-template-columns: 22px 1fr; gap: 12px 10px; align-items: center;
+    background: var(--tint-a); border: 1px solid var(--border);
+    padding: 14px 12px; border-radius: 12px; margin-bottom: 14px;
+  }
+  .flour-controls { grid-column: 1 / -1; }
+  /* En móvil el borrar se va al extremo derecho, bien lejos del candado.
+     Especificidad doble para ganar a la regla base .btn-icon.flour-delete. */
+  .btn-icon.flour-delete { margin-left: auto; }
+}
+
+/* Pantallas muy estrechas (≈320-360px): recupera ancho reduciendo el padding
+   lateral, para que la fila de harina (selector + controles) no se desborde. */
+@media (max-width: 360px) {
+  .section { padding: 28px 16px; }
+  .results { padding: 26px 16px 20px; }
+  .flour-row { padding: 14px 10px; }
+  .pct-value { padding: 0 6px; }
+  .btn-icon.flour-delete { width: 42px; min-width: 42px; }
+}
+
+.btn-icon { background: none; border: none; cursor: pointer; padding: 6px; width: 44px; height: 44px; min-width: 44px; color: var(--text-soft); border-radius: 10px; transition: background 0.08s, color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; }
+.btn-icon:hover { background: var(--surface-3); color: var(--text); }
+.btn-icon:active { transform: scale(0.88); }
+.btn-icon.active-lock { color: var(--chip-ink); background: var(--surface-3); }
+.btn-icon.delete:hover { color: var(--pomodoro); background: rgba(193,67,46,0.1); }
+
+.flour-buttons { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; }
+.btn-outline { flex: 1; background: transparent; border: 1.5px solid var(--control-border); color: var(--text); font-family: var(--font-body); font-size: 14px; font-weight: 600; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.08s, border-color 0.08s, transform 0.08s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-outline:hover { border-color: var(--forno); background: var(--tint-a); }
+.btn-outline:active { transform: scale(0.97); }
+.btn-secondary { background: var(--surface-3); border: none; color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: background 0.08s, transform 0.08s; }
+.btn-secondary:hover { background: var(--surface-3-hover); }
+.btn-secondary:active { transform: scale(0.96); }
+
+/* Pie del panel: acción global de restablecer, discreta hasta que se busca. */
+/* Restablecer receta: acción secundaria del bloque "Mis recetas". Va como "pie" del bloque
+   —ancho completo, sin borde y con un separador fino arriba— para que se integre en lugar de
+   flotar como una píldora suelta. Hover terracota (acción algo destructiva), solo en ratón. */
+.recipe-reset-row{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.btn-reset{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background: transparent; border: none; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight:600; padding: 10px 12px; border-radius: 10px; cursor:pointer; transition: color 0.12s, background 0.12s, transform 0.08s; }
+.btn-reset svg{ width:14px; height:14px; opacity: 0.85; }
+.btn-reset:active{ transform: scale(0.99); }
+@media (hover: hover){
+  .btn-reset:hover{ color: var(--pomodoro); background: rgba(193,67,46,0.07); }
+  .btn-reset:hover svg{ opacity: 1; }
+}
+/* Menos aire bajo el botón de restablecer (es el último elemento del bloque "Mis recetas"). */
+.section:has(.recipe-reset-row){ padding-bottom: 16px; }
+
+.warning-banner{ display:none; margin-top: 14px; background: rgba(193,67,46,0.09); border: 1.5px solid rgba(193,67,46,0.4); color: var(--pomodoro-dark); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 500; align-items:flex-start; gap: 8px; }
+.warning-banner.show{ display:flex; }
+
+/* Results Card */
+.results{ position: sticky; top: 20px; background: var(--forno); background-image: radial-gradient(ellipse 500px 300px at 100% 0%, rgba(193,67,46,0.25), transparent 60%); border-radius: var(--radius); padding: 30px 26px 26px; color: var(--farina); box-shadow: var(--card-shadow); border: 1px solid rgba(255,255,255,0.06); }
+@media (max-width:900px){ .results{ position:static; scroll-margin-top: 24px; } }
+.results-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 22px; }
+.results-title{ font-family: var(--font-display); font-size: 21px; font-weight:600; margin:0; }
+.results-badge{ font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 4px 10px; color: var(--farina-2); }
+.headline-stat{ display:flex; align-items:baseline; gap:10px; }
+.headline-number{ font-family: var(--font-mono); font-size: 44px; font-weight:700; letter-spacing: -0.02em; line-height: 1; transform-origin: left center; }
+/* Micro-interacción: el total "late" brevemente al recalcular (ver pulseRecalc en
+   calculator.js). La regla global de prefers-reduced-motion la neutraliza. */
+@keyframes result-pop{ 0%{ transform: scale(1); } 35%{ transform: scale(1.05); } 100%{ transform: scale(1); } }
+.headline-number.recalc{ animation: result-pop 0.38s cubic-bezier(0.34,1.4,0.64,1); }
+.headline-label{ font-size: 13px; color: rgba(243,234,217,0.65); }
+.headline-context{ margin: 6px 0 0; font-family: var(--font-mono); font-size: 12.5px; color: rgba(243,234,217,0.5); }
+
+/* Barra de proporción: composición de la masa por peso (harina/agua/sal/levadura) */
+.ingredient-bar{ display:flex; height: 8px; margin: 20px 0; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.06); }
+.ing-seg{ height: 100%; min-width: 2px; }
+.ing-seg + .ing-seg{ box-shadow: inset 1px 0 0 rgba(36,26,21,0.4); }
+
+/* Filas de ingredientes: icono + nombre | % de panadero | peso */
+.swatch{ width:9px;height:9px;border-radius:2px; flex-shrink:0; }
+.ing-row{ display:grid; grid-template-columns: 1fr auto 76px; align-items:center; gap:12px; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.ing-row.ing-row-last{ border-bottom:none; padding-bottom: 2px; }
+.ing-lead{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
+.ing-ico{ display:inline-flex; flex-shrink:0; margin-top:1px; }
+.ing-ico svg{ width:16px; height:16px; display:block; }
+.ing-ico-harina{ color: var(--c-harina); }
+.ing-ico-agua{ color: var(--c-agua); }
+.ing-ico-sal{ color: var(--c-sal); }
+.ing-ico-levadura{ color: var(--c-levadura); }
+.ing-name{ font-size: 13.5px; line-height: 1.3; color: rgba(243,234,217,0.82); min-width:0; overflow-wrap:anywhere; }
+.ing-pct{ font-family: var(--font-mono); font-size: 12px; color: rgba(243,234,217,0.5); text-align:right; font-variant-numeric: tabular-nums; }
+.ing-value{ font-family: var(--font-mono); font-size: 16px; font-weight:600; color: var(--farina); text-align:right; white-space:nowrap; font-variant-numeric: tabular-nums; }
+
+/* Desglose por harina, subordinado a "Harina total" */
+.flour-breakdown{ margin-top: 2px; }.flour-breakdown:empty{ display: none; }
+.flour-sub{ display:grid; grid-template-columns: 1fr auto 76px; align-items:start; gap:12px; padding: 7px 0 7px 26px; border-bottom: 1px dashed rgba(255,255,255,0.07); }
+.flour-sub:last-child{ border-bottom:none; }
+.flour-sub .fname{ color: rgba(243,234,217,0.7); display:flex; align-items:flex-start; gap:8px; min-width:0; font-size:12.5px; }
+.flour-sub .fname .swatch{ margin-top:4px; }
+.flour-sub .fname-text{ min-width:0; line-height:1.3; overflow-wrap:anywhere; }
+.flour-sub .fpct{ font-family: var(--font-mono); font-size:11.5px; color: rgba(243,234,217,0.6); text-align:right; font-variant-numeric: tabular-nums; }
+.flour-sub .fval{ font-family: var(--font-mono); font-size:13px; color: rgba(243,234,217,0.9); font-weight:600; white-space:nowrap; text-align:right; font-variant-numeric: tabular-nums; }
+/* Nota subordinada: la levadura seca es alternativa a la fresca, no un ingrediente aparte */
+.yeast-alt{ margin: 6px 0 0 26px; font-size: 12.5px; color: rgba(243,234,217,0.5); }
+.yeast-alt #totalLevaduraSeca{ font-family: var(--font-mono); }
+/* Resumen de fermentación (tiempos + temperaturas) dentro del panel de resultado */
+.result-ferment{ margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.12); }
+.result-ferment-title{ display:block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--farina-2); margin-bottom: 8px; }
+.result-ferment-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding: 4px 0; font-size: 13.5px; }
+.result-ferment-row .rf-label{ color: rgba(243,234,217,0.7); }
+.result-ferment-row .rf-value{ font-family: var(--font-mono); font-weight:600; color: var(--farina); white-space: nowrap; }
+.disabled-overlay{ text-align:center; padding: 30px 10px; color: rgba(243,234,217,0.75); font-size: 14px; }
+.disabled-overlay strong{ display:block; color: var(--pomodoro-text); margin-bottom:6px; font-size:15px;}
+
+/* Footer & Socials */
+footer.note{ text-align:center; font-size: 12.5px; color: var(--text-soft); margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--tint-a); }
+footer.note .credits{ margin-top: 14px; font-size: 10.5px; letter-spacing: 0.02em; opacity: 0.55; }
+.social-block { display: flex; flex-direction: column; align-items: center; gap: 16px; padding-bottom: 20px; }
+.social-block span { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-soft); font-weight: bold; }
+.social-links { display: flex; gap: 16px; }
+.social-link { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: var(--surface); border: 1px solid var(--control-border); border-radius: 50%; color: var(--text-soft); transition: background 0.1s, border-color 0.1s, transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 12px rgba(36,26,21,0.05); }
+.social-link:hover { color: white; background: var(--pomodoro); border-color: var(--pomodoro); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(193,67,46,0.25); }
+.social-link:active { transform: scale(0.9); }
+.social-link svg { width: 20px; height: 20px; fill: currentColor; }
+/* Botones sobre la tarjeta oscura de resultado (Copiar / Compartir) */
+.recipe-share-row{ display: flex; gap: 10px; margin-top: 16px; }
+.recipe-share-row .btn-on-dark{ flex: 1; margin-top: 0; }
+.btn-on-dark{ color: var(--farina); border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.08s; }
+.btn-on-dark:hover{ background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); }
+.btn-on-dark-ok{ background: var(--basilico) !important; border-color: var(--basilico) !important; color: #fff !important; }
+
+/* Desplegable de consejos (fermentación): <details>/<summary> con estilo propio */
+.accordion{ width: 100%; scroll-margin-top: 14px; }
+.accordion-summary{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 28px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.12s ease;
+}
+.accordion-summary::-webkit-details-marker{ display: none; }
+.accordion-summary::marker{ content: ""; }
+@media (hover: hover){ .accordion-summary:hover{ background: var(--tint-a); } }
+.accordion-summary:focus-visible{ outline: 2px solid var(--focus); outline-offset: -3px; border-radius: var(--radius); }
+.accordion-summary .section-title{ margin: 0; }
+.accordion-chevron{
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-soft);
+  transition: transform 0.22s ease, color 0.12s ease;
+}
+@media (hover: hover){ .accordion-summary:hover .accordion-chevron{ color: var(--text); } }
+.accordion[open] .accordion-chevron{ transform: rotate(180deg); }
+.accordion-body{ padding: 0 28px 26px; }
+.accordion[open] .accordion-body{ animation: accordionReveal 0.28s ease; }
+@keyframes accordionReveal{
+  from{ opacity: 0; transform: translateY(-6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+/* Botón de modo oscuro/claro */
+.theme-toggle{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.theme-toggle:hover{ border-color: var(--pomodoro); }
+.theme-toggle:active{ transform: scale(0.9); }
+.theme-toggle .icon-moon{ display: none; }
+html[data-theme="dark"] .theme-toggle .icon-sun{ display: none; }
+html[data-theme="dark"] .theme-toggle .icon-moon{ display: block; }
+
+/* Recetas guardadas */
+.saved-recipes-row{ display:flex; gap: 8px; align-items:center; }
+.saved-recipes-row select{ flex:1; min-width: 0; }
+.recipe-status{ margin-left:auto; align-self:center; font-family:var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:4px 10px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.recipe-status:empty{ display:none; }
+.recipe-status::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.recipe-status.saved{ color:var(--basilico-text); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); }
+.recipe-status.unsaved{ color:#b23c0a; background:rgba(217,119,6,0.14); border:1px solid rgba(217,119,6,0.4); }
+html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
+.recipes-io-row{ display:flex; gap: 8px; margin-top: 8px; }
+.recipe-notes-input{ width:100%; margin-top:10px; padding:11px 13px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.4; resize:vertical; min-height:64px; }
+.recipe-notes-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px var(--focus-ring); }
+.recipe-notes-display{ margin-top:10px; padding:10px 12px; background:var(--surface-3); border:1px solid var(--border); border-radius:10px; font-size:13px; line-height:1.45; color:var(--text-soft); white-space:pre-wrap; word-break:break-word; }
+.icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
+.icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
+.icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
+.icon-btn-square:disabled{ opacity: 0.4; cursor: not-allowed; }
+.icon-btn-square.delete:hover:not(:disabled){ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+
+/* ===== Sistema «Mis recetas» (receta activa + acciones + lista) ===== */
+.active-recipe-line{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-soft); margin-bottom:12px; min-width:0; }
+.active-recipe-ico{ flex-shrink:0; color:var(--basilico); }
+.active-recipe-line.none .active-recipe-ico{ color:var(--text-soft); opacity:0.6; }
+.active-recipe-label{ flex-shrink:0; }
+.active-recipe-name{ color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.recipe-actions-row{ display:flex; gap:8px; align-items:stretch; }
+.recipe-load-btn{ flex:1; margin-top:0; }
+.recipe-actions-row .icon-btn-square{ height:auto; align-self:stretch; }
+
+/* Buscador de la lista de recetas */
+.recipe-search{ position:relative; margin-top:14px; }
+.recipe-search svg{ position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--text-soft); pointer-events:none; }
+.recipe-search-input{ width:100%; box-sizing:border-box; padding:10px 12px 10px 38px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); color:var(--text); font-family:var(--font-body); font-size:15px; }
+.recipe-search-input::placeholder{ color:var(--text-soft); }
+.recipe-search-input:focus-visible{ outline:2px solid var(--pomodoro); outline-offset:1px; border-color:var(--pomodoro); }
+
+/* Lista de recetas del modal Lista de recetas. Rejilla auto-ajustable: 1 columna
+   en móvil (popup estrecho) y 2+ cuando el modal es ancho en escritorio, así se
+   aprovecha el espacio horizontal y se scrollea menos. */
+.recipe-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); align-items:start; gap:10px; margin-top:12px; max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
+.recipe-item{ width:100%; background:var(--surface-2); border:1.5px solid var(--control-border); border-radius:12px; padding:14px 16px; transition:border-color .1s, background .1s; display:flex; flex-direction:column; gap:12px; font-family:var(--font-body); color:var(--text); }
+.recipe-item.active{ border-color:var(--basilico); box-shadow:0 0 0 3px rgba(92,125,79,0.14); }
+.recipe-item-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; }
+.recipe-item-badge{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--basilico-text); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); border-radius:999px; padding:2px 8px; }
+/* Cuerpo de la tarjeta: rejilla etiquetada de 2 columnas. Cada dato con su
+   ETIQUETA en versalitas sobre el valor; fermentación y harina ocupan la fila
+   completa. Sustituye a la antigua línea de iconos+números (apelotonada y con
+   iconos ambiguos entre sal y peso). */
+.recipe-item-grid{ display:grid; grid-template-columns:1fr 1fr; gap:11px 18px; }
+.rc-cell{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.rc-cell--wide{ grid-column:1 / -1; }
+.rc-k{ font-size:10px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-soft); }
+.rc-v{ font-family:var(--font-mono); font-size:13.5px; color:var(--text); line-height:1.35; word-break:break-word; }
+.recipe-item-notes{ font-size:12.5px; color:var(--text-soft); line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+/* Barra de acciones al pie de la tarjeta: Abrir (principal) + Editar + Eliminar. */
+.recipe-item-actions{ display:flex; align-items:center; gap:8px; margin-top:2px; padding-top:12px; border-top:1px solid var(--border); }
+.recipe-open-btn{ flex:1 1 auto; min-width:0; height:38px; padding:0 14px; border:1.5px solid var(--basilico); border-radius:9px; background:rgba(92,125,79,0.10); color:var(--basilico-text); font-family:var(--font-body); font-size:13.5px; font-weight:700; cursor:pointer; transition:background-color .1s, border-color .1s, transform .08s; }
+.recipe-tool{ flex:0 0 auto; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border:1.5px solid var(--control-border); border-radius:9px; background:transparent; color:var(--text-soft); cursor:pointer; transition:background-color .1s, color .1s, border-color .1s, transform .08s; }
+.recipe-tool svg{ width:16px; height:16px; }
+@media (hover:hover){
+  .recipe-open-btn:hover{ background:rgba(92,125,79,0.18); border-color:var(--basilico); }
+  .recipe-tool:hover{ color:var(--text); border-color:var(--forno); }
+  .recipe-tool.delete:hover{ color:var(--pomodoro); border-color:var(--pomodoro); background:rgba(193,67,46,0.08); }
+}
+.recipe-open-btn:active, .recipe-tool:active{ transform:scale(0.94); }
+.recipe-open-btn:focus-visible, .recipe-tool:focus-visible{ outline:2px solid var(--focus); outline-offset:1px; }
+.recipe-list-empty{ text-align:center; padding:20px 4px; }
+
+/* Modal guardar receta */
+.modal-overlay{ position:fixed; inset:0; background: rgba(12,9,6,0.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 10000; display:flex; align-items:center; justify-content:center; padding: 20px; height: 100%; overscroll-behavior-y: contain; }
+/* La confirmación puede abrirse SOBRE la lista de recetas (eliminar): debe quedar por encima. */
+#confirmModal{ z-index: 10001; }
+/* Bloquea el scroll del fondo mientras haya cualquier modal abierto */
+html.modal-open, html.modal-open body{ overflow: hidden; }
+.modal-card{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65);
+  /* En pantallas bajas el modal debe caber y hacer scroll interno, no salirse
+     (el fondo tiene el scroll bloqueado y el título/acciones quedarían fuera). */
+  max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+/* En oscuro el modal se aclara un punto y refuerza su borde para despegarse del
+   fondo (antes se confundían por ser del mismo color). */
+html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color: rgba(243,234,217,0.20); }
+/* La tarjeta es solo un "aterrizaje" de foco al abrir el modal (tabindex=-1): no debe
+   mostrar recuadro de foco; el foco visible va en los controles reales al tabular. */
+.modal-card:focus, .modal-card:focus-visible{ outline: none; }
+.modal-card .recipe-list { max-height: 50vh; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 10px; }
+/* La tarjeta del modal usa barra fina, y SIEMPRE dentro de su relleno (24px), así
+   que no se solapa con el contenido. La página principal conserva la barra nativa
+   (reserva su hueco; nunca pisa el panel de resultado). */
+.modal-card{ scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+.modal-card::-webkit-scrollbar{ width: 8px; height: 8px; }
+.modal-card::-webkit-scrollbar-track{ background: transparent; }
+.modal-card::-webkit-scrollbar-thumb{ background: var(--scroll-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.modal-card::-webkit-scrollbar-thumb:hover{ background: var(--scroll-thumb-hover); background-clip: padding-box; }
+
+/* Contenedores con scroll SIN barra visible (listas de recetas/harinas, popups
+   altos): la barra molestaba —se solapaba con las tarjetas o se veía fea en oscuro—.
+   En su lugar un DIFUMINADO suave arriba/abajo aparece solo cuando hay más contenido
+   en esa dirección (el JS pone .more-above / .more-below según la posición de scroll). */
+.scroll-faded{ scrollbar-width: none; }
+.scroll-faded::-webkit-scrollbar{ width: 0; height: 0; }
+.scroll-faded.more-below{
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); }
+.scroll-faded.more-above:not(.more-below){
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px);
+          mask-image: linear-gradient(to bottom, transparent, #000 26px); }
+.scroll-faded.more-above.more-below{
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent);
+          mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 26px), transparent); }
+/* Popups altos (novedades, ajustes): la tarjeta NO scrollea; cabecera (título + X) y
+   botones quedan FIJOS y solo scrollea el cuerpo interior (.modal-body). Así el título
+   y la X no se mueven al desplazar, y el difuminado se funde con el fondo de la tarjeta. */
+.whatsnew-card, .settings-card{ display: flex; flex-direction: column; overflow: hidden; }
+.whatsnew-card > .whatsnew-head, .settings-card > .settings-head,
+.whatsnew-card > .modal-actions, .settings-card > .modal-actions{ flex: 0 0 auto; }
+.modal-body{ flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.modal-title{ font-family: var(--font-display); font-size: 19px; font-weight:600; color: var(--heading); margin: 0 0 6px; }
+.modal-sub{ font-size: 13.5px; color: var(--text-soft); margin: 0 0 14px; }
+.modal-actions{ display:flex; gap: 10px; margin-top: 16px; }
+.modal-actions .btn-outline, .modal-actions .modal-confirm{ flex:1; margin-top:0; }
+/* Variante apilada (modal de guardar: hasta 3 acciones) */
+.modal-actions-stack{ flex-direction: column; }
+.modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
+/* Pista de validación del modal (p. ej. nombre duplicado) */
+.modal-error{ font-size: 12.5px; line-height: 1.4; color: var(--pomodoro-text); margin: 8px 2px 0; }
+/* Popup de novedades 2.0 */
+.whatsnew-card{ max-width: 440px; max-height: 85vh; overflow-y: auto; }
+
+/* ===== Escritorio / pantallas anchas (incluidas móviles en horizontal): los
+   modales se expanden a lo ancho en vez de quedarse en un popup estrecho y
+   vertical, que desaprovechaba la pantalla y obligaba a hacer scroll. En vertical
+   de móvil (<560px) se mantienen compactos. La lista de recetas es la que más se
+   beneficia: al ensancharse, sus tarjetas pasan a 2 columnas (rejilla auto-fill). */
+@media (min-width: 560px){
+  .modal-card{ max-width: 440px; }
+  .whatsnew-card{ max-width: 560px; }
+  #loadRecipeModal .modal-card{ max-width: 820px; }
+  #loadRecipeModal .modal-card .recipe-list{ max-height: 64vh; }
+}
+.whatsnew-head{ margin-bottom: 2px; }
+.whatsnew-badge{ display: inline-block; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: #fff; background: var(--pomodoro); border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(193,67,46,0.3); }
+.whatsnew-list{ list-style: none; padding: 0; margin: 16px 0 0; display: flex; flex-direction: column; gap: 14px; }
+.wn-item{ display: flex; align-items: flex-start; gap: 12px; }
+.wn-ico{ flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; background: var(--tint-b); display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
+.wn-text{ font-size: 13.5px; line-height: 1.5; color: var(--text-soft); }
+.wn-text b{ color: var(--heading); }
+/* Botones deshabilitados (acciones del modal) */
+.btn-outline:disabled, .btn-secondary:disabled{ opacity: 0.45; cursor: not-allowed; }
+
+/* ===== Botón de configuración (engranaje) y panel de ajustes ===== */
+.settings-toggle{
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--control-border); color: var(--text);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.settings-toggle:hover{ border-color: var(--pomodoro); }
+.settings-toggle:active{ transform: scale(0.9); }
+
+.settings-card{ max-width: 380px; }
+/* En PC los ajustes van en DOS COLUMNAS: el modal queda ancho y bajo (no hay que hacer
+   scroll para verlos todos). Los dos toggles pequeños (Idioma/Tema) se emparejan arriba y
+   los cuatro segmentados forman una rejilla 2×2 debajo. En móvil siguen en una columna. */
+@media (min-width: 560px) {
+  .settings-card{ max-width: 560px; }
+  .settings-grid{ display: grid; grid-template-columns: 1fr 1fr; align-items: start; column-gap: 26px; }
+  .settings-grid .settings-row{ padding: 12px 0; border-bottom: none; }
+  .settings-grid .settings-row.stacked{ flex-direction: column; align-items: stretch; gap: 8px; }
+  .settings-grid .settings-row.stacked .segmented{ width: 100%; }
+}
+.settings-head{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.settings-head .modal-title{ margin: 0; }
+.settings-row{ display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.settings-row.stacked{ flex-direction: column; align-items: stretch; gap: 10px; }
+.settings-row-label{ font-size: 13.5px; font-weight: 600; color: var(--text); }
+.settings-section{ padding-top: 16px; }
+.settings-section .settings-row-label{ display: block; margin-bottom: 10px; }
+.settings-section .recipes-io-row{ margin-top: 0; }
+
+/* Control segmentado (unidades) */
+.segmented{ display: flex; gap: 4px; background: var(--surface-2); border: 1.5px solid var(--control-border); border-radius: 10px; padding: 3px; }
+.segmented .seg-opt{ flex: 1; border: none; background: transparent; color: var(--text-soft); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 9px 10px; border-radius: 7px; cursor: pointer; transition: background 0.1s, color 0.1s; }
+.segmented .seg-opt:hover{ color: var(--text); }
+.segmented .seg-opt.active{ background: var(--pomodoro); color: #fff; }
+
+/* Botón de idioma ES/EN */
+.lang-toggle{
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(36,26,21,0.08);
+}
+.lang-toggle:hover{ border-color: var(--pomodoro); }
+.lang-toggle:active{ transform: scale(0.94); }
+.lang-toggle .lang-opt{ opacity: 0.4; }
+.lang-toggle .lang-opt.active{ opacity: 1; color: var(--pomodoro-text); }
+.lang-toggle .lang-sep{ opacity: 0.3; }
+@media (max-width: 480px){
+  /* En móvil los controles pasan a su propia fila alineada a la derecha,
+     para no apretarse contra el logo centrado ni salirse por la derecha. */
+  .hero-controls{ position: static; width: 100%; justify-content: flex-end; margin-bottom: 2px; }
+}
+/* Hero compacto en móvil: reduce logo, márgenes y tamaño de título para que la
+   herramienta quede más arriba. El hero de escritorio no se toca. */
+@media (max-width: 600px){
+  header.hero{ padding: 10px 4px 22px; margin-bottom: 24px; gap: 6px; }
+  .hero-logo{ width: 60px; margin-bottom: 8px; }
+  h1{ font-size: clamp(24px, 7vw, 32px); }
+  .sub{ margin-top: 10px; font-size: 14px; line-height: 1.55; }
+  .sub-toggle{ margin-top: 4px; }
+}
+
+/* ===== Barra-resumen fija (solo móvil) ===== */
+.mobile-summary{ display: none; }
+@media (max-width: 900px){
+  .mobile-summary{
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9990;
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--forno); color: var(--farina);
+    padding: 9px 16px calc(9px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.45);
+    transform: translateY(120%);
+    transition: transform 0.25s ease;
+    cursor: pointer;
+  }
+  .mobile-summary.show{ transform: translateY(0); }
+}
+/* Fila 1: masa total (destacada) + chevron. Fila 2: los cuatro ingredientes. */
+.ms-main{ display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ms-total{ display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ms-total-label{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
+.ms-total-val{ font-family: var(--font-mono); font-size: 18px; font-weight: 800; white-space: nowrap; display: inline-block; transform-origin: left center; }
+.ms-stats{ display: flex; gap: 10px; justify-content: space-between; min-width: 0; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.10); }
+.ms-stat{ display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.ms-label{ font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--farina-2); opacity: 0.75; }
+.ms-val{ font-family: var(--font-mono); font-size: 13.5px; font-weight: 700; white-space: nowrap; display: inline-block; transform-origin: left center; }
+/* Latido de las cifras de la barra fija al recalcular (móvil). La regla global de
+   prefers-reduced-motion lo neutraliza. */
+@keyframes ms-pop{ 0%{ transform: scale(1); } 40%{ transform: scale(1.14); } 100%{ transform: scale(1); } }
+.ms-val.recalc, .ms-total-val.recalc{ animation: ms-pop 0.32s ease; }
+.ms-blocked{ display: none; font-size: 13px; font-weight: 600; color: #f0a44e; padding: 4px 0; }
+.ms-chevron{ flex-shrink: 0; opacity: 0.75; }
+.mobile-summary.blocked .ms-main, .mobile-summary.blocked .ms-stats{ display: none; }
+.mobile-summary.blocked .ms-blocked{ display: block; }
+
+/* ===== Foco de teclado ===== */
+/* :focus-visible nativo: el anillo solo aparece al navegar con teclado, nunca
+   con ratón ni táctil. Sustituye a la antigua clase manual .using-keyboard. */
+button:focus-visible,
+[role="button"]:focus-visible,
+a.social-link:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible{
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ===== Respeta la preferencia de movimiento reducido ===== */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-logo:hover{ transform: none; }
+}
+
+/* ===== Distintivo de entorno de PRUEBAS (beta) =====
+   Todo lo relacionado con la beta está OCULTO por defecto y solo se muestra bajo
+   .beta-mode, clase que el script del <head> añade al <html> únicamente en hosts
+   que no son producción (ver index.html). Así estos estilos pueden convivir en
+   main sin aparecer jamás en calculatupizza.com. */
+.beta-badge{ display: none; }
+.beta-watermark{ display: none; }
+
+.beta-mode .beta-badge{
+  position: absolute; top: 18px; left: 4px; z-index: 5;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  color: #fff; background: var(--pomodoro);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px -6px rgba(193,67,46,0.6);
+  user-select: none;
+}
+.beta-badge__ver{ font-weight: 600; opacity: 0.85; letter-spacing: 0.04em; }
+.beta-badge__dot{
+  width: 7px; height: 7px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 0 rgba(255,255,255,0.6);
+  animation: beta-pulse 2s infinite;
+}
+@keyframes beta-pulse{
+  0%{ box-shadow: 0 0 0 0 rgba(255,255,255,0.55); }
+  70%{ box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+.beta-mode .beta-watermark{
+  display: block; position: fixed; right: 14px; bottom: 12px; z-index: 9980;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--pomodoro); opacity: 0.5;
+  pointer-events: none; user-select: none;
+}
+
+@media (max-width: 900px){
+  /* En móvil la barra-resumen fija ocupa la parte baja: ocultamos la marca de
+     agua para no solaparla. El badge de la cabecera es suficiente. */
+  .beta-mode .beta-watermark{ display: none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .beta-badge__dot{ animation: none; }
+}
+
+/* PLANIFICADOR DE FERMENTACIÓN */
+.planner-panel {
+  margin-top: 22px;
+  padding: 22px 16px 18px;
+  background: #2f231d;
+  border: 1px solid #5a4237;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.planner-title {
+  text-align: center;
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: #fff3df;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #e0512b;
+  border-image: linear-gradient(90deg, transparent, #e0512b, transparent) 1;
+}
+.planner-title span {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+.planner-lab {
+  font: 0.7rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--farina);
+  margin: 16px 0 0;
+}
+.planner-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+}
+.planner-seg button {
+  padding: 9px;
+  border: 1px solid #4a3d37;
+  background: transparent;
+  color: var(--text-soft);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.planner-seg button.on {
+  background: #3a2d27;
+  border-color: var(--farina);
+  color: var(--farina);
+}
+.planner-panel label {
+  display: block;
+  font: 0.7rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.06em;
+  color: rgba(243,234,217,0.7);
+  margin: 14px 0 6px;
+}
+.planner-panel input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #4a3d37;
+  border-radius: 10px;
+  background: #1a1310;
+  color: var(--farina);
+  font: inherit;
+  color-scheme: dark;
+}
+.planner-tl {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.planner-tl li {
+  position: relative;
+  padding: 0 0 14px 28px;
+}
+.planner-tl li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: -2px;
+  width: 2px;
+  background: #3a2e29;
+}
+.planner-tl li:last-child::before {
+  display: none;
+}
+.planner-tl .dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.planner-tl .when {
+  font-weight: 700;
+  font-size: 0.93rem;
+  color: var(--farina);
+}
+.planner-tl .what {
+  color: rgba(243,234,217,0.75);
+  font-size: 0.84rem;
+}
+.planner-tl .tag {
+  display: inline-block;
+  font-size: 0.66rem;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--c);
+  color: #1a1310;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.planner-tot {
+  font: 0.74rem ui-monospace, Menlo, monospace;
+  color: var(--text-soft);
+}
+
+/* PLANIFICADOR DE FERMENTACIÓN */
+.planner-panel {
+  margin-top: 22px;
+  padding: 22px 16px 18px;
+  background: #2f231d;
+  border: 1px solid #5a4237;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.planner-title {
+  text-align: center;
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: #fff3df;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #e0512b;
+  border-image: linear-gradient(90deg, transparent, #e0512b, transparent) 1;
+}
+.planner-title span {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+.planner-lab {
+  font: 0.7rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--farina);
+  margin: 16px 0 0;
+}
+.planner-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 10px;
+}
+.planner-seg button {
+  padding: 9px;
+  border: 1px solid #4a3d37;
+  background: transparent;
+  color: var(--text-soft);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.planner-seg button.on {
+  background: #3a2d27;
+  border-color: var(--farina);
+  color: var(--farina);
+}
+.planner-panel label {
+  display: block;
+  font: 0.7rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.06em;
+  color: rgba(243,234,217,0.7);
+  margin: 14px 0 6px;
+}
+.planner-panel input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #4a3d37;
+  border-radius: 10px;
+  background: #1a1310;
+  color: var(--farina);
+  font: inherit;
+  color-scheme: dark;
+}
+.planner-tl {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.planner-tl li {
+  position: relative;
+  padding: 0 0 14px 28px;
+}
+.planner-tl li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: -2px;
+  width: 2px;
+  background: #3a2e29;
+}
+.planner-tl li:last-child::before {
+  display: none;
+}
+.planner-tl .dot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.planner-tl .when {
+  font-weight: 700;
+  font-size: 0.93rem;
+  color: var(--farina);
+}
+.planner-tl .what {
+  color: rgba(243,234,217,0.75);
+  font-size: 0.84rem;
+}
+.planner-tl .tag {
+  display: inline-block;
+  font-size: 0.66rem;
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: var(--c);
+  color: #1a1310;
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 700;
+}
+.planner-tot {
+  font: 0.74rem ui-monospace, Menlo, monospace;
+  color: var(--text-soft);
+}
+
+/* ====== Textura cálida (ruido) ====== */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.045'/%3E%3C/svg%3E");
+  z-index: 9999;
+}
