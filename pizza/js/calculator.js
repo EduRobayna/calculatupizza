@@ -1382,47 +1382,7 @@ window.stepColdTemp = function(dir) {
     // Compatibilidad fuerza de la harina ↔ tiempo de fermentación de RELOJ total
     // (ambiente + nevera activa). Sin dato de W en la mezcla → sin aviso.
     if (el.flourWarn) {
-      let show = false;
-      if (wEff != null) {
-        // Horas estructurales de desgaste del gluten (modelo Q10/Arrhenius: AMBAS fases se
-        // ponderan por su temperatura; ver structuralHours en dough.js). EXCLUSIVO para
-        // validar contra la tabla de rangos W. temp = °C ambiente (#temperatura); coldT =
-        // °C CANÓNICA de la fría (convertida desde °F). Ambiente y nevera son fases
-        // independientes (sin tope combinado de reloj).
-        const H = D.structuralHours(horas, temp, coldH, coldT);
-        const clockHours = horas + coldH; // tiempo de reloj real configurado por el usuario
-        const verdict = D.flourTimeWarning(wEff, H);
-        if (verdict) {
-          const band = D.flourBand(wEff);
-          // Damos DOS arreglos concretos: fuerza de harina (de la tabla de bandas) y tiempo
-          // total de reloj. El tiempo es proporcional a H manteniendo la mezcla de
-          // temperaturas actual (escala lineal: reloj · objetivo_estructural / H).
-          const opts = [];
-          let head;
-          if (verdict === 'weak') {
-            head = I18N.t('warnFlourWeakHead').replace('{W_value}', wEff);
-            const minW = D.minWForHours(H);
-            if (minW != null) opts.push(I18N.t('adviceFlourMin').replace('{w}', minW));
-            if (H > 0 && clockHours > 0) {
-              const maxHours = Math.max(1, Math.floor(clockHours * band.maxH / H));
-              opts.push(I18N.t('adviceTimeMax').replace('{h}', maxHours));
-            }
-          } else { // strong
-            head = I18N.t('warnFlourStrongHead').replace('{W_value}', wEff);
-            const maxW = D.maxWForHours(H);
-            if (maxW != null) opts.push(I18N.t('adviceFlourMax').replace('{w}', maxW));
-            if (H > 0 && clockHours > 0) {
-              const minHours = Math.ceil(clockHours * band.minH / H);
-              if (minHours <= 96) opts.push(I18N.t('adviceTimeMin').replace('{h}', minHours));
-            }
-          }
-          let text = head;
-          if (opts.length) text += ' ' + I18N.t('adviceNeed') + ' ' + opts.join(I18N.t('adviceOr')) + '.';
-          if (el.flourWarnText) el.flourWarnText.textContent = text;
-          show = true;
-        }
-      }
-      el.flourWarn.hidden = !show;
+      el.flourWarn.hidden = true;
     }
 
     // No pisar el campo mientras el usuario lo está escribiendo (lo confirma al salir).
@@ -1541,7 +1501,8 @@ window.stepColdTemp = function(dir) {
         I18N.t('recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
         U.formatWeight(pesoPaneto);
     }
-    renderResultFerment(); // resumen de fermentación (tiempos + temperaturas) en el resultado
+    renderResultFerment();
+    if (window.__triggerPlanner) window.__triggerPlanner();
 
     // Porcentajes de panadero (relativos a la harina = 100%).
     if (el.aguaPct) el.aguaPct.textContent = pctSobreHarina(aguaTotal, harinaTotal, 1);
@@ -1576,7 +1537,8 @@ window.stepColdTemp = function(dir) {
     }
     masaInitialized = true;
     updateCards();
-  }
+  
+}
 
   [el.numPaneteos, el.temperatura, el.tempFrio, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
@@ -2793,6 +2755,10 @@ window.stepColdTemp = function(dir) {
       flours.forEach((f) => L.push('🔸 ' + noSp(U.formatWeight(harinaT * (f.pct / 100))) +
         ' (' + U.formatNumber(f.pct) + '%) ' + flourName(f.flourId)));
     }
+    if (window.__plannerPlanText) {
+      L.push('');
+      L.push(window.__plannerPlanText);
+    }
     return L.join('\n');
   }
 
@@ -2873,5 +2839,207 @@ window.stepColdTemp = function(dir) {
     // botón. "¡Empezar!", tocar el fondo y Escape cierran igual (foco atrapado en el modal).
     openModal(modal, modal.querySelector('.modal-card'));
   })();
+
+})();
+// --- LÓGICA DEL PLANIFICADOR DE FERMENTACIÓN ---
+(function initPlanner() {
+  const I18N = window.PizzaI18N;
+  const U = window.PizzaUnits;
+  const pTypes = document.getElementById('plannerTypes');
+  const pBlWrap = document.getElementById('plannerBlWrap');
+  const pBl = document.getElementById('plannerBl');
+  const pBlHint = document.getElementById('plannerBlHint');
+  const pM1 = document.getElementById('plannerM1');
+  const pM2 = document.getElementById('plannerM2');
+  const pDt = document.getElementById('plannerDt');
+  const pDtLabel = document.getElementById('plannerDtLabel');
+  const pTl = document.getElementById('plannerTl');
+  const pTotal = document.getElementById('plannerTotal');
+  if (!pTypes || !pDt) return;
+
+  let planCur = 'b'; // 'a' = bloque+bollos, 'b' = solo bollos
+  let planMode = 1;  // 1 = empiezo, 2 = como
+
+  function toLocalInput(d){
+    const o = new Date(d.getTime() - d.getTimezoneOffset() * 6e4);
+    return o.toISOString().slice(0,16);
+  }
+
+  function setMode(m){
+    planMode = m;
+    pM1.className = m === 1 ? 'on' : '';
+    pM2.className = m === 2 ? 'on' : '';
+    pDtLabel.textContent = m === 1 ? I18N.t('plannerDtLabel1') : I18N.t('plannerDtLabel2');
+    const n = new Date();
+    n.setMinutes(0,0,0);
+    if(m===1){
+      n.setHours(n.getHours() + 1); // proxima hora
+    } else {
+      n.setDate(n.getDate() + 2);
+      n.setHours(21);
+    }
+    pDt.value = toLocalInput(n);
+    renderPlanner();
+  }
+
+  pM1.addEventListener('click', () => setMode(1));
+  pM2.addEventListener('click', () => setMode(2));
+  pDt.addEventListener('input', renderPlanner);
+  pBl.addEventListener('input', renderPlanner);
+
+  pTypes.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      planCur = b.getAttribute('data-r');
+      pTypes.querySelectorAll('button').forEach(x => x.className = x === b ? 'on' : '');
+      renderPlanner();
+    });
+  });
+
+  const NAME = { n: I18N.t('plannerControladaName'), t: I18N.t('plannerAmbienteName') };
+  const COL = { n: '#7db3da', t: '#e3c58a', r: '#9a8b7e', h: '#d0452f' };
+  const TAG = { n: I18N.t('plannerControladaTag'), t: I18N.t('plannerAmbienteTag'), r: I18N.t('plannerReposoTag') };
+
+  function fmtDate(d){
+    const fmt = new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en-US' : 'es-ES', {
+      hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', hour12: false
+    });
+    const p = fmt.formatToParts(d);
+    const g = (t) => {
+      const part = p.find(x => x.type === t);
+      return part ? part.value : '';
+    };
+    return g('hour')+':'+g('minute')+', '+g('day')+' '+g('month');
+  }
+
+  function durFmt(h){
+    if (h < 1) return Math.round(h * 60) + ' min';
+    const num = (Math.round(h * 100) / 100);
+    return document.documentElement.lang === 'es' ? num.toString().replace('.', ',') + ' h' : num + ' h';
+  }
+
+  function getD(){
+    const coldH = (document.getElementById('fridgeToggle') && document.getElementById('fridgeToggle').checked) 
+      ? Math.max(0, parseFloat(document.getElementById('horasFrio').value) || 0) : 0;
+    const ambH = Math.max(0, parseFloat(document.getElementById('horas').value) || 0);
+
+    let d = { bloque: { n: 0, t: 0 }, bollos: { n: 0, t: 0 } };
+    if (planCur === 'b') { // solo bollos
+      d.bollos.n = coldH;
+      d.bollos.t = ambH;
+    } else { // bloque + bollos
+      if (coldH > 0) { // mixta
+        d.bloque.n = coldH;
+        d.bollos.t = ambH;
+      } else { // todo a TA
+        const tot = ambH;
+        let b = parseFloat(pBl.value);
+        if (isNaN(b)) b = Math.max(0.5, tot / 2);
+        b = Math.min(Math.max(b, 0.5), tot - 0.5);
+        d.bloque.t = b;
+        d.bollos.t = tot - b;
+      }
+    }
+    return d;
+  }
+
+  function getPhases(){
+    const d = getD();
+    const out = [];
+    let done = false;
+    
+    // Si fridgeToggle off, temp = lo que haya pero asumimos >=15 por defecto si no hay nevera.
+    // Wait, D.coldT in calculator is coldTempC(). We can compute it:
+    let coldTVal = 4;
+    const coldTempEl = document.getElementById('tempFrio');
+    if (coldTempEl) {
+      let v = parseFloat(coldTempEl.value);
+      if (!isNaN(v)) {
+        coldTVal = window.U ? (window.U.isFahrenheit() ? (v - 32) * 5/9 : v) : v;
+      }
+    }
+
+    ['bloque', 'bollos'].forEach(st => {
+      if (st === 'bollos') {
+        if (planCur === 'b' && !done && (d.bollos.n + d.bollos.t) > 0) {
+          done = true;
+          out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
+        }
+        out.push(['h', I18N.t('plannerFormarPhase')]);
+      }
+      ['n', 't'].forEach(w => {
+        const h = d[st][w];
+        if (!h) return;
+        if (w === 'n' && coldTVal < 15 && !done) {
+          done = true;
+          out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
+        }
+        const stageName = st === 'bloque' ? I18N.t('plannerBloque') : I18N.t('plannerBollos');
+        out.push(['f', stageName + NAME[w], h, w]);
+      });
+    });
+    return out;
+  }
+
+  window.__triggerPlanner = renderPlanner;
+  function renderPlanner(){
+    if (!pDt) return;
+    const isMixta = (document.getElementById('fridgeToggle') && document.getElementById('fridgeToggle').checked) 
+      ? (parseFloat(document.getElementById('horasFrio').value) > 0) : false;
+      
+    const showBl = (planCur === 'a' && !isMixta);
+    pBlWrap.style.display = showBl ? 'block' : 'none';
+    if (showBl) {
+      const dd0 = getD();
+      pBlHint.textContent = I18N.t('plannerBlHint').replace('{h}', durFmt(dd0.bollos.t));
+    }
+    
+    const v = pDt.value;
+    if (!v) {
+      pTl.innerHTML = '';
+      pTotal.textContent = '';
+      window.__plannerPlanText = '';
+      return;
+    }
+    
+    const ph = getPhases();
+    const tot = ph.reduce((a, x) => a + (x[0] === 'f' ? x[2] : 0), 0);
+    const dtDate = new Date(v);
+    let t = (planMode === 1 ? dtDate : new Date(dtDate.getTime() - tot * 36e5)).getTime();
+    
+    const items = [];
+    ph.forEach(x => {
+      if (x[0] === 'h') items.push({ t: null, x: x[1], c: COL.h, g: '' });
+      else { items.push({ t: new Date(t), x: x[1] + ' (' + durFmt(x[2]) + ')', c: COL[x[3]], g: TAG[x[3]] }); t += x[2] * 36e5; }
+    });
+    items.push({ t: new Date(t), x: I18N.t('plannerLista'), c: '#6cc17e', g: I18N.t('plannerAHornear') });
+    
+    pTl.innerHTML = items.map(s => {
+      if (s.t) {
+        return '<li style="--c:' + s.c + '"><span class="dot"></span><div class="when">' + fmtDate(s.t) + '<span class="tag">' + s.g + '</span></div><div class="what">' + s.x + '</div></li>';
+      }
+      return '<li style="--c:' + s.c + '"><span class="dot"></span><div class="when">' + s.x + '</div></li>';
+    }).join('');
+    
+    pTotal.textContent = I18N.t('plannerTotal') + ': ' + durFmt(tot);
+    
+    window.__plannerPlanText = '*' + I18N.t('plannerHeader') + '* 🕐\n' + items.map(s => {
+      return s.t ? fmtDate(s.t) + ' – ' + s.x : '_· ' + s.x + '_';
+    }).join('\n');
+  }
+
+  // Hook into D or global recalculation
+  const origCalcular = window.calcular || function(){};
+  window.calcular = function() {
+    origCalcular.apply(this, arguments);
+    renderPlanner();
+  };
+  
+  // Try hook the button inputs directly if possible since calculator.js hides them.
+  document.getElementById('fridgeToggle')?.addEventListener('change', renderPlanner);
+  document.getElementById('horasFrio')?.addEventListener('input', renderPlanner);
+  document.getElementById('horas')?.addEventListener('input', renderPlanner);
+  
+  // initial mode
+  setTimeout(() => setMode(1), 500);
 
 })();

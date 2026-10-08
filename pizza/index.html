@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Masa de Pizza Napolitana · Edu Robayna</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
 <!-- theme-color por tema; el script de abajo fija el color exacto antes de pintar -->
 <meta name="theme-color" id="themeColorMeta" content="#f3ead9">
@@ -109,8 +110,8 @@
     </button>
     </div>
     <img src="logo-hero.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
-    <h1 data-i18n-html="h1">Calculadora de <em>masa</em> de pizza napolitana</h1>
-    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite y sin prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">La calculadora está programada para ofrecer las cantidades exactas en cuatro pasos. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
+    <h1 data-i18n-html="h1">Calculadora de masa de pizza napolitana</h1>
+    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">La calculadora está programada para ofrecer las cantidades exactas en cuatro pasos. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
     <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false">Leer más</button>
   </header>
 
@@ -213,7 +214,7 @@
           <span class="card-summary" id="summaryFerm"></span>
         </summary>
         <div class="card-body">
-        <p class="section-sub" data-i18n="section2Sub">La levadura se ajusta según el tiempo y la temperatura.</p>
+        <p class="section-sub" data-i18n="section2Sub">La levadura se ajusta según el tiempo y la temperatura. Si haces fermentación mixta, empieza por la nevera tras un breve reposo.</p>
         <div class="param-head">
           <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
           <div class="temp-readout"><input type="text" id="tempValue" class="temp-input" value="23" maxlength="3" inputmode="numeric" autocomplete="off" aria-label="Escribe la temperatura ambiente" data-i18n-aria="tempInputAria"><span id="tempUnit">°C</span></div>
@@ -424,6 +425,50 @@
         </div>
       </details>
 
+  <div class="panel">
+    <details class="accordion">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+        </span>
+        <h2 class="section-title" data-i18n="kneadTitle">Consejos sobre el amasado</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora y la masa.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos pocos gramos (1-2) más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, lo último.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-25 ºC.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una única bola y déjala reposar 20-30 minutos cubierta con un paño húmedo.</li>
+        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi7"><b>A fermentar.</b> Después de este reposo, arranca la fermentación. Ve a la sección «Consejos sobre la fermentación» para más ideas.</li>
+      </ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <details class="accordion" id="fermentTips">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </span>
+        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
+        <li style="margin-bottom: 10px;"><b>Haz doble fermentación:</b> una primera en bloque (toda la masa junta) y una segunda ya con los bollos (bolas) formados. Recomendamos hacer la mayor parte de la fermentación en bloque, aunque no pasa nada si prefieres que la fermentación más larga sea en bollos que la fermentación al completo sea con bollos.</li>
+        <li style="margin-bottom: 10px;"><b>Temperatura y tiempos:</b> la fermentación la puedes hacer a temperatura ambiente (TA) o mixta (nevera+TA). La calculadora utiliza un motor matemático que adapta la cantidad exacta de levadura a tus horarios y temperatura. Tú decides cuándo quieres comer pizza (aunque recomendamos mínimo 8 horas de fermentación).</li>
+        <li style="margin-bottom: 10px;"><b>Órden:</b> si decides hacer fermentación mixta (o fermentar en bollos a TA), deja la masa reposar 30 minutos fuera de la nevera para que la levadura empiece a trabajar. Después, mete la masa en la nevera para que fermente. Por último, sácala de la nevera al menos 4 horas para que atempere y termine de fermentar.</li>
+        <li style="margin-bottom: 10px;"><b>Referencia visual (el volumen):</b> los tiempos son solo una guía. Durante la fermentación en bloque, la masa no necesariamente tiene que duplicar su tamaño; un crecimiento del 50% al 70% suele ser el punto óptimo antes de formar los bollos para evitar que la red de gluten se agote.</li>
+        <li style="margin-bottom: 10px;"><b>Protección contra el aire:</b> es vital mantener la masa herméticamente tapada (con tapa o film transparente) tanto en bloque como en bollos. Si el aire entra en contacto continuo con la masa, se formará una costra dura que arruinará la elasticidad de los bordes al estirar.</li>
+        <li style="margin-bottom: 10px;"><b>El test del dedo:</b> para saber si el bollo está listo para hornear, presiona ligeramente la masa con un dedo. Si la huella vuelve a su sitio lentamente y queda una ligera marca, está perfecta. Si rebota de inmediato, le falta tiempo; si se queda hundida, se ha pasado.</li>
+      </ul>
+      </div>
+    </details>
+  </div>
     </div>
 
     <div class="results">
@@ -484,6 +529,30 @@
           <span class="result-ferment-title" data-i18n="recipeFermentation">Fermentación</span>
           <div class="result-ferment-body" id="resultFermentBody"></div>
         </div>
+
+        <!-- Planificador de fermentación -->
+        <div class="planner-panel" id="plannerPanel">
+          <div class="planner-title"><span aria-hidden="true">🍕</span> <span data-i18n="plannerTitle">Planifica tu pizza</span></div>
+          <div class="planner-lab" data-i18n="plannerTypeLabel">TIPO DE FERMENTACIÓN</div>
+          <div class="planner-seg" id="plannerTypes">
+            <button type="button" data-r="a" data-i18n="plannerTypeA">Bloque + bollos</button>
+            <button type="button" data-r="b" class="on" data-i18n="plannerTypeB">Solo en bollos</button>
+          </div>
+          <div id="plannerBlWrap" style="display:none">
+            <label for="plannerBl" data-i18n="plannerBlLabel">Horas en bloque</label>
+            <input type="number" id="plannerBl" min="0.5" step="0.5" value="12">
+            <div class="planner-tot" id="plannerBlHint" style="margin-top:6px"></div>
+          </div>
+          <div class="planner-lab" data-i18n="plannerTimeLabel">FIJA TU HORA Y DÍA</div>
+          <div class="planner-seg">
+            <button type="button" id="plannerM1" class="on" data-i18n="plannerMode1">Empiezo a las…</button>
+            <button type="button" id="plannerM2" data-i18n="plannerMode2">Quiero comer a las…</button>
+          </div>
+          <label id="plannerDtLabel" for="plannerDt" data-i18n="plannerDtLabel1">Hora de inicio de la fermentación</label>
+          <input type="datetime-local" id="plannerDt">
+          <ul class="planner-tl" id="plannerTl"></ul>
+          <div class="planner-tot" id="plannerTotal"></div>
+        </div>
       </div>
 
       <div class="disabled-overlay" id="disabledOverlay" style="display:none;">
@@ -516,49 +585,6 @@
 
   </div>
 
-  <div class="panel" style="margin-top: 20px;">
-    <details class="accordion">
-      <summary class="accordion-summary">
-        <span class="section-num section-icon" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
-        </span>
-        <h2 class="section-title" data-i18n="kneadTitle">Consejos sobre el amasado</h2>
-        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </summary>
-      <div class="accordion-body">
-      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora y la masa.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos pocos gramos (1-2) más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, lo último.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-25 ºC.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una única bola y déjala reposar 20-30 minutos cubierta con un paño húmedo.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi7"><b>A fermentar.</b> Después de este reposo, arranca la fermentación. Ve a la sección «Consejos sobre la fermentación» para más ideas.</li>
-      </ul>
-      </div>
-    </details>
-  </div>
-
-  <div class="panel" style="margin-top: 20px;">
-    <details class="accordion" id="fermentTips">
-      <summary class="accordion-summary">
-        <span class="section-num section-icon" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        </span>
-        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
-        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </summary>
-      <div class="accordion-body">
-      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos (bolas) formados. Para una fermentación de 24 horas: 10-16 horas en bloque y 8-14 horas en bollos. Si lo prefieres, puedes hacer una breve fermentación en bloque (dos horas) y fermentar el resto del tiempo con los bollos hechos.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2"><b>Temperatura y tiempos:</b> la fermentación la puedes hacer a temperatura ambiente o mixta. La calculadora utiliza un motor matemático que adapta la cantidad exacta de levadura a tus horarios y temperatura. Tú decides cuándo quieres comer pizza (aunque recomendamos mínimo 8 horas de fermentación).</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi3"><b>Referencia visual (el volumen):</b> los tiempos son solo una guía. Durante la fermentación en bloque, la masa no necesariamente tiene que duplicar su tamaño; un crecimiento del 50% al 70% suele ser el punto óptimo antes de formar los bollos para evitar que la red de gluten se agote.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi4"><b>Protección contra el aire:</b> es vital mantener la masa herméticamente tapada (con tapa o film transparente) tanto en bloque como en bollos. Si el aire entra en contacto continuo con la masa, se formará una costra dura que arruinará la elasticidad de los bordes al estirar.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi5"><b>El test del dedo:</b> para saber si el bollo está listo para hornear, presiona ligeramente la masa con un dedo. Si la huella vuelve a su sitio lentamente y queda una ligera marca, está perfecta. Si rebota de inmediato, le falta tiempo; si se queda hundida, se ha pasado.</li>
-      </ul>
-      </div>
-    </details>
-  </div>
 
   <div id="settingsModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
     <div class="modal-card settings-card">
