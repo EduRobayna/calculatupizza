@@ -2919,9 +2919,9 @@ window.stepColdTemp = function(dir) {
     });
   });
 
-  const NAME = { n: I18N.t('plannerControladaName'), t: I18N.t('plannerAmbienteName') };
+  const getName = () => ({ n: I18N.t('plannerControladaName'), t: I18N.t('plannerAmbienteName') });
   const COL = { n: '#7db3da', t: '#e3c58a', r: '#d8cec2', h: '#d0452f' };
-  const TAG = { n: I18N.t('plannerControladaTag'), t: I18N.t('plannerAmbienteTag'), r: I18N.t('plannerReposoTag') };
+  const getTag = () => ({ n: I18N.t('plannerControladaTag'), t: I18N.t('plannerAmbienteTag'), r: I18N.t('plannerReposoTag') });
 
   function fmtDate(d){
     const fmt = new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en-US' : 'es-ES', {
@@ -2998,7 +2998,7 @@ window.stepColdTemp = function(dir) {
           out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
         }
         const stageName = st === 'bloque' ? I18N.t('plannerBloque') : I18N.t('plannerBollos');
-        out.push(['f', stageName + NAME[w], h, w]);
+        out.push(['f', stageName + getName()[w], h, w]);
       });
     });
     return out;
@@ -3033,7 +3033,7 @@ window.stepColdTemp = function(dir) {
     const items = [];
     ph.forEach(x => {
       if (x[0] === 'h') items.push({ t: new Date(t), x: x[1], c: COL.h, g: '' });
-      else { items.push({ t: new Date(t), x: x[1] + ' (' + durFmt(x[2]) + ')', c: COL[x[3]], g: TAG[x[3]] }); t += x[2] * 36e5; }
+      else { items.push({ t: new Date(t), x: x[1] + ' (' + durFmt(x[2]) + ')', c: COL[x[3]], g: getTag()[x[3]] }); t += x[2] * 36e5; }
     });
     items.push({ t: new Date(t), x: I18N.t('plannerLista'), c: '#6cc17e', g: I18N.t('plannerAHornear') });
     
