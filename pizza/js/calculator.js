@@ -2843,7 +2843,7 @@ window.stepColdTemp = function(dir) {
   (function initWhatsNew(){
     const modal = document.getElementById('whatsNewModal');
     if (!modal) return;
-    const KEY = 'edu_pizza_whatsnew_v2';
+    const KEY = 'edu_pizza_whatsnew_v3';
     let seen = false;
     try { seen = localStorage.getItem(KEY) === '1'; } catch (e) {}
     if (seen) return;
