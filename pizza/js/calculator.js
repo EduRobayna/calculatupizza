@@ -3292,9 +3292,9 @@ window.stepColdTemp = function(dir) {
     
     pTotal.textContent = I18N.t('plannerTotal') + ': ' + durFmt(tot);
     
-    window.__plannerPlanText = '*' + I18N.t('plannerHeader') + '* 🕐\n' + items.map(s => {
+    window.__plannerPlanText = I18N.t('plannerHeader') + ' 🕐\n' + items.map(s => {
       const txtX = s.x.replace(/<[^>]*>?/gm, '').trim();
-      return s.t ? fmtDate(s.t) + ' – ' + txtX : '_· ' + txtX + '_';
+      return s.t ? fmtDate(s.t) + ' – ' + txtX : '· ' + txtX;
     }).join('\n');
 
     window.__plannerTimeline = items;
