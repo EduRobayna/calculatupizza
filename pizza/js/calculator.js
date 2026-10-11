@@ -3265,10 +3265,26 @@ window.stepColdTemp = function(dir) {
 
   function fmtPlannerTime(d, isEn) {
     if (!d) return '';
+    const dateObj = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
     const fmt = new Intl.DateTimeFormat(isEn ? 'en-US' : 'es-ES', {
       hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12: false
     });
-    return fmt.format(d);
+    const parts = fmt.formatToParts(dateObj);
+    const getPart = (type) => {
+      const p = parts.find(x => x.type === type);
+      return p ? p.value : '';
+    };
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const day = getPart('day');
+    const month = getPart('month');
+    if (!hour || !minute) return '';
+    const timeStr = `${hour}:${minute}`;
+    if (day && month) {
+      return isEn ? `${timeStr} on ${month} ${day}` : `${timeStr} del ${day} ${month}`;
+    }
+    return timeStr;
   }
 
   function renderStepByStep() {
@@ -3300,14 +3316,56 @@ window.stepColdTemp = function(dir) {
       flours: flours
     });
 
-    const aguaTotal = Math.round(rec.agua);
-    const agua80 = Math.round(rec.agua * 0.8);
-    const aguaMitad = Math.round(rec.agua * 0.1);
-    const aguaFinal = aguaTotal - agua80 - aguaMitad;
+    const rawHarina = (rec && rec.harinaTotal != null) ? rec.harinaTotal : (rec ? rec.harina : NaN);
+    const rawAgua = (rec && rec.aguaTotal != null) ? rec.aguaTotal : (rec ? rec.agua : NaN);
+    const rawSal = (rec && rec.salTotal != null) ? rec.salTotal : (rec ? rec.sal : NaN);
+    const rawLev = (rec && rec.levaduraFresca != null) ? rec.levaduraFresca : (rec ? rec.levadura : NaN);
 
-    const harinaTotal = Math.round(rec.harinaTotal);
-    const salTotal = Math.round(rec.sal);
-    const levTotal = U.formatNumber(rec.levadura, rec.levadura < 1 ? 2 : 1);
+    const harinaTotal = Math.round(rawHarina);
+    const aguaTotal = Math.round(rawAgua);
+    const agua80 = Math.round(aguaTotal * 0.8);
+    const aguaRestante = aguaTotal - agua80;
+    const aguaMitad = Math.round(aguaRestante / 2);
+    const aguaFinal = aguaRestante - aguaMitad;
+
+    const salTotal = Math.round(rawSal);
+    const levNum = (typeof rawLev === 'number') ? rawLev : parseFloat(rawLev);
+    const levTotal = (isFinite(levNum) && levNum >= 0) ? U.formatNumber(levNum, levNum < 1 ? 2 : 1) : '';
+
+    const numPizzasVal = parseInt(numPizzas, 10);
+    const pesoBolaVal = Math.round(pesoBola);
+
+    // Validación estricta: si alguna variable requerida es NaN, undefined o no finita,
+    // no se pinta el paso a paso y se avisa por consola.
+    const checkVars = {
+      harinaTotal,
+      aguaTotal,
+      agua80,
+      aguaMitad,
+      aguaFinal,
+      salTotal,
+      levNum,
+      numPizzas: numPizzasVal,
+      pesoBola: pesoBolaVal
+    };
+
+    let hasInvalidVar = false;
+    for (const [key, val] of Object.entries(checkVars)) {
+      if (val === undefined || val === null || Number.isNaN(val) || !Number.isFinite(val)) {
+        console.warn(`[Paso a paso] Variable inválida detectada: ${key} = ${val}`);
+        hasInvalidVar = true;
+      }
+    }
+
+    if (!levTotal || levTotal === 'NaN' || levTotal === 'undefined') {
+      console.warn(`[Paso a paso] Levadura formateada inválida: "${levTotal}"`);
+      hasInvalidVar = true;
+    }
+
+    if (hasInvalidVar) {
+      container.innerHTML = '';
+      return;
+    }
 
     // Lista de harinas para el paso 3
     let flourText = '';
@@ -3453,13 +3511,19 @@ window.stepColdTemp = function(dir) {
       });
     }
 
+    const tempCVal = isFinite(tempC) ? tempC : 23;
+    const coldTVal = isFinite(coldT) ? coldT : 4;
+    const coldHVal = isFinite(coldH) ? coldH : 0;
+    const horasBloqueVal = isFinite(horasBloque) ? horasBloque : 0;
+    const horasBollosVal = isFinite(horasBollos) ? horasBollos : (isFinite(horas) ? horas : 24);
+
     // 9. Boleado
     let boleadoPlanText = horaBoleado ? (isEn ? ` at ${horaBoleado}` : ` a las ${horaBoleado}`) : '';
     steps.push({
       title: isEn ? "Ball shaping." : "Boleado.",
       body: isEn
-        ? `Divide the dough into ${numPizzas} balls of ${pesoBola} g and shape each with tension${boleadoPlanText}.`
-        : `Divide la masa en ${numPizzas} bolas de ${pesoBola} g y forma cada una con tensión${boleadoPlanText}.`
+        ? `Divide the dough into ${numPizzasVal} balls of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
+        : `Divide la masa en ${numPizzasVal} bolas de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`
     });
 
     // 10. Fermentación de las bolas
@@ -3470,8 +3534,8 @@ window.stepColdTemp = function(dir) {
       steps.push({
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
-          ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldT} °C for ${coldH} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
-          : `Coloca las bolas en un recipiente tapado y hermético. Guarda las bolas en la nevera a ${coldT} °C durante ${coldH} h${fridgePlanText}. Déjalas antes un rato fuera a temperatura ambiente para que la levadura despierte.`
+          ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldTVal} °C for ${coldHVal} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Guarda las bolas en la nevera a ${coldTVal} °C durante ${coldHVal} h${fridgePlanText}. Déjalas antes un rato fuera a temperatura ambiente para que la levadura despierte.`
       });
     } else {
       let ballsPlanText = (horaBoleado && horaHornear)
@@ -3480,8 +3544,8 @@ window.stepColdTemp = function(dir) {
       steps.push({
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
-          ? `Place the balls in an airtight container. Leave them at ${tempC} °C for ${horasBollos} h${ballsPlanText}.`
-          : `Coloca las bolas en un recipiente tapado y hermético. Déjalas a ${tempC} °C durante ${horasBollos} h${ballsPlanText}.`
+          ? `Place the balls in an airtight container. Leave them at ${tempCVal} °C for ${horasBollosVal} h${ballsPlanText}.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Déjalas a ${tempCVal} °C durante ${horasBollosVal} h${ballsPlanText}.`
       });
     }
 
@@ -3507,6 +3571,17 @@ window.stepColdTemp = function(dir) {
         : `Con las bolas de pizza ya listas, solo tienes que estirar la masa, poner los ingredientes y meterla en el horno${cocinarPlanText}.`
     });
 
+    // Comprobación de seguridad final: si algún paso renderizado contiene "NaN" o "undefined",
+    // no se pinta nada y se avisa por consola.
+    for (const s of steps) {
+      if (s.title.includes('NaN') || s.title.includes('undefined') ||
+          s.body.includes('NaN') || s.body.includes('undefined')) {
+        console.warn('[Paso a paso] Texto con NaN o undefined detectado:', s);
+        container.innerHTML = '';
+        return;
+      }
+    }
+
     container.innerHTML = steps.map((s, idx) => `
       <li><strong>${idx + 1}. ${s.title}</strong> ${s.body}</li>
     `).join('');
@@ -3514,6 +3589,7 @@ window.stepColdTemp = function(dir) {
 
   window.__updateStepByStep = renderStepByStep;
   window.addEventListener('pizzaLangChange', renderStepByStep);
+  window.addEventListener('pizzaUnitsChange', renderStepByStep);
   setTimeout(renderStepByStep, 400);
 })();
 

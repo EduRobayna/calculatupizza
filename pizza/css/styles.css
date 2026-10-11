@@ -1393,15 +1393,24 @@ body::after {
 }
 .step-list {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
+  list-style-type: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 .step-list li {
+  list-style: none;
+  list-style-type: none;
   font-size: 13.5px;
   line-height: 1.5;
   color: rgba(243, 234, 217, 0.85);
+}
+.step-list li::marker {
+  content: "";
+  display: none;
+  font-size: 0;
 }
 .step-list li strong {
   color: #fff;
