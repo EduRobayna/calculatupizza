@@ -3663,24 +3663,53 @@ window.stepColdTemp = function(dir) {
     if (showToastMsg && I18N) window.showToast?.(I18N.t('plannerNotifyCancelledToast'));
   }
 
+  // Dispara una notificación inmediata de un hito del planificador.
+  //
+  // NOTA ARQUITECTURA / PRODUCCIÓN PWA:
+  // Actualmente los avisos del planificador se programan en primer plano con setTimeout
+  // en la ventana activa (por eso la interfaz advierte que la pestaña debe seguir abierta).
+  // Para que los recordatorios sobrevivan al cierre del navegador o de la PWA en producción,
+  // la programación futura deberá delegarse al Service Worker (mediante Background Sync,
+  // Periodic Background Sync o Web Push API).
   function triggerNotification(title, body) {
-    try {
-      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, {
-            body: body,
-            icon: './icon-192.png',
-            badge: './icon-192.png',
-            vibrate: [200, 100, 200]
-          });
-        }).catch(() => {
+    const notifOptions = {
+      body: body,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      vibrate: [200, 100, 200]
+    };
+
+    function fallbackNotification() {
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(title, { body: body, icon: './icon-192.png' });
+        }
+      } catch (err) {
+        console.warn('Error showing fallback notification:', err);
+      }
+    }
+
+    try {
+      // Comprobamos si existe un Service Worker registrado y activo mediante getRegistration().
+      // IMPORTANTE: NO usamos .ready de serviceWorker porque esa promesa se queda perpetuamente
+      // pendiente si no hay ningún Service Worker registrado (p. ej. en entornos beta o desarrollo),
+      // impidiendo que la notificación llegue a mostrarse.
+      if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistration === 'function') {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.active && typeof reg.showNotification === 'function') {
+            reg.showNotification(title, notifOptions).catch(fallbackNotification);
+          } else {
+            fallbackNotification();
+          }
+        }).catch(() => {
+          fallbackNotification();
         });
       } else {
-        new Notification(title, { body: body, icon: './icon-192.png' });
+        fallbackNotification();
       }
     } catch(e) {
       console.warn('Error showing notification:', e);
+      fallbackNotification();
     }
   }
 
