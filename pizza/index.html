@@ -45,11 +45,11 @@
 </script>
 
 <!-- Meta Etiquetas SEO y Open Graph -->
-<meta name="description" content="Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.">
+<meta name="description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
 <link rel="canonical" href="https://calculatupizza.com/">
 <meta property="og:site_name" content="CalculaTuPizza">
 <meta property="og:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta property="og:description" content="Calcula levadura, hidratación y harinas al instante para hacer la auténtica masa de pizza napolitana en casa.">
+<meta property="og:description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
 <meta property="og:image" content="https://calculatupizza.com/og-image.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -60,7 +60,7 @@
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta name="twitter:description" content="Calcula levadura, hidratación y harinas al instante para la auténtica masa napolitana.">
+<meta name="twitter:description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
 <meta name="twitter:image" content="https://calculatupizza.com/og-image.png?v=3">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
 
@@ -85,12 +85,12 @@
      ignoran http-equiv="Cache-Control" para el propio documento, así que no se ponen aquí. -->
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link rel="stylesheet" href="css/styles.css?v=44">
+<link rel="stylesheet" href="css/styles.css?v=51">
 </head>
 <body>
 <div class="wrap">
@@ -102,7 +102,7 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v45</span>
+      <span class="beta-badge__ver">v51</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
@@ -111,7 +111,8 @@
     </div>
     <img src="pizza-slice.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
     <h1 data-i18n-html="h1">Calculadora de masa de pizza napolitana</h1>
-    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">Una herramienta pensada para que consigas la masa perfecta en cuatro pasos, sin matemáticas de por medio. Ajusta tus ingredientes, controla los tiempos y la calculadora hará el resto por ti.</span></p>
+    <p class="hero-slogan" data-i18n="heroSlogan">Gratis. Sin registro y sin anuncios.</p>
+    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">Consigue tu masa perfecta en cuatro pasos. Ajusta tus ingredientes y la calculadora hará el resto por ti.</span></p>
     <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false" data-i18n="readMore">Leer más</button>
   </header>
 
@@ -527,6 +528,20 @@
           <span data-i18n="yeastAltPre">o</span> <span id="totalLevaduraSeca">0 g</span> <span data-i18n="yeastAltSuf">de levadura seca</span>
         </p>
 
+        <!-- Sección Paso a paso (plegable) -->
+        <div class="step-by-step-section" id="stepByStepSection">
+          <button type="button" class="btn-step-by-step" id="stepByStepToggle" aria-expanded="false" aria-controls="stepByStepBody">
+            <span class="step-toggle-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <span data-i18n="stepByStepBtn">Paso a paso</span>
+            </span>
+            <svg class="accordion-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="step-by-step-body" id="stepByStepBody" style="display:none;">
+            <ol class="step-list" id="stepList"></ol>
+          </div>
+        </div>
+
         <div class="result-ferment" id="resultFerment">
           <span class="result-ferment-title" data-i18n="recipeFermentation">Fermentación</span>
           <div class="result-ferment-body" id="resultFermentBody"></div>
@@ -554,6 +569,16 @@
           <input type="datetime-local" id="plannerDt">
           <ul class="planner-tl" id="plannerTl"></ul>
           <div class="planner-tot" id="plannerTotal"></div>
+
+          <!-- Notificaciones de pasos del planificador -->
+          <div class="planner-notify-wrap" id="plannerNotifyWrap">
+            <button type="button" id="btnPlannerNotify" class="btn-planner-notify">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span id="btnPlannerNotifyText" data-i18n="plannerNotifyBtn">Avisarme de cada paso</span>
+            </button>
+            <div class="planner-notify-status" id="plannerNotifyStatus" style="display:none;"></div>
+            <p class="planner-notify-disclaimer" id="plannerNotifyDisclaimer" data-i18n="plannerNotifyDisclaimer">Aviso: las notificaciones dependen del sistema operativo. Con la app cerrada o el móvil bloqueado (sobre todo en iPhone) pueden no sonar si no mantienes la web abierta o instalada.</p>
+          </div>
         </div>
       </div>
 
@@ -851,12 +876,12 @@
 
 <!-- Módulos JS. Orden importante: i18n define window.PizzaI18N y units define
      window.PizzaUnits; de ambos dependen calculator y app. -->
-<script src="js/i18n.js?v=44"></script>
-<script src="js/units.js?v=44"></script>
-<script src="js/dough.js?v=44"></script>
-<script src="js/flours.js?v=44"></script>
-<script src="js/calculator.js?v=44"></script>
-<script src="js/app.js?v=44"></script>
+<script src="js/i18n.js?v=51"></script>
+<script src="js/units.js?v=51"></script>
+<script src="js/dough.js?v=51"></script>
+<script src="js/flours.js?v=51"></script>
+<script src="js/calculator.js?v=51"></script>
+<script src="js/app.js?v=51"></script>
 
 </body>
 </html>

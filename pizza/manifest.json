@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Calculadora de pizza napolitana",
-  "short_name": "Calculadora Pizza",
-  "description": "Calculadora de masa de pizza napolitana: hidratación, sal, mezcla de harinas y levadura según la temperatura.",
+  "name": "Calculadora de masa de pizza napolitana",
+  "short_name": "CalculaTuPizza",
+  "description": "Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "./",

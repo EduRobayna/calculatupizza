@@ -5,11 +5,12 @@ window.PizzaI18N = (function(){
   const DICT = {
     es: {
       title: "Calculadora de masa de pizza napolitana",
-      metaDescription: "Agua, harina, levadura y sal. Haz pizza en casa sin complicaciones.",
+      metaDescription: "Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.",
+      heroSlogan: "Gratis. Sin registro y sin anuncios.",
       heroLogoAlt: "Logo de Edu Robayna",
       h1: 'Calculadora de masa de pizza napolitana',
       subShort: "Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.",
-      subMore: "Una herramienta pensada para que consigas la masa perfecta en cuatro pasos, sin matemáticas de por medio. Ajusta tus ingredientes, controla los tiempos y la calculadora hará el resto por ti.",
+      subMore: "Consigue tu masa perfecta en cuatro pasos. Ajusta tus ingredientes y la calculadora hará el resto por ti.",
       section1Title: "Elige el tamaño y la cantidad",
       numPizzasLabel: "Número de pizzas",
       restarPizza: "Restar una pizza",
@@ -352,15 +353,36 @@ window.PizzaI18N = (function(){
       warningsOff: "Desactivados",
       settingsRecipes: "Recetas",
       settingsClose: "Cerrar",
-      settingsDone: "Hecho"
+      settingsDone: "Hecho",
+      stepByStepBtn: "Paso a paso",
+      linkCopiedToast: "Enlace copiado",
+      shareRecipeUrlText: "Calculadora de masa de pizza napolitana:",
+      plannerNotifyBtn: "Avisarme de cada paso",
+      plannerNotifyCancelBtn: "Cancelar avisos programados",
+      plannerNotifyScheduled: "🔔 {n} avisos programados para este plan.",
+      plannerNotifyCancelledToast: "Avisos cancelados.",
+      plannerNotifyPermissionDenied: "Has bloqueado las notificaciones en el navegador.",
+      plannerNotifyNoSupport: "Tu navegador no admite notificaciones locales.",
+      plannerNotifyNoFuture: "Todos los pasos de este plan ya han pasado.",
+      plannerNotifyScheduledToast: "🔔 {n} avisos programados.",
+      plannerNotifyDisclaimer: "Aviso: las notificaciones dependen del sistema operativo. Con la app cerrada o el móvil bloqueado (sobre todo en iPhone) pueden no sonar si no mantienes la web abierta o instalada.",
+      notifRestTitle: "Reposo en bloque",
+      notifRestBody: "Fin del reposo: la masa ya está lista para empezar su fermentación.",
+      notifBolearTitle: "Es hora de bolear",
+      notifBolearBody: "Divide la masa y forma las bolas con tensión.",
+      notifNeveraTitle: "Saca las bolas de la nevera",
+      notifNeveraBody: "Sácalas ahora a temperatura ambiente para que se atemperen antes de hornear.",
+      notifHornearTitle: "¡A hornear pizzas!",
+      notifHornearBody: "Tus bolas de pizza están en su punto perfecto. ¡Hora de encender el horno!"
     },
     en: {
       title: "Neapolitan Pizza Dough Calculator",
-      metaDescription: "Water, flour, yeast and salt. Make pizza at home without complications.",
+      metaDescription: "Neapolitan pizza dough calculator. Free, no sign-up, no ads.",
+      heroSlogan: "Free. No sign-up, no ads.",
       heroLogoAlt: "Edu Robayna logo",
       h1: 'Neapolitan pizza dough calculator',
       subShort: "Designed for beginners and professionals alike. Direct dough, no oil and no pre-ferments. Just flour, water, salt and yeast.",
-      subMore: "The calculator is built to give you the exact amounts in four steps. If you prefer, you can enter your own settings. Choose between room-temperature (RT) fermentation or a mixed one (RT + fridge, wine cooler or proofer).",
+      subMore: "Get your perfect dough in four steps. Adjust your ingredients and the calculator does the rest for you.",
       section1Title: "Batch size",
       numPizzasLabel: "Number of pizzas",
       restarPizza: "Subtract one pizza",
@@ -702,7 +724,27 @@ window.PizzaI18N = (function(){
       warningsOff: "Off",
       settingsRecipes: "Recipes",
       settingsClose: "Close",
-      settingsDone: "Done"
+      settingsDone: "Done",
+      stepByStepBtn: "Step by step",
+      linkCopiedToast: "Link copied",
+      shareRecipeUrlText: "Neapolitan pizza dough calculator:",
+      plannerNotifyBtn: "Notify me at each step",
+      plannerNotifyCancelBtn: "Cancel scheduled notifications",
+      plannerNotifyScheduled: "🔔 {n} reminders scheduled for this plan.",
+      plannerNotifyCancelledToast: "Reminders cancelled.",
+      plannerNotifyPermissionDenied: "Notifications were denied in your browser.",
+      plannerNotifyNoSupport: "Your browser does not support local notifications.",
+      plannerNotifyNoFuture: "All steps in this plan are in the past.",
+      plannerNotifyScheduledToast: "🔔 {n} reminders scheduled.",
+      plannerNotifyDisclaimer: "Note: browser notifications depend on your OS. With the phone locked or app closed (especially on iPhone), they may not ring unless the web is open or installed.",
+      notifRestTitle: "Bulk rest finished",
+      notifRestBody: "Rest finished: the dough is ready to begin fermenting.",
+      notifBolearTitle: "Time to shape the balls",
+      notifBolearBody: "Divide the dough and shape the balls with tension.",
+      notifNeveraTitle: "Take dough out of the fridge",
+      notifNeveraBody: "Bring the balls to room temperature so they temper before baking.",
+      notifHornearTitle: "Time to bake pizzas!",
+      notifHornearBody: "Your dough balls are ready. Time to fire up the oven!"
     }
   };
 
@@ -727,6 +769,10 @@ window.PizzaI18N = (function(){
     document.title = t('title');
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', t('metaDescription'));
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', t('metaDescription'));
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', t('metaDescription'));
 
     document.querySelectorAll('[data-i18n]').forEach(elm => {
       elm.textContent = t(elm.getAttribute('data-i18n'));
