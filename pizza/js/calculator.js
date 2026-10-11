@@ -3490,6 +3490,9 @@ window.stepColdTemp = function(dir) {
 
     // 1. Agua
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Start with the water." : "Empieza por el agua.",
       body: isEn
         ? `You'll use ${aguaTotal} grams, as cold as possible. Begin by pouring in 80% of the total (${agua80} g). In summer or if kneading a large batch, replace part of the water with ice so the mixer doesn't overheat the dough.`
@@ -3498,6 +3501,9 @@ window.stepColdTemp = function(dir) {
 
     // 2. Levadura
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Dissolve the yeast." : "Disuelve la levadura.",
       body: isEn
         ? `Dissolve the ${levTotal} g of yeast directly in the water. You can do this with your fingers.`
@@ -3506,6 +3512,9 @@ window.stepColdTemp = function(dir) {
 
     // 3. Harina
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Time for the flour." : "Turno de la harina.",
       body: isEn
         ? `Add the flour to the water with the yeast and knead until well combined. ${flourText} Add a couple of extra grams of flour because some dough is always lost on the bowl and hands. Use half of the remaining water (${aguaMitad} g) to help the flour incorporate well.`
@@ -3514,6 +3523,9 @@ window.stepColdTemp = function(dir) {
 
     // 4. Amasado
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Knead." : "Amasa.",
       body: isEn
         ? `Incorporate the ingredients well. If using a mixer, start at low speed.`
@@ -3522,6 +3534,9 @@ window.stepColdTemp = function(dir) {
 
     // 5. Sal
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Add the salt." : "Incorpora la sal.",
       body: isEn
         ? `When the flour and water are already combined and the dough looks uniform, add ${salTotal} g of salt. It helps tighten the gluten network, but it also tends to warm up the dough, so be careful. Pour in the remaining water (${aguaFinal} g) to help dissolve the salt.`
@@ -3530,6 +3545,9 @@ window.stepColdTemp = function(dir) {
 
     // 6. Amasado continuo
     steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
       title: isEn ? "Knead." : "Amasa.",
       body: isEn
         ? `Continue until the dough stops sticking to the bowl walls, is smooth, and its internal temperature is around 23–25 °C (73–77 °F). Don't watch the clock.`
@@ -3538,6 +3556,9 @@ window.stepColdTemp = function(dir) {
 
     // 7. Reposo
     steps.push({
+      group: 'fermentacion',
+      theme: 'ambar',
+      tag: '20–30 min',
       title: isEn ? "Bulk rest." : "Reposo en bloque.",
       body: isEn
         ? `Take the dough out, build tension by shaping a large ball, and let it rest 20-30 minutes covered with a bowl or a damp cloth. Don't worry if it isn't completely smooth.`
@@ -3547,6 +3568,8 @@ window.stepColdTemp = function(dir) {
     // 8. Fermentación en bloque (solo si el plan tiene fase de bloque). Toma la fase de
     // bloque del planificador: nevera (n) o temperatura ambiente (t), con su temperatura,
     // horas y rango horario propios. Mismo formato en español e inglés.
+    const bulkFridge = bloqueSegs.filter(s => s.w === 'n');
+    const hasBulkFridge = bulkFridge.length > 0;
     if (bloqueSegs.length > 0) {
       const blockDesc = describeSegs(bloqueSegs);
       const blockRange = segRange(bloqueSegs);
@@ -3556,7 +3579,13 @@ window.stepColdTemp = function(dir) {
           ? `from ${blockRange.from} to ${blockRange.to} (${blockDesc})`
           : `de ${blockRange.from} a ${blockRange.to} (${blockDesc})`;
       }
+      const blockH = fmtH(sumHours(bloqueSegs));
+      const blockT = Math.round(U.tempValue(hasBulkFridge ? coldTVal : tempCVal));
+      const blockTag = `${blockH} h · ${blockT} ${U.tempUnit()}`;
       steps.push({
+        group: 'fermentacion',
+        theme: hasBulkFridge ? 'azul' : 'ambar',
+        tag: blockTag,
         title: isEn ? "Bulk fermentation." : "Fermentación en bloque.",
         body: isEn
           ? `After the previous rest, the dough has already gained a lot of strength. Give it a bit more tension again, you'll see it becomes smoother. Let the whole dough ferment, tightly sealed in a container: ${blockPlanText}. It doesn't need to double: once it has grown 50 to 70% it's ready to ball.`
@@ -3566,8 +3595,6 @@ window.stepColdTemp = function(dir) {
 
     // 9. Boleado: si el bloque fermentó en la nevera, la masa sale del frío en este
     // paso ("Saca la masa de la nevera a las 16:00 y divídela en...").
-    const bulkFridge = bloqueSegs.filter(s => s.w === 'n');
-    const hasBulkFridge = bulkFridge.length > 0;
     let boleadoPlanText = horaBoleado ? (isEn ? ` at ${horaBoleado}` : ` a las ${horaBoleado}`) : '';
     let boleadoBody = '';
     if (hasBulkFridge) {
@@ -3580,6 +3607,9 @@ window.stepColdTemp = function(dir) {
         : `Divide la masa en ${numPizzasVal} bolas de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`;
     }
     steps.push({
+      group: 'fermentacion',
+      theme: 'ambar',
+      tag: null,
       title: isEn ? "Ball shaping." : "Boleado.",
       body: boleadoBody
     });
@@ -3588,13 +3618,18 @@ window.stepColdTemp = function(dir) {
     // temperatura ambiente, con su temperatura, horas y rango horario propios).
     const bollosFridge = bollosSegs.filter(s => s.w === 'n');
     const bollosAmbient = bollosSegs.filter(s => s.w === 't');
-    if (bollosFridge.length > 0) {
+    const hasBollosFridge = bollosFridge.length > 0;
+    if (hasBollosFridge) {
       const fr = segRange(bollosFridge);
       const fridgePlanText = fr
         ? (isEn ? ` (from ${fr.from} to ${fr.to})` : ` (de ${fr.from} a ${fr.to})`)
         : '';
       const fridgeHours = fmtH(sumHours(bollosFridge));
+      const fridgeTagT = Math.round(U.tempValue(coldTVal));
       steps.push({
+        group: 'fermentacion',
+        theme: 'azul',
+        tag: `${fridgeHours} h · ${fridgeTagT} ${U.tempUnit()}`,
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
           ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldTVal} °C for ${fridgeHours} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
@@ -3606,7 +3641,11 @@ window.stepColdTemp = function(dir) {
         ? (isEn ? ` (from ${ar.from} to ${ar.to})` : ` (de ${ar.from} a ${ar.to})`)
         : '';
       const ambientHours = fmtH(sumHours(bollosAmbient));
+      const ambientTagT = Math.round(U.tempValue(tempCVal));
       steps.push({
+        group: 'fermentacion',
+        theme: 'ambar',
+        tag: `${ambientHours} h · ${ambientTagT} ${U.tempUnit()}`,
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
           ? `Place the balls in an airtight container. Leave them at room temperature (${tempCVal} °C) for ${ambientHours} h${ballsPlanText}.`
@@ -3638,7 +3677,13 @@ window.stepColdTemp = function(dir) {
       } else if (hoursBeforeTxt) {
         sacarPlanText = ` ${hoursBeforeTxt}`;
       }
+      const sacarTag = hoursAfterFridge > 0
+        ? `${fmtH(hoursAfterFridge)} h ${isEn ? 'before' : 'antes'}`
+        : (sacarAt || null);
       steps.push({
+        group: 'hornear',
+        theme: 'verde',
+        tag: sacarTag,
         title: isEn ? "Take them out." : "Sácalas.",
         body: isEn
           ? `Take the dough balls out of the fridge${sacarPlanText} so they temper well and finish fermenting.`
@@ -3648,7 +3693,20 @@ window.stepColdTemp = function(dir) {
 
     // 12. Hora de cocinar
     let cocinarPlanText = horaHornear ? (isEn ? ` at ${horaHornear}` : ` a las ${horaHornear}`) : '';
+    const ovenTempStr = U.isImperial() ? '850–930 °F' : '450–500 °C';
+    let cookTag = ovenTempStr;
+    if (segData && segData.bakeAt) {
+      try {
+        const bakeTimeOnly = new Intl.DateTimeFormat(isEn ? 'en-US' : 'es-ES', {
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).format(new Date(segData.bakeAt));
+        if (bakeTimeOnly) cookTag = `${bakeTimeOnly} · ${ovenTempStr}`;
+      } catch (e) {}
+    }
     steps.push({
+      group: 'hornear',
+      theme: 'verde',
+      tag: cookTag,
       title: isEn ? "Time to cook." : "Hora de cocinar.",
       body: isEn
         ? `With your pizza balls ready, just stretch the dough, top it, and slide it into the oven${cocinarPlanText}.`
@@ -3666,9 +3724,29 @@ window.stepColdTemp = function(dir) {
       }
     }
 
-    container.innerHTML = steps.map((s, idx) => `
-      <li><strong>${idx + 1}. ${s.title}</strong> ${s.body}</li>
-    `).join('');
+    // Grupos por fases con mini-título en mayúsculas pequeñas.
+    // Solo aparecen si ese grupo tiene pasos en el modo activo.
+    const groupDefs = [
+      { id: 'masa', title: isEn ? "THE DOUGH" : "LA MASA" },
+      { id: 'fermentacion', title: isEn ? "REST AND FERMENTATION" : "REPOSO Y FERMENTACIÓN" },
+      { id: 'hornear', title: isEn ? "BAKE TIME" : "A HORNEAR" }
+    ];
+
+    let html = '';
+    groupDefs.forEach(g => {
+      const gSteps = steps.filter(s => s.group === g.id);
+      if (gSteps.length === 0) return;
+
+      html += `<li class="step-group-header" role="presentation"><span class="step-group-title">${g.title}</span></li>`;
+      gSteps.forEach(s => {
+        const idx = steps.indexOf(s);
+        const isLastInGroup = (gSteps.indexOf(s) === gSteps.length - 1);
+        const tagHtml = s.tag ? `<span class="step-tag">${s.tag}</span> ` : '';
+        html += `<li class="step-item step-item--${s.theme}${isLastInGroup ? ' is-last-in-group' : ''}"><div class="step-marker" aria-hidden="true"><span class="step-pill">${idx + 1}<span class="step-dot">.</span></span> </div><div class="step-content"><div class="step-head"><strong class="step-title">${s.title}</strong> ${tagHtml}</div><p class="step-body">${s.body}</p></div></li>`;
+      });
+    });
+
+    container.innerHTML = html;
   }
 
   window.__updateStepByStep = renderStepByStep;
