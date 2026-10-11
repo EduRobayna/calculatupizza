@@ -1,0 +1,11 @@
+# Cloudflare Pages redirige /index.html -> / (308) automáticamente. Las PWAs ya
+# instaladas con start_url "./index.html" abren esa URL al arrancar. Un service
+# worker antiguo no sabe manejar esa redirección en una NAVEGACIÓN (modo
+# 'manual') y devuelve ERR_FAILED; la app queda atascada (no puede cargar, así
+# que tampoco puede autoactualizarse) y en algunos móviles llega a colgar la red.
+#
+# Sirviendo /index.html como REESCRITURA 200 (sin cabecera Location) eliminamos
+# la redirección por completo: cualquier SW, por antiguo que sea, recibe un 200
+# normal, la app carga y se autoactualiza sola. Rompe el bloqueo sin tener que
+# reinstalar la PWA.
+/index.html   /   200
