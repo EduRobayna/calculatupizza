@@ -105,7 +105,15 @@ header.hero{ display:flex; flex-direction:column; gap:10px; padding: 18px 4px 34
 
 h1{ font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 5vw, 48px); letter-spacing: -0.01em; margin: 0; color: var(--heading); text-align: center; }
 h1 em{ font-style: italic; color: var(--pomodoro); }
-.sub{ max-width: 720px; margin: 16px auto 0; color: var(--text-soft); font-size: 15px; line-height: 1.6; text-align: center; }
+.hero-slogan {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pomodoro-text);
+  margin: -2px 0 0;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.sub{ max-width: 720px; margin: 6px auto 0; color: var(--text-soft); font-size: 15px; line-height: 1.6; text-align: center; }
 /* En móvil el intro muestra solo la primera parte (.sub-more oculto) con "Leer más"
    para no empujar la herramienta hacia abajo; en escritorio se muestra completo. */
 .sub-toggle{ display: none; align-self: center; margin-top: 8px; background: none; border: none; padding: 7px 10px; color: var(--pomodoro-text); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -1227,6 +1235,17 @@ input:focus-visible{
   font: inherit;
   color-scheme: dark;
 }
+.planner-intro-note {
+  margin: 14px 0 6px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--pomodoro, #c1432e);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--farina);
+  opacity: 0.95;
+}
 .planner-tl {
   list-style: none;
   margin: 18px 0 0;
@@ -1321,16 +1340,6 @@ body::after {
   vertical-align: middle;
   margin-left: 6px;
   display: inline-block;
-}
-
-/* Lema cabecera */
-.hero-slogan {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--pomodoro-text);
-  margin: -6px 0 12px;
-  letter-spacing: 0.01em;
-  text-align: center;
 }
 
 /* Sección Paso a paso (dentro del panel oscuro .results) */

@@ -112,7 +112,7 @@
     <img src="pizza-slice.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
     <h1 data-i18n-html="h1">Calculadora de masa de pizza napolitana</h1>
     <p class="hero-slogan" data-i18n="heroSlogan">Gratis. Sin registro y sin anuncios.</p>
-    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">Consigue tu masa perfecta en cuatro pasos. Ajusta tus ingredientes y la calculadora hará el resto por ti.</span></p>
+    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">Consigue tu masa perfecta en cuatro pasos. Ajusta tus ingredientes y la calculadora hará el resto por ti. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
     <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false" data-i18n="readMore">Leer más</button>
   </header>
 
@@ -553,6 +553,7 @@
           </div>
           <label id="plannerDtLabel" for="plannerDt" data-i18n="plannerDtLabel1">Hora de inicio de la fermentación</label>
           <input type="datetime-local" id="plannerDt">
+          <div class="planner-intro-note" id="plannerIntroNote" data-i18n="plannerIntroNote">Una vez tienes la masa lista, comienza la fase de fermentación.</div>
           <ul class="planner-tl" id="plannerTl"></ul>
           <div class="planner-tot" id="plannerTotal"></div>
 
@@ -731,11 +732,12 @@
         <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Esto es lo nuevo:</p>
       </div>
       <div class="modal-body scroll-faded">
-            <ul class="whatsnew-list">
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="pizza-slice.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Planificador de horarios.</b> Olvídate de calcular a qué hora tienes que empezar a amasar para comerte la pizza, la calculadora lo hará por ti y te dirá qué hacer en cada momento.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🫧</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Un toque más artesanal.</b> Nueva tipografía clásica y texturas sutiles en la interfaz.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">💧</span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Pequeñas correcciones.</b> Ajustes menores y mejoras que no se ven a simple vista para que la calculadora funcione aún más rápido y sin fallos.</span></li>
-      </ul>
+        <ul class="whatsnew-list">
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="pizza-slice.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Planificador de horarios con avisos.</b> Olvídate de calcular a qué hora tienes que empezar a amasar para comerte la pizza, la calculadora organiza tus tiempos y te avisa cuándo amasar, bolear y hornear.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true">📋</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Paso a paso con tus cantidades exactas.</b> Instrucciones detalladas de amasado directo integradas con los ingredientes y porcentajes calculados para tu receta.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true">🔗</span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Comparte tus recetas por enlace.</b> Guarda o envía cualquier receta configurada directamente a tus amigos mediante una URL lista para abrir.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true">📱</span><span class="wn-text" data-i18n-html="whatsNewLi4"><b>100% gratis, sin registro y sin anuncios.</b> Instálala en tu pantalla de inicio como app para usarla sin conexión en cualquier momento.</span></li>
+        </ul>
       </div>
       <div class="modal-actions">
         <button type="button" id="whatsNewOkBtn" class="btn-secondary modal-confirm" data-i18n="whatsNewCta">¡Empezar!</button>

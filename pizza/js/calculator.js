@@ -2742,47 +2742,60 @@ window.stepColdTemp = function(dir) {
     const URLParams = (typeof URLSearchParams !== 'undefined') ? URLSearchParams : (typeof window !== 'undefined' ? window.URLSearchParams : null);
     if (!URLParams || typeof window === 'undefined' || !window.location || !window.location.search) return false;
     const params = new URLParams(window.location.search);
-    if (!params.has('pizzas') && !params.has('hid') && !params.has('horas') && !params.has('harinas')) return false;
+    if (!params.has('pizzas') && !params.has('hid') && !params.has('horas') && !params.has('harinas') && !params.has('fridge') && !params.has('peso')) return false;
     try {
       if (params.has('pizzas')) {
         const v = parseInt(params.get('pizzas'), 10);
         if (!isNaN(v) && v >= 1 && v <= 100) el.numPaneteos.value = v;
       }
       if (params.has('peso')) {
-        const v = parseFloat(params.get('peso'));
+        const v = parseDecimal(params.get('peso'));
         if (!isNaN(v) && v >= 50 && v <= 1000) pesoG = v;
       }
       if (params.has('hid')) {
-        const v = parseFloat(params.get('hid'));
+        const v = parseDecimal(params.get('hid'));
         if (!isNaN(v) && v >= 40 && v <= 100) el.hidratacion.value = v;
       }
       if (params.has('temp') || params.has('ta')) {
         const v = parseInt(params.get('temp') || params.get('ta'), 10);
-        if (!isNaN(v) && v >= 10 && v <= 40) el.temperatura.value = v;
+        if (!isNaN(v) && v >= 10 && v <= 40) {
+          el.temperatura.value = v;
+          if (el.tempValue) el.tempValue.value = U.tempValue(v);
+        }
       }
-      if (params.has('horas')) {
-        const v = parseFloat(params.get('horas'));
-        if (!isNaN(v) && v >= 0 && v <= 96) el.horas.value = clampHoras(v);
-      }
+
+      // IMPORTANTE: la fase fría debe leerse ANTES de clampHoras para que ambHorasMin()
+      // permita 0 h a temperatura ambiente si la nevera está activa.
       if (params.has('fridge')) {
         const f = params.get('fridge');
         el.fridgeToggle.checked = (f === '1' || f === 'true');
       }
       if (params.has('tempFrio') || params.has('tfrio')) {
-        const v = parseFloat(params.get('tempFrio') || params.get('tfrio'));
+        const v = parseDecimal(params.get('tempFrio') || params.get('tfrio'));
         if (!isNaN(v)) renderColdTempField(clampColdTempC(v));
+      } else if (el.fridgeToggle.checked && (!el.tempFrio || !el.tempFrio.value)) {
+        renderColdTempField(4);
       }
       if (params.has('horasFrio') || params.has('hfrio')) {
-        const v = parseFloat(params.get('horasFrio') || params.get('hfrio'));
+        const v = parseDecimal(params.get('horasFrio') || params.get('hfrio'));
         if (!isNaN(v)) el.horasFrio.value = clampColdHoras(v);
+      } else if (el.fridgeToggle.checked && (!el.horasFrio || !el.horasFrio.value || el.horasFrio.value === '0')) {
+        el.horasFrio.value = 24;
       }
       applyFridgeVisibility();
 
+      if (params.has('horas')) {
+        const v = parseDecimal(params.get('horas'));
+        if (!isNaN(v) && v >= 0 && v <= 96) el.horas.value = clampHoras(v);
+      }
+
+      // Sincronización de la unidad de sal: fijar en PizzaUnits ANTES de leer el valor de la sal
       if (params.has('salUnit')) {
         const u = params.get('salUnit');
         if (u === 'harina' || u === 'gl') {
-          salUnitMode = u;
-          try { localStorage.setItem('pizza-calc-sal-unit', u); } catch(e){}
+          if (window.PizzaUnits && window.PizzaUnits.setSaltUnit) {
+            window.PizzaUnits.setSaltUnit(u);
+          }
           const btnH = document.querySelector('#saltUnitToggle button[data-salt="harina"]');
           const btnG = document.querySelector('#saltUnitToggle button[data-salt="gl"]');
           if (btnH && btnG) {
@@ -2792,7 +2805,7 @@ window.stepColdTemp = function(dir) {
         }
       }
       if (params.has('sal')) {
-        const v = parseFloat(params.get('sal'));
+        const v = parseDecimal(params.get('sal'));
         if (!isNaN(v) && v > 0) {
           if (saltIsFlour()) {
             salPctFlour = v;
@@ -2811,7 +2824,7 @@ window.stepColdTemp = function(dir) {
         if (lm === 'auto' || lm === 'manual') yeastMode = lm;
       }
       if (params.has('lev')) {
-        const v = parseFloat(params.get('lev'));
+        const v = parseDecimal(params.get('lev'));
         if (!isNaN(v) && v > 0) manualYeastPerKg = v;
       }
 
@@ -2823,7 +2836,7 @@ window.stepColdTemp = function(dir) {
           const parts = chunk.split(':');
           if (parts.length >= 2) {
             const fid = parts[0].trim();
-            const pct = parseFloat(parts[1]);
+            const pct = parseDecimal(parts[1]);
             if (fid && !isNaN(pct) && pct > 0) {
               parsedFlours.push({ id: nextId++, flourId: fid, pct: pct, locked: false });
             }
@@ -2831,10 +2844,24 @@ window.stepColdTemp = function(dir) {
         });
         if (parsedFlours.length > 0) {
           const sum = parsedFlours.reduce((a, b) => a + b.pct, 0);
-          if (Math.abs(sum - 100) < 0.1) {
+          if (Math.abs(sum - 100) < 1.0) {
+            // Forzar suma exacta a 100 en la última harina para evitar bloqueo de esValidoHarina
+            const diff = 100 - sum;
+            parsedFlours[parsedFlours.length - 1].pct = Math.round((parsedFlours[parsedFlours.length - 1].pct + diff) * 100) / 100;
             flours = parsedFlours;
             flourIdCounter = nextId;
           }
+        }
+      }
+
+      // Salvaguarda: garantizar que flours siempre suma 100 para que resultsBody nunca quede bloqueado
+      const floursSum = flours.reduce((a, b) => a + b.pct, 0);
+      if (Math.abs(floursSum - 100) >= 0.001) {
+        if (flours.length > 0) {
+          const diff = 100 - floursSum;
+          flours[flours.length - 1].pct = Math.round((flours[flours.length - 1].pct + diff) * 100) / 100;
+        } else {
+          flours = migrateFlours(defaultSettings.flours);
         }
       }
 
@@ -2842,6 +2869,8 @@ window.stepColdTemp = function(dir) {
       renderParamModes();
       renderFlours();
       calcular();
+      if (window.__triggerPlanner) window.__triggerPlanner();
+      if (window.__updateStepByStep) window.__updateStepByStep();
       return true;
     } catch (err) {
       console.error('Error loading recipe from URL:', err);
@@ -3192,15 +3221,18 @@ window.stepColdTemp = function(dir) {
     }
     
     const v = pDt.value;
+    const pIntro = document.getElementById('plannerIntroNote');
     if (!v) {
       pTl.innerHTML = '';
       pTotal.textContent = '';
+      if (pIntro) pIntro.style.display = 'none';
       window.__plannerPlanText = '';
       window.__plannerTimeline = [];
       if (window.__updateStepByStep) window.__updateStepByStep();
       if (window.__updatePlannerNotifications) window.__updatePlannerNotifications();
       return;
     }
+    if (pIntro) pIntro.style.display = '';
     
     const ph = getPhases();
     const tot = ph.reduce((a, x) => a + (x[0] === 'f' ? x[2] : 0), 0);
