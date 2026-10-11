@@ -48,8 +48,8 @@
 <meta name="description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
 <link rel="canonical" href="https://calculatupizza.com/">
 <meta property="og:site_name" content="CalculaTuPizza">
-<meta property="og:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta property="og:description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
+<meta property="og:title" content="Calculadora de masa de pizza napolitana">
+<meta property="og:description" content="Planifica paso a paso. Gratis. Sin registro y sin anuncios.">
 <meta property="og:image" content="https://calculatupizza.com/og-image.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -59,8 +59,8 @@
 <meta property="og:locale" content="es_ES">
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta name="twitter:description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
+<meta name="twitter:title" content="Calculadora de masa de pizza napolitana">
+<meta name="twitter:description" content="Planifica paso a paso. Gratis. Sin registro y sin anuncios.">
 <meta name="twitter:image" content="https://calculatupizza.com/og-image.png?v=3">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
 
@@ -256,10 +256,6 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span id="coldNoteText"></span>
             </p>
-            <div class="ferm-total" id="fermTotal" hidden>
-              <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
-              <span class="ferm-total-value" id="fermTotalValue">—</span>
-            </div>
           </div>
         </div>
 
@@ -295,7 +291,10 @@
           </p>
         </div>
 
-        
+        <div class="ferm-total" id="fermTotal">
+          <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
+          <span class="ferm-total-value" id="fermTotalValue">—</span>
+        </div>
 
         <div class="param param-yeast">
           <div class="param-head">
@@ -578,6 +577,7 @@
               <span id="btnPlannerNotifyText" data-i18n="plannerNotifyBtn">Avisarme de cada paso</span>
             </button>
             <div class="planner-notify-status" id="plannerNotifyStatus" style="display:none;"></div>
+            <div class="planner-notify-warn" id="plannerNotifyWarn" role="alert" style="display:none;"></div>
             <p class="planner-notify-disclaimer" id="plannerNotifyDisclaimer" data-i18n="plannerNotifyDisclaimer">Aviso: las notificaciones dependen del sistema operativo. Con la app cerrada o el móvil bloqueado (sobre todo en iPhone) pueden no sonar si no mantienes la web abierta o instalada.</p>
           </div>
         </div>

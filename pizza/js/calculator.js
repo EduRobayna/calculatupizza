@@ -1331,11 +1331,10 @@ window.stepColdTemp = function(dir) {
       el.levadura.value = pct; // el input (bloqueado) ES la lectura visible del valor Auto
     }
 
-    // Lector del tiempo total de fermentación (ambiente + nevera): solo con la nevera activa
-    // (con una sola fase el total = ese tiempo). Ayuda a decidir el tiempo de nevera viendo
-    // el total al vuelo. Ya no hay tope de 96 h: ambiente y nevera son fases independientes.
+    // Lector del tiempo total de fermentación (ambiente + nevera): colocado al final
+    // de la sección de tiempos como resumen del conjunto, tanto si la nevera está activa como si no.
     if (el.fermTotal) {
-      el.fermTotal.hidden = !el.fridgeToggle.checked;
+      el.fermTotal.hidden = false;
       if (el.fermTotalValue) el.fermTotalValue.textContent = U.formatNumber(horas + coldH, 0) + ' h';
     }
     // Avisos por temperatura ambiente extrema (>28 °C frenético · 15-16 °C baja).
@@ -2020,6 +2019,7 @@ window.stepColdTemp = function(dir) {
       setTimeout(() => toast.remove(), 300);
     }, 1800);
   }
+  window.showToast = showToast;
 
   // Devuelve la receta activa (la cargada en la calculadora) o null.
   function getActiveRecipe() {
@@ -3200,11 +3200,34 @@ window.stepColdTemp = function(dir) {
           out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
         }
         const stageName = st === 'bloque' ? I18N.t('plannerBloque') : I18N.t('plannerBollos');
-        out.push(['f', stageName + getName()[w], h, w]);
+        // 5.º elemento = etapa (bloque / bollos): lo usa el paso a paso para asignar
+        // a cada paso la fase (temperatura y rango horario) que de verdad le corresponde.
+        out.push(['f', stageName + getName()[w], h, w, st]);
       });
     });
     return out;
   }
+
+  // Fases estructuradas del plan (misma fuente que la línea de tiempo) para el paso a paso:
+  // [{ kind:'ferment', stage:'bloque'|'bollos', w:'n'|'t'|'r', hours, start, end }, { kind:'shape', start }].
+  // startMs = null cuando no hay fecha elegida (entonces no hay rangos horarios, solo horas).
+  function buildSegments(startMs){
+    let t = startMs;
+    const list = [];
+    getPhases().forEach(x => {
+      if (x[0] === 'h') {
+        list.push({ kind: 'shape', start: t == null ? null : new Date(t) });
+        return;
+      }
+      const seg = { kind: 'ferment', stage: x[4] || null, w: x[3], hours: x[2], start: t == null ? null : new Date(t), end: null };
+      if (t != null) { t += x[2] * 36e5; seg.end = new Date(t); }
+      list.push(seg);
+    });
+    return { list: list, bakeAt: t == null ? null : new Date(t) };
+  }
+  // Siempre se reconstruye con las fases actuales y el último inicio calculado por el
+  // planificador (null si no hay fecha elegida).
+  window.__getPlannerSegments = function(){ return buildSegments(window.__plannerStartMs == null ? null : window.__plannerStartMs); };
 
   window.__getPlannerD = getD;
   window.__triggerPlanner = renderPlanner;
@@ -3228,6 +3251,7 @@ window.stepColdTemp = function(dir) {
       if (pIntro) pIntro.style.display = 'none';
       window.__plannerPlanText = '';
       window.__plannerTimeline = [];
+      window.__plannerStartMs = null;
       if (window.__updateStepByStep) window.__updateStepByStep();
       if (window.__updatePlannerNotifications) window.__updatePlannerNotifications();
       return;
@@ -3238,6 +3262,7 @@ window.stepColdTemp = function(dir) {
     const tot = ph.reduce((a, x) => a + (x[0] === 'f' ? x[2] : 0), 0);
     const dtDate = new Date(v);
     let t = (planMode === 1 ? dtDate : new Date(dtDate.getTime() - tot * 36e5)).getTime();
+    window.__plannerStartMs = t;
     
     const items = [];
     ph.forEach(x => {
@@ -3422,48 +3447,44 @@ window.stepColdTemp = function(dir) {
         : `Pesa los ${harinaTotal} g de ${fName}.`;
     }
 
-    const plannerItems = window.__plannerTimeline || [];
-    const hasPlan = plannerItems.length > 0;
+    // Fases reales del planificador (única fuente de verdad). Cada fase trae su etapa
+    // (bloque / bollos), su tipo (n = nevera, t = temperatura ambiente), sus horas y, si hay
+    // fecha elegida, su rango horario. Así cada paso coge la fase (temperatura y horas) que
+    // de verdad le corresponde, en cualquier idioma, sin depender de textos traducidos.
+    const segData = window.__getPlannerSegments ? window.__getPlannerSegments() : null;
+    const segs = (segData && segData.list) ? segData.list : [];
+    const fermSegs = segs.filter(s => s.kind === 'ferment' && (s.w === 'n' || s.w === 't'));
+    const bloqueSegs = fermSegs.filter(s => s.stage === 'bloque');
+    const bollosSegs = fermSegs.filter(s => s.stage === 'bollos');
+    const shapeSeg = segs.find(s => s.kind === 'shape');
 
-    let horaBoleado = '';
-    let horaInicioBloque = '';
-    let horaFinBloque = '';
-    let horaInicioNevera = '';
-    let horaFinNevera = '';
-    let horaSacarNevera = '';
-    let horaHornear = '';
+    const horaBoleado = (shapeSeg && shapeSeg.start) ? fmtPlannerTime(shapeSeg.start, isEn) : '';
+    const horaHornear = (segData && segData.bakeAt) ? fmtPlannerTime(segData.bakeAt, isEn) : '';
 
-    if (hasPlan) {
-      for (let i = 0; i < plannerItems.length; i++) {
-        const it = plannerItems[i];
-        const nextIt = plannerItems[i + 1];
-        const txt = (it.x || '').toLowerCase();
-        const tag = (it.g || '').toLowerCase();
-
-        if (txt.includes('bloque') || tag.includes('bloque')) {
-          if (!horaInicioBloque && it.t) horaInicioBloque = fmtPlannerTime(it.t, isEn);
-          if (nextIt && nextIt.t) horaFinBloque = fmtPlannerTime(nextIt.t, isEn);
-        }
-        if (txt.includes('formar') || txt.includes('shape') || tag.includes('bole')) {
-          if (it.t) horaBoleado = fmtPlannerTime(it.t, isEn);
-        }
-        if (tag.includes('nevera') || tag.includes('fridge') || txt.includes('controlada')) {
-          if (!horaInicioNevera && it.t) horaInicioNevera = fmtPlannerTime(it.t, isEn);
-          if (nextIt && nextIt.t) {
-            horaFinNevera = fmtPlannerTime(nextIt.t, isEn);
-            horaSacarNevera = fmtPlannerTime(nextIt.t, isEn);
-          }
-        }
-        if (txt.includes('lista') || txt.includes('ready') || tag.includes('hornear') || tag.includes('bake')) {
-          if (it.t) horaHornear = fmtPlannerTime(it.t, isEn);
-        }
+    const tempCVal = isFinite(tempC) ? tempC : 23;
+    const coldTVal = isFinite(coldT) ? coldT : 4;
+    const fmtH = (h) => U.formatNumber(h, 1);
+    const sumHours = (list) => list.reduce((a, s) => a + s.hours, 0);
+    // Rango "de X a Y" de un grupo de fases consecutivas (null si no hay fecha elegida).
+    const segRange = (list) => {
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (first && last && first.start && last.end) {
+        return { from: fmtPlannerTime(first.start, isEn), to: fmtPlannerTime(last.end, isEn) };
       }
-    }
-
-    const dFerm = (window.__getPlannerD ? window.__getPlannerD() : { bloque: { t: 0, n: 0 }, bollos: { t: horas, n: coldH } });
-    const horasBloque = dFerm.bloque ? (dFerm.bloque.t + dFerm.bloque.n) : 0;
-    const horasBollos = dFerm.bollos ? (dFerm.bollos.t + dFerm.bollos.n) : horas;
-    const isFridge = inputs.fridgeOn && coldH > 0;
+      return null;
+    };
+    // "19 h en la nevera a 10 °C" / "5 h a 23 °C", según el tipo de cada fase.
+    const describeSegs = (list) => list.map(s => {
+      if (s.w === 'n') {
+        return isEn
+          ? `${fmtH(s.hours)} h in the fridge at ${coldTVal} °C`
+          : `${fmtH(s.hours)} h en la nevera a ${coldTVal} °C`;
+      }
+      return isEn
+        ? `${fmtH(s.hours)} h at ${tempCVal} °C`
+        : `${fmtH(s.hours)} h a ${tempCVal} °C`;
+    }).join(' + ');
 
     const steps = [];
 
@@ -3471,8 +3492,8 @@ window.stepColdTemp = function(dir) {
     steps.push({
       title: isEn ? "Start with the water." : "Empieza por el agua.",
       body: isEn
-        ? `Weigh ${aguaTotal} g of water, as cold as possible. In summer or if kneading a large batch, replace part of the water with ice so the mixer doesn't overheat the dough. Pour 80% of the water (${agua80} g) into the mixer or bowl.`
-        : `Pesa ${aguaTotal} g de agua, lo más fría posible. En verano o si amasas mucha cantidad, cambia parte del agua por hielo para que la amasadora no sobrecaliente la masa. Echa en la amasadora o el cuenco un 80% del agua (${agua80} g).`
+        ? `You'll use ${aguaTotal} grams, as cold as possible. Begin by pouring in 80% of the total (${agua80} g). In summer or if kneading a large batch, replace part of the water with ice so the mixer doesn't overheat the dough.`
+        : `Vas a usar ${aguaTotal} gramos, y lo más fría posible. Empieza echando el 80% del total (${agua80} g). En verano o si amasas mucha cantidad, cambia parte del agua por hielo para que la amasadora no sobrecaliente la masa.`
     });
 
     // 2. Levadura
@@ -3519,73 +3540,104 @@ window.stepColdTemp = function(dir) {
     steps.push({
       title: isEn ? "Bulk rest." : "Reposo en bloque.",
       body: isEn
-        ? `Take the dough out, build tension by shaping a large ball, and let it rest 20–30 minutes covered with a bowl or a damp cloth.`
-        : `Saca la masa, dale tensión formando una bola grande y déjala reposar 20–30 minutos tapada con un bol o un paño húmedo.`
+        ? `Take the dough out, build tension by shaping a large ball, and let it rest 20-30 minutes covered with a bowl or a damp cloth. Don't worry if it isn't completely smooth.`
+        : `Saca la masa, dale tensión formando una bola grande y déjala reposar 20-30 minutos tapada con un bol o un paño húmedo. No te preocupes si no está del todo lisa.`
     });
 
-    // 8. Fermentación en bloque (si horasBloque > 0)
-    if (horasBloque > 0) {
-      let blockPlanText = '';
-      if (horaInicioBloque && horaFinBloque) {
+    // 8. Fermentación en bloque (solo si el plan tiene fase de bloque). Toma la fase de
+    // bloque del planificador: nevera (n) o temperatura ambiente (t), con su temperatura,
+    // horas y rango horario propios. Mismo formato en español e inglés.
+    if (bloqueSegs.length > 0) {
+      const blockDesc = describeSegs(bloqueSegs);
+      const blockRange = segRange(bloqueSegs);
+      let blockPlanText = blockDesc;
+      if (blockRange) {
         blockPlanText = isEn
-          ? `from ${horaInicioBloque} to ${horaFinBloque} (${horasBloque} h at ${tempC} °C)`
-          : `de ${horaInicioBloque} a ${horaFinBloque} (${horasBloque} h a ${tempC} °C)`;
-      } else {
-        blockPlanText = isEn
-          ? `${horasBloque} h at ${tempC} °C`
-          : `${horasBloque} h a ${tempC} °C`;
+          ? `from ${blockRange.from} to ${blockRange.to} (${blockDesc})`
+          : `de ${blockRange.from} a ${blockRange.to} (${blockDesc})`;
       }
       steps.push({
         title: isEn ? "Bulk fermentation." : "Fermentación en bloque.",
         body: isEn
-          ? `Let the whole dough ferment, tightly sealed to prevent a crust: ${blockPlanText}. No need to double: growing 50 to 70% is enough to ball. Watch the dough, not the clock.`
-          : `Deja fermentar la masa entera, bien tapada y hermética para que no se haga costra: ${blockPlanText}. No hace falta que doble: con que crezca entre un 50 y un 70 % está lista para bolear. Fíjate en la masa, no en el reloj.`
+          ? `After the previous rest, the dough has already gained a lot of strength. Give it a bit more tension again, you'll see it becomes smoother. Let the whole dough ferment, tightly sealed in a container: ${blockPlanText}. It doesn't need to double: once it has grown 50 to 70% it's ready to ball.`
+          : `Tras el reposo anterior, la masa ya ha ganado mucha fuerza. Vuelve a darle algo de tensión, verás que se vuelve más lisa. Deja fermentar la masa entera, bien tapada y hermética en un recipiente: ${blockPlanText}. No hace falta que doble: con que crezca entre un 50 y un 70 % está lista para bolear.`
       });
     }
 
-    const tempCVal = isFinite(tempC) ? tempC : 23;
-    const coldTVal = isFinite(coldT) ? coldT : 4;
-    const coldHVal = isFinite(coldH) ? coldH : 0;
-    const horasBloqueVal = isFinite(horasBloque) ? horasBloque : 0;
-    const horasBollosVal = isFinite(horasBollos) ? horasBollos : (isFinite(horas) ? horas : 24);
-
-    // 9. Boleado
+    // 9. Boleado: si el bloque fermentó en la nevera, la masa sale del frío en este
+    // paso ("Saca la masa de la nevera a las 16:00 y divídela en...").
+    const bulkFridge = bloqueSegs.filter(s => s.w === 'n');
+    const hasBulkFridge = bulkFridge.length > 0;
     let boleadoPlanText = horaBoleado ? (isEn ? ` at ${horaBoleado}` : ` a las ${horaBoleado}`) : '';
+    let boleadoBody = '';
+    if (hasBulkFridge) {
+      boleadoBody = isEn
+        ? `Take the dough out of the fridge${boleadoPlanText} and divide it into ${numPizzasVal} balls of ${pesoBolaVal} g. Shape each with tension.`
+        : `Saca la masa de la nevera${boleadoPlanText} y divídela en ${numPizzasVal} bolas de ${pesoBolaVal} g. Forma cada una con tensión.`;
+    } else {
+      boleadoBody = isEn
+        ? `Divide the dough into ${numPizzasVal} balls of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
+        : `Divide la masa en ${numPizzasVal} bolas de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`;
+    }
     steps.push({
       title: isEn ? "Ball shaping." : "Boleado.",
-      body: isEn
-        ? `Divide the dough into ${numPizzasVal} balls of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
-        : `Divide la masa en ${numPizzasVal} bolas de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`
+      body: boleadoBody
     });
 
-    // 10. Fermentación de las bolas
-    if (isFridge) {
-      let fridgePlanText = (horaInicioNevera && horaFinNevera)
-        ? (isEn ? ` (from ${horaInicioNevera} to ${horaFinNevera})` : ` (de ${horaInicioNevera} a ${horaFinNevera})`)
+    // 10. Fermentación de las bolas: toma la fase de bollos del planificador (nevera o
+    // temperatura ambiente, con su temperatura, horas y rango horario propios).
+    const bollosFridge = bollosSegs.filter(s => s.w === 'n');
+    const bollosAmbient = bollosSegs.filter(s => s.w === 't');
+    if (bollosFridge.length > 0) {
+      const fr = segRange(bollosFridge);
+      const fridgePlanText = fr
+        ? (isEn ? ` (from ${fr.from} to ${fr.to})` : ` (de ${fr.from} a ${fr.to})`)
         : '';
+      const fridgeHours = fmtH(sumHours(bollosFridge));
       steps.push({
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
-          ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldTVal} °C for ${coldHVal} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
-          : `Coloca las bolas en un recipiente tapado y hermético. Guarda las bolas en la nevera a ${coldTVal} °C durante ${coldHVal} h${fridgePlanText}. Déjalas antes un rato fuera a temperatura ambiente para que la levadura despierte.`
+          ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldTVal} °C for ${fridgeHours} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Guarda las bolas en la nevera a ${coldTVal} °C durante ${fridgeHours} h${fridgePlanText}. Déjalas antes un rato fuera a temperatura ambiente para que la levadura despierte.`
       });
-    } else {
-      let ballsPlanText = (horaBoleado && horaHornear)
-        ? (isEn ? ` (from ${horaBoleado} to ${horaHornear})` : ` (de ${horaBoleado} a ${horaHornear})`)
+    } else if (bollosAmbient.length > 0) {
+      const ar = segRange(bollosAmbient);
+      const ballsPlanText = ar
+        ? (isEn ? ` (from ${ar.from} to ${ar.to})` : ` (de ${ar.from} a ${ar.to})`)
         : '';
+      const ambientHours = fmtH(sumHours(bollosAmbient));
       steps.push({
         title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
         body: isEn
-          ? `Place the balls in an airtight container. Leave them at ${tempCVal} °C for ${horasBollosVal} h${ballsPlanText}.`
-          : `Coloca las bolas en un recipiente tapado y hermético. Déjalas a ${tempCVal} °C durante ${horasBollosVal} h${ballsPlanText}.`
+          ? `Place the balls in an airtight container. Leave them at room temperature (${tempCVal} °C) for ${ambientHours} h${ballsPlanText}.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Déjalas a temperatura ambiente (${tempCVal} °C) durante ${ambientHours} h${ballsPlanText}.`
       });
     }
 
-    // 11. Sácalas (solo si nevera)
-    if (isFridge) {
-      let sacarPlanText = horaSacarNevera
-        ? (isEn ? ` at ${horaSacarNevera} (3–4 hours before baking)` : ` a las ${horaSacarNevera} (3–4 horas antes de hornear)`)
-        : (isEn ? ` 3–4 hours before baking` : ` 3–4 horas antes de hornear`);
+    // 11. Sácalas (solo si las bolas estuvieron en la nevera). En "Solo bollos" con
+    // nevera, las bolas van al frío y luego atemperan fuera. En "Bloque + bollos" con
+    // nevera, lo que va al frío es el bloque y sale para bolear (paso 9), por lo que
+    // las bolas nunca entran en la nevera y no hay paso "Sácalas".
+    if (bollosFridge.length > 0) {
+      const lastFridge = bollosFridge[bollosFridge.length - 1];
+      const hoursAfterFridge = sumHours(fermSegs.slice(fermSegs.indexOf(lastFridge) + 1));
+      const sacarAt = lastFridge.end ? fmtPlannerTime(lastFridge.end, isEn) : '';
+      let hoursBeforeTxt = '';
+      if (hoursAfterFridge > 0) {
+        const n = fmtH(hoursAfterFridge);
+        const one = (hoursAfterFridge === 1);
+        hoursBeforeTxt = isEn
+          ? `${n} ${one ? 'hour' : 'hours'} before baking`
+          : `${n} ${one ? 'hora' : 'horas'} antes de hornear`;
+      }
+      let sacarPlanText = '';
+      if (sacarAt) {
+        sacarPlanText = isEn
+          ? ` at ${sacarAt}${hoursBeforeTxt ? ` (${hoursBeforeTxt})` : ''}`
+          : ` a las ${sacarAt}${hoursBeforeTxt ? ` (${hoursBeforeTxt})` : ''}`;
+      } else if (hoursBeforeTxt) {
+        sacarPlanText = ` ${hoursBeforeTxt}`;
+      }
       steps.push({
         title: isEn ? "Take them out." : "Sácalas.",
         body: isEn
@@ -3637,6 +3689,7 @@ window.stepColdTemp = function(dir) {
   function updateUI() {
     const I18N = window.PizzaI18N;
     if (!I18N) return;
+    if (unsupportedShown) renderUnsupportedWarning();
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('pizza_scheduled_notifs')); } catch(e){}
 
@@ -3713,10 +3766,26 @@ window.stepColdTemp = function(dir) {
     }
   }
 
+  // Aviso visible cuando el navegador no tiene API de notificaciones (p. ej. iPhone con la
+  // web sin instalar). Se pinta en línea bajo el botón, no en un toast de 2 s, para que
+  // se pueda leer con calma; se vuelve a traducir si cambia el idioma.
+  const warnEl = document.getElementById('plannerNotifyWarn');
+  let unsupportedShown = false;
+  function renderUnsupportedWarning() {
+    const I18N = window.PizzaI18N;
+    if (!warnEl || !I18N) return;
+    warnEl.textContent = I18N.t('plannerNotifyNoSupport');
+    warnEl.style.display = 'block';
+  }
+  function showUnsupportedWarning() {
+    unsupportedShown = true;
+    renderUnsupportedWarning();
+  }
+
   async function scheduleNotifications() {
     const I18N = window.PizzaI18N;
-    if (!('Notification' in window)) {
-      if (I18N) window.showToast?.(I18N.t('plannerNotifyNoSupport'));
+    if (typeof Notification === 'undefined') {
+      showUnsupportedWarning();
       return;
     }
 

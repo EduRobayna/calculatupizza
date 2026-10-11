@@ -6,6 +6,8 @@ window.PizzaI18N = (function(){
     es: {
       title: "Calculadora de masa de pizza napolitana",
       metaDescription: "Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.",
+      shareTitle: "Calculadora de masa de pizza napolitana",
+      shareDescription: "Planifica paso a paso. Gratis. Sin registro y sin anuncios.",
       heroSlogan: "Gratis. Sin registro y sin anuncios.",
       heroLogoAlt: "Logo de Edu Robayna",
       h1: 'Calculadora de masa de pizza napolitana',
@@ -365,7 +367,7 @@ window.PizzaI18N = (function(){
       plannerNotifyScheduled: "🔔 {n} avisos programados para este plan.",
       plannerNotifyCancelledToast: "Avisos cancelados.",
       plannerNotifyPermissionDenied: "Has bloqueado las notificaciones en el navegador.",
-      plannerNotifyNoSupport: "Tu navegador no admite notificaciones locales.",
+      plannerNotifyNoSupport: "Tu navegador no permite avisos. En iPhone, instala la web en tu pantalla de inicio para usarlos.",
       plannerNotifyNoFuture: "Todos los pasos de este plan ya han pasado.",
       plannerNotifyScheduledToast: "🔔 {n} avisos programados.",
       plannerNotifyDisclaimer: "Aviso: las notificaciones dependen del sistema operativo. Con la app cerrada o el móvil bloqueado (sobre todo en iPhone) pueden no sonar si no mantienes la web abierta o instalada.",
@@ -381,6 +383,8 @@ window.PizzaI18N = (function(){
     en: {
       title: "Neapolitan Pizza Dough Calculator",
       metaDescription: "Neapolitan pizza dough calculator. Free, no sign-up, no ads.",
+      shareTitle: "Neapolitan pizza dough calculator",
+      shareDescription: "Plan it step by step. Free. No sign-up, no ads.",
       heroSlogan: "Free. No sign-up, no ads.",
       heroLogoAlt: "Edu Robayna logo",
       h1: 'Neapolitan pizza dough calculator',
@@ -740,7 +744,7 @@ window.PizzaI18N = (function(){
       plannerNotifyScheduled: "🔔 {n} reminders scheduled for this plan.",
       plannerNotifyCancelledToast: "Reminders cancelled.",
       plannerNotifyPermissionDenied: "Notifications were denied in your browser.",
-      plannerNotifyNoSupport: "Your browser does not support local notifications.",
+      plannerNotifyNoSupport: "Your browser doesn't support notifications. On iPhone, install the web app to your home screen to use them.",
       plannerNotifyNoFuture: "All steps in this plan are in the past.",
       plannerNotifyScheduledToast: "🔔 {n} reminders scheduled.",
       plannerNotifyDisclaimer: "Note: browser notifications depend on your OS. With the phone locked or app closed (especially on iPhone), they may not ring unless the web is open or installed.",
@@ -776,10 +780,14 @@ window.PizzaI18N = (function(){
     document.title = t('title');
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', t('metaDescription'));
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', t('shareTitle'));
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', t('shareTitle'));
     const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute('content', t('metaDescription'));
+    if (ogDesc) ogDesc.setAttribute('content', t('shareDescription'));
     const twDesc = document.querySelector('meta[name="twitter:description"]');
-    if (twDesc) twDesc.setAttribute('content', t('metaDescription'));
+    if (twDesc) twDesc.setAttribute('content', t('shareDescription'));
 
     document.querySelectorAll('[data-i18n]').forEach(elm => {
       elm.textContent = t(elm.getAttribute('data-i18n'));

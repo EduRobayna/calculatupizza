@@ -263,15 +263,12 @@ html[data-theme="dark"] .temp-readout{ color: var(--pomodoro-text); }
 .cp-fields .param + .param { margin-top: 0; }
 .phase-tip { position: relative; margin: 14px 0 2px; padding-left: 24px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
 .phase-tip::before { content: '💡'; position: absolute; left: 0; top: 0; font-size: 13px; }
-/* Lector del tiempo TOTAL de fermentación */
-/* Recuadro inferior "Fermentación total": separado del bloque de fases con más margen,
-   borde propio y un filete superior que actúa de divisor. */
-/* Lector ligero del tiempo total, dentro de la fase controlada: sin recuadro, solo
-   un filete superior y texto tenue (menos peso visual que la levadura calculada). */
-.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border); }
+/* Lector del tiempo TOTAL de fermentación: colocado como resumen al final de los
+   tiempos (debajo de tiempo a temperatura ambiente), tanto si hay fase fría como si no. */
+.ferm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 18px; margin-bottom: 6px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .ferm-total[hidden] { display: none; }
-.ferm-total-label { font-size: 12px; font-weight: 600; color: var(--text-soft); }
-.ferm-total-value { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-soft); }
+.ferm-total-label { font-size: 13px; font-weight: 600; color: var(--text-soft); }
+.ferm-total-value { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text); }
 /* Aviso suave (informativo, no error) al llegar al máximo recomendado de fermentación */
 .ferm-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--text-soft); }
 .ferm-note[hidden] { display: none; }
@@ -956,8 +953,9 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
 .modal-actions-stack .btn-outline, .modal-actions-stack .modal-confirm{ flex: 0 0 auto; width: 100%; }
 /* Pista de validación del modal (p. ej. nombre duplicado) */
 .modal-error{ font-size: 12.5px; line-height: 1.4; color: var(--pomodoro-text); margin: 8px 2px 0; }
-/* Popup de novedades 2.0 */
-.whatsnew-card{ max-width: 440px; max-height: 85vh; overflow-y: auto; }
+/* Popup de novedades 2.0. OJO: la tarjeta NO debe tener overflow-y:auto (anularía el
+   overflow:hidden de arriba): solo scrollea .modal-body, que lleva el difuminado inferior. */
+.whatsnew-card{ max-width: 440px; max-height: 85vh; }
 
 /* ===== Escritorio / pantallas anchas (incluidas móviles en horizontal): los
    modales se expanden a lo ancho en vez de quedarse en un popup estrecho y
@@ -977,6 +975,28 @@ html[data-theme="dark"] .modal-card{ background: var(--surface-2); border-color:
 .wn-ico{ flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; background: var(--tint-b); display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; }
 .wn-text{ font-size: 13.5px; line-height: 1.5; color: var(--text-soft); }
 .wn-text b{ color: var(--heading); }
+/* Móvil: popup de novedades compacto para que quepan todos los puntos y el botón sin
+   scroll. En pantallas muy bajas sigue scrolleando el cuerpo, con un difuminado inferior
+   más largo que avisa de que hay más contenido. */
+@media (max-width: 559px){
+  #whatsNewModal.modal-overlay{ padding: 12px; }
+  .whatsnew-card{ padding: 16px 16px 14px; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
+  .whatsnew-badge{ margin-bottom: 6px; padding: 2px 9px; font-size: 10.5px; }
+  .whatsnew-card .modal-title{ font-size: 17px; margin: 0 0 2px; }
+  .whatsnew-card .modal-sub{ font-size: 12.5px; margin: 0 0 4px; }
+  .whatsnew-list{ margin-top: 8px; gap: 9px; }
+  .wn-item{ gap: 10px; }
+  .wn-ico{ width: 30px; height: 30px; border-radius: 8px; font-size: 15px; }
+  .wn-ico .wn-ico-img{ width: 20px; height: 20px; }
+  .wn-text{ font-size: 12.5px; line-height: 1.4; }
+  .whatsnew-card .modal-actions{ margin-top: 10px; }
+  #whatsNewModal .scroll-faded.more-below{
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+            mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent); }
+  #whatsNewModal .scroll-faded.more-above.more-below{
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 40px), transparent);
+            mask-image: linear-gradient(to bottom, transparent, #000 26px, #000 calc(100% - 40px), transparent); }
+}
 /* Botones deshabilitados (acciones del modal) */
 .btn-outline:disabled, .btn-secondary:disabled{ opacity: 0.45; cursor: not-allowed; }
 
@@ -1474,4 +1494,15 @@ body::after {
   line-height: 1.4;
   color: rgba(243, 234, 217, 0.7);
   margin: 0;
+}
+/* Aviso cuando el navegador no admite notificaciones (p. ej. iPhone sin instalar la web). */
+.planner-notify-warn {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #f2c27f;
+  background: rgba(224, 158, 74, 0.12);
+  border: 1px solid rgba(224, 158, 74, 0.45);
+  border-radius: 9px;
+  padding: 9px 12px;
 }
