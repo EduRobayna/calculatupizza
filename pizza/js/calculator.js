@@ -2943,22 +2943,33 @@ window.stepColdTemp = function(dir) {
       flours.forEach((f) => L.push('🔸 ' + noSp(U.formatWeight(harinaT * (f.pct / 100))) +
         ' (' + U.formatNumber(f.pct) + '%) ' + flourName(f.flourId)));
     }
-    if (window.__plannerPlanText) {
-      L.push('');
-      L.push(window.__plannerPlanText);
+    if (!window.__plannerPlanText && typeof window.__renderPlanner === 'function') {
+      try { window.__renderPlanner(); } catch (e) {}
     }
-    return L.join('\r\n');
+    if (window.__plannerPlanText && window.__plannerPlanText.trim()) {
+      L.push('');
+      L.push(window.__plannerPlanText.trim());
+    }
+    return L.join('\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
+  window.buildRecipeText = buildRecipeText;
 
   // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.
   function fallbackCopy(str) {
     const ta = document.createElement('textarea');
     ta.value = str;
     ta.setAttribute('readonly', '');
-    ta.style.cssText = 'position:fixed; top:-9999px; left:-9999px;';
+    ta.style.fontSize = '12pt';
+    ta.style.border = '0';
+    ta.style.padding = '0';
+    ta.style.margin = '0';
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
+    ta.setSelectionRange(0, str.length);
     let ok = false;
     try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
     ta.remove();
@@ -3014,26 +3025,27 @@ window.stepColdTemp = function(dir) {
     }
     return window.location.origin + window.location.pathname + '?' + p.toString();
   }
+  window.generateRecipeShareUrl = generateRecipeShareUrl;
 
-  // Compartir receta como URL (Web Share API con fallback a copiar)
+  // Compartir receta (Web Share API con fallback a copiar)
+  // Utiliza exactamente el mismo string unificado con \n que el botón de copiar receta
   const btnCompartir = document.getElementById('btnCompartir');
   if (btnCompartir) {
     btnCompartir.addEventListener('click', async () => {
-      const shareUrl = generateRecipeShareUrl();
+      const recipeText = buildRecipeText();
       if (navigator.share) {
         try {
           await navigator.share({
             title: I18N.t('recipeHeader'),
-            text: I18N.t('shareRecipeUrlText') || I18N.t('recipeHeader'),
-            url: shareUrl
+            text: recipeText
           });
         } catch (e) {
           if (e.name !== 'AbortError') {
-            copyText(shareUrl, () => showToast(I18N.t('linkCopiedToast')));
+            copyText(recipeText, () => showToast(I18N.t('copiado')));
           }
         }
       } else {
-        copyText(shareUrl, () => showToast(I18N.t('linkCopiedToast')));
+        copyText(recipeText, () => showToast(I18N.t('copiado')));
       }
     });
   }
@@ -3283,12 +3295,13 @@ window.stepColdTemp = function(dir) {
     window.__plannerPlanText = '*' + I18N.t('plannerHeader') + '* 🕐\n' + items.map(s => {
       const txtX = s.x.replace(/<[^>]*>?/gm, '').trim();
       return s.t ? fmtDate(s.t) + ' – ' + txtX : '_· ' + txtX + '_';
-    }).join('\r\n');
+    }).join('\n');
 
     window.__plannerTimeline = items;
     if (window.__updateStepByStep) window.__updateStepByStep();
     if (window.__updatePlannerNotifications) window.__updatePlannerNotifications();
   }
+  window.__renderPlanner = renderPlanner;
 
   // Hook into D or global recalculation
   const origCalcular = window.calcular || function(){};
