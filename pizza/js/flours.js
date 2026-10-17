@@ -135,9 +135,9 @@
 
     // -- Genéricas de supermercado (para quien no tiene acceso a harinas de molino;
     //    además las referencian recetas antiguas por su id: NO borrar) --
-    { id: 'fuerza-supermercado', brand: 'Supermercado', line: '', type: 'Fuerza', wMin: 0, wMax: 0,
+    { id: 'fuerza-supermercado', brand: 'Supermercado', line: '', type: 'Fuerza', wMin: 280, wMax: 320,
       name: { es: 'Harina de Fuerza (Supermercado)', en: 'Bread/Strong Flour (Supermarket)' } },
-    { id: 'comun-supermercado', brand: 'Supermercado', line: '', type: 'Común', wMin: 0, wMax: 0,
+    { id: 'comun-supermercado', brand: 'Supermercado', line: '', type: 'Común', wMin: 180, wMax: 220,
       name: { es: 'Harina de Trigo Común (Supermercado)', en: 'All-Purpose Wheat Flour (Supermarket)' } }
   ];
 

@@ -268,7 +268,7 @@ window.stepColdTemp = function(dir) {
   function updateCards(){
     if (el.summaryTanda){
       const n = Math.max(1, parseDecimal(el.numPaneteos.value) || 0);
-      el.summaryTanda.textContent = n + ' ' + I18N.t('recipePizzas').toLowerCase() + ' ' +
+      el.summaryTanda.textContent = n + ' ' + I18N.t(n === 1 ? 'recipePizzaOne' : 'recipePizzas').toLowerCase() + ' ' +
         I18N.t('recipeOf') + ' ' + U.formatWeight(pesoG);
     }
     // Valores para el resumen de Fermentación y los avisos resumidos.
@@ -1377,13 +1377,21 @@ window.stepColdTemp = function(dir) {
     // Fuerza (W) efectiva de la mezcla: media ponderada por % de las harinas con dato
     // (null si ninguna lo tiene). Se muestra junto a la barra de proporción y alimenta
     // el aviso de compatibilidad W↔tiempo (RN-02).
-    const wEff = D.effectiveW(flours.map(function (f) { return { w: F.wValue(f.flourId), pct: f.pct }; }));
-    if (el.flourStrengthValue) el.flourStrengthValue.textContent = (wEff != null) ? ('W' + wEff) : '—';
+    const flourWItems = flours.map(function (f) { return { w: F.wValue(f.flourId), pct: f.pct }; });
+    const wEff = D.effectiveW(flourWItems);
+    const knownWPct = flourWItems.reduce(function (s, x) { return s + ((x.w > 0 && x.pct > 0) ? x.pct : 0); }, 0);
+    const totalMixPct = flourWItems.reduce(function (s, x) { return s + (x.pct > 0 ? x.pct : 0); }, 0);
+    const isPartialW = (wEff != null) && (totalMixPct - knownWPct > 0.05);
+    if (el.flourStrengthValue) {
+      el.flourStrengthValue.textContent = (wEff != null)
+        ? ('W' + wEff + (isPartialW ? ' (' + I18N.t('flourStrengthPartial') + ')' : ''))
+        : '—';
+    }
     // Compatibilidad fuerza de la harina ↔ tiempo de fermentación de RELOJ total
-    // (ambiente + nevera activa). Sin dato de W en la mezcla → sin aviso.
+    // (ambiente + nevera activa). Sin dato de W completo en la mezcla → sin aviso.
     if (el.flourWarn && el.flourWarnText) {
       el.flourWarn.hidden = true;
-      if (wEff != null) {
+      if (wEff != null && !isPartialW) {
         const structH = D.structuralHours(horas, temp, coldH, coldT);
         const warnType = D.flourTimeWarning(wEff, structH);
         
@@ -1506,10 +1514,10 @@ window.stepColdTemp = function(dir) {
     el.totalLevadura.textContent = U.formatWeightPrecise(levaduraTotal);
     el.totalLevaduraSeca.textContent = U.formatWeightPrecise(levaduraSecaTotal);
 
-    // Contexto de la tanda bajo el titular: "6 pizzas de 280 g".
+    // Contexto de la tanda bajo el titular: "6 pizzas de 280 g" (o "1 pizza de 280 g").
     if (el.batchContext) {
       el.batchContext.textContent = numPaneteos + ' ' +
-        I18N.t('recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
+        I18N.t(numPaneteos === 1 ? 'recipePizzaOne' : 'recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
         U.formatWeight(pesoPaneto);
     }
     renderResultFerment();
@@ -2019,11 +2027,13 @@ window.stepColdTemp = function(dir) {
     toast.textContent = message;
     toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(0); background:var(--forno); color:var(--farina); padding:12px 20px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:10001; box-shadow:0 12px 30px -8px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); transition: opacity 0.3s ease, transform 0.3s ease; opacity:1;';
     document.body.appendChild(toast);
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(-50%) translateY(10px)';
-      setTimeout(() => toast.remove(), 300);
+      const t2 = setTimeout(() => toast.remove(), 300);
+      if (t2 && typeof t2.unref === 'function') t2.unref();
     }, 1800);
+    if (t1 && typeof t1.unref === 'function') t1.unref();
   }
   window.showToast = showToast;
 
@@ -3043,10 +3053,10 @@ window.stepColdTemp = function(dir) {
         const parsedFlours = [];
         let nextId = 1;
         raw.forEach(chunk => {
-          const parts = chunk.split(':');
-          if (parts.length >= 2) {
-            const fid = parts[0].trim();
-            const pct = parseDecimal(parts[1]);
+          const lastColon = chunk.lastIndexOf(':');
+          if (lastColon > 0) {
+            const fid = chunk.slice(0, lastColon).trim();
+            const pct = parseDecimal(chunk.slice(lastColon + 1));
             if (fid && !isNaN(pct) && pct > 0) {
               parsedFlours.push({ id: nextId++, flourId: fid, pct: pct, locked: false });
             }
@@ -3195,17 +3205,31 @@ window.stepColdTemp = function(dir) {
     else { showToast(I18N.t('copyError')); }
   }
 
-  // Copiar receta
-  document.getElementById('btnCopiarReceta').addEventListener('click', function() {
-    const btn = this;
-    const showCopied = () => {
-      const originalHtml = btn.innerHTML;
+  function flashButtonCopied(btn) {
+    if (btn) {
+      if (btn._origHtml == null) btn._origHtml = btn.innerHTML;
+      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
       btn.innerHTML = I18N.t('copiado');
       btn.classList.add('btn-on-dark-ok');
-      setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.remove('btn-on-dark-ok'); }, 2500);
-    };
-    copyText(buildRecipeText(), showCopied);
-  });
+      const t = setTimeout(() => {
+        btn.innerHTML = btn._origHtml;
+        btn.classList.remove('btn-on-dark-ok');
+        btn._copiedTimer = null;
+      }, 2500);
+      if (t && typeof t.unref === 'function') t.unref();
+      btn._copiedTimer = t;
+    }
+    showToast(I18N.t('copiado'));
+  }
+
+  // Copiar receta
+  const btnCopiarReceta = document.getElementById('btnCopiarReceta');
+  if (btnCopiarReceta) {
+    btnCopiarReceta.addEventListener('click', function() {
+      const btn = this || btnCopiarReceta;
+      copyText(buildRecipeText(), () => flashButtonCopied(btn));
+    });
+  }
 
   // Generar URL con todos los parámetros de la receta codificados
   function generateRecipeShareUrl() {
@@ -3251,11 +3275,11 @@ window.stepColdTemp = function(dir) {
           });
         } catch (e) {
           if (e.name !== 'AbortError') {
-            copyText(recipeText, () => showToast(I18N.t('copiado')));
+            copyText(recipeText, () => flashButtonCopied(btnCompartir));
           }
         }
       } else {
-        copyText(recipeText, () => showToast(I18N.t('copiado')));
+        copyText(recipeText, () => flashButtonCopied(btnCompartir));
       }
     });
   }
@@ -3819,15 +3843,16 @@ window.stepColdTemp = function(dir) {
     // 9. Boleado: si el bloque fermentó en la nevera, la masa sale del frío en este
     // paso ("Saca la masa de la nevera a las 16:00 y divídela en...").
     let boleadoPlanText = horaBoleado ? (isEn ? ` at ${horaBoleado}` : ` a las ${horaBoleado}`) : '';
+    const ballsWord = numPizzasVal === 1 ? (isEn ? 'ball' : 'bola') : (isEn ? 'balls' : 'bolas');
     let boleadoBody = '';
     if (hasBulkFridge) {
       boleadoBody = isEn
-        ? `Take the dough out of the fridge${boleadoPlanText} and divide it into ${numPizzasVal} balls of ${pesoBolaVal} g. Shape each with tension.`
-        : `Saca la masa de la nevera${boleadoPlanText} y divídela en ${numPizzasVal} bolas de ${pesoBolaVal} g. Forma cada una con tensión.`;
+        ? `Take the dough out of the fridge${boleadoPlanText} and divide it into ${numPizzasVal} ${ballsWord} of ${pesoBolaVal} g. Shape each with tension.`
+        : `Saca la masa de la nevera${boleadoPlanText} y divídela en ${numPizzasVal} ${ballsWord} de ${pesoBolaVal} g. Forma cada una con tensión.`;
     } else {
       boleadoBody = isEn
-        ? `Divide the dough into ${numPizzasVal} balls of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
-        : `Divide la masa en ${numPizzasVal} bolas de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`;
+        ? `Divide the dough into ${numPizzasVal} ${ballsWord} of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
+        : `Divide la masa en ${numPizzasVal} ${ballsWord} de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`;
     }
     steps.push({
       group: 'fermentacion',
