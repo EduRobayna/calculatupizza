@@ -840,6 +840,24 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .recipe-notes-input{ width:100%; margin-top:10px; padding:11px 13px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); font-family:var(--font-body); font-size:14px; color:var(--text); line-height:1.4; resize:vertical; min-height:64px; }
 .recipe-notes-input:focus{ outline:none; border-color:var(--focus); box-shadow:0 0 0 3px var(--focus-ring); }
 .recipe-notes-display{ margin-top:10px; padding:10px 12px; background:var(--surface-3); border:1px solid var(--border); border-radius:10px; font-size:13px; line-height:1.45; color:var(--text-soft); white-space:pre-wrap; word-break:break-word; }
+.recipe-notes-display.has-photo{ display:flex; align-items:center; gap:12px; white-space:normal; }
+.recipe-notes-display .recipe-notes-text{ flex:1; min-width:0; white-space:pre-wrap; word-break:break-word; }
+.recipe-photo-picker{ margin-top:10px; }
+.recipe-photo-add-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:10px; border:1.5px dashed var(--control-border); background:var(--surface-2); color:var(--text-soft); font-family:var(--font-body); font-size:13.5px; font-weight:600; cursor:pointer; transition:border-color .12s, color .12s, background-color .12s; }
+.recipe-photo-add-btn svg{ flex-shrink:0; }
+.recipe-photo-add-btn:hover{ border-color:var(--forno); color:var(--text); }
+.recipe-photo-add-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:1px; border-color:var(--focus); }
+.recipe-photo-preview-row{ display:flex; align-items:center; gap:12px; padding:8px 10px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); }
+.recipe-photo-thumb-btn{ position:relative; flex-shrink:0; width:56px; height:56px; padding:0; border-radius:9px; border:1.5px solid var(--border); background:var(--surface-3); overflow:hidden; cursor:zoom-in; display:block; transition:transform .1s, border-color .1s, box-shadow .1s; }
+.recipe-photo-thumb-btn:hover{ border-color:var(--forno); transform:scale(1.03); }
+.recipe-photo-thumb-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+.recipe-photo-thumb{ width:100%; height:100%; object-fit:cover; display:block; }
+.recipe-photo-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; min-width:0; }
+.recipe-photo-act-btn{ padding:6px 11px; border-radius:8px; border:1.5px solid var(--control-border); background:var(--surface); color:var(--text); font-family:var(--font-body); font-size:12.5px; font-weight:600; cursor:pointer; transition:border-color .1s, color .1s, background-color .1s, transform .08s; }
+.recipe-photo-act-btn:hover{ border-color:var(--forno); }
+.recipe-photo-act-btn:active{ transform:scale(0.95); }
+.recipe-photo-act-btn.delete{ color:var(--text-soft); background:transparent; }
+.recipe-photo-act-btn.delete:hover{ color:var(--pomodoro); border-color:var(--pomodoro); background:rgba(193,67,46,0.08); }
 .icon-btn-square{ flex-shrink:0; width:44px; height:44px; border-radius:10px; border:1.5px solid var(--control-border); background:var(--surface-2); color:var(--text-soft); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background 0.08s, color 0.08s, border-color 0.08s, transform 0.08s; }
 .icon-btn-square:hover:not(:disabled){ border-color: var(--forno); color: var(--text); }
 .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
@@ -869,8 +887,9 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .recipe-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); align-items:start; gap:10px; margin-top:12px; max-height:56vh; overflow-y:auto; overscroll-behavior:contain; }
 .recipe-item{ width:100%; background:var(--surface-2); border:1.5px solid var(--control-border); border-radius:12px; padding:14px 16px; transition:border-color .1s, background .1s; display:flex; flex-direction:column; gap:12px; font-family:var(--font-body); color:var(--text); }
 .recipe-item.active{ border-color:var(--basilico); box-shadow:0 0 0 3px rgba(92,125,79,0.14); }
-.recipe-item-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; }
-.recipe-item-badge{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--basilico-text); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); border-radius:999px; padding:2px 8px; }
+.recipe-item-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.recipe-item-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+.recipe-item-badge{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--basilico-text); background:rgba(92,125,79,0.14); border:1px solid rgba(92,125,79,0.35); border-radius:999px; padding:2px 8px; flex-shrink:0; }
 /* Cuerpo de la tarjeta: rejilla etiquetada de 2 columnas. Cada dato con su
    ETIQUETA en versalitas sobre el valor; fermentación y harina ocupan la fila
    completa. Sustituye a la antigua línea de iconos+números (apelotonada y con
@@ -899,6 +918,15 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .modal-overlay{ position:fixed; inset:0; background: rgba(12,9,6,0.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 10000; display:flex; align-items:center; justify-content:center; padding: 20px; height: 100%; overscroll-behavior-y: contain; }
 /* La confirmación puede abrirse SOBRE la lista de recetas (eliminar): debe quedar por encima. */
 #confirmModal{ z-index: 10001; }
+/* Visor de foto a pantalla completa: por encima de todos los modales (lista o edición). */
+#photoViewerModal{ z-index: 10002; background: rgba(10,8,6,0.88); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.photo-viewer-box{ position:relative; max-width:min(92vw, 720px); max-height:88vh; display:flex; flex-direction:column; align-items:center; gap:10px; outline:none; }
+.photo-viewer-img{ max-width:100%; max-height:calc(88vh - 50px); width:auto; height:auto; border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.14); object-fit:contain; display:block; background:#14110f; }
+.photo-viewer-close{ position:absolute; top:-12px; right:-12px; width:38px; height:38px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.22); background:rgba(24,19,16,0.92); color:#f3ead9; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.5); transition:transform .1s, background-color .1s, border-color .1s; }
+.photo-viewer-close:hover{ transform:scale(1.06); background:var(--pomodoro); border-color:var(--pomodoro); color:#fff; }
+.photo-viewer-close:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+.photo-viewer-caption{ margin:0; font-family:var(--font-display); font-size:15px; font-weight:600; color:#f3ead9; text-align:center; text-shadow:0 1px 4px rgba(0,0,0,0.6); }
+.photo-viewer-caption:empty{ display:none; }
 /* Bloquea el scroll del fondo mientras haya cualquier modal abierto */
 html.modal-open, html.modal-open body{ overflow: hidden; }
 .modal-card{ background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 30px 70px -24px rgba(0,0,0,0.65);
@@ -1332,12 +1360,12 @@ body::after {
 }
 
 .planner-icon {
-  width: 52px;
-  height: 52px;
+  width: 62px;
+  height: auto;
+  max-height: 48px;
   object-fit: contain;
   display: block;
   margin: 0 auto 6px;
-  transform: rotate(15deg);
 }
 .wn-ico-img {
   width: 24px;
@@ -1345,7 +1373,6 @@ body::after {
   object-fit: contain;
   display: inline-block;
   vertical-align: middle;
-  transform: rotate(15deg);
 }
 @media (prefers-color-scheme: dark) {
   .wn-ico-img {

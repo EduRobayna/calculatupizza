@@ -463,7 +463,7 @@
       <ul style="padding-left: 20px; line-height: 1.65; color: var(--text-soft); font-size: 15px;">
         <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi1">Te recomiendo dividir la fermentación en dos grandes fases: una primera con toda la masa junta (en bloque) y una segunda con las bolas ya formadas (los bollos). Lo ideal es que el bloque se lleve la mayor parte del tiempo.</li>
         <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi2">Yo adapto la levadura matemáticamente a tu entorno. Tú solo tienes que decidir a qué hora quieres comer pizza y a qué temperatura está tu cocina, y yo me encargo de calcular el resto (aunque te recomiendo un mínimo de 8 horas de paciencia).</li>
-        <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi3">Si vas a meter la masa en la nevera, dale antes unos 30-60 minutos de ventaja a temperatura ambiente para que la levadura despierte. Y muy importante: saca las bolas de la nevera unas 3 o 4 horas antes de hornear para que se atemperen bien.</li>
+        <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi3">Si vas a meter la masa en la nevera, dale antes unos 30 minutos de reposo a temperatura ambiente para que la levadura despierte. Y muy importante: saca la masa (o las bolas) de la nevera unas 3 o 4 horas antes de hornear para que se atemperen bien y termine de fermentar.</li>
         <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi4">No te obsesiones con el reloj, fíjate en la masa. Durante el bloque, no hace falta que duplique su tamaño; con que crezca entre un 50% y un 70% está perfecta para bolear sin agotar la red de gluten.</li>
         <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi5">El aire y el oxígeno son los grandes enemigos de la masa. Mantenla siempre bien tapada y hermética para evitar que se reseque y forme una costra. Si se hace costra, la pizza no estirará bien y se romperá.</li>
         <li style="margin-bottom: 12px; padding-left: 5px;" data-i18n-html="fermentLi6">Para saber si un bollo está listo para el horno, presiónalo suavemente con el dedo. Si la masa recupera su forma lentamente dejando una leve marca, está en su punto perfecto.</li>
@@ -534,7 +534,7 @@
 
         <!-- Planificador de fermentación -->
         <div class="planner-panel" id="plannerPanel">
-          <div class="planner-title"><img src="pizza-slice.png" alt="" class="planner-icon" aria-hidden="true"> <span data-i18n="plannerTitle">Planifica tu pizza</span></div>
+          <div class="planner-title"><img src="planner-slice.png" alt="" class="planner-icon" width="62" height="30" aria-hidden="true"> <span data-i18n="plannerTitle">Planifica tu pizza</span></div>
           <div class="planner-lab" data-i18n="plannerTypeLabel">TIPO DE FERMENTACIÓN</div>
           <div class="planner-seg" id="plannerTypes">
             <button type="button" data-r="a" data-i18n="plannerTypeA">Bloque + bollos</button>
@@ -703,6 +703,22 @@
       <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
       <p id="saveModalError" class="modal-error" role="alert" style="display:none;"></p>
       <textarea id="saveRecipeNotesInput" class="recipe-notes-input" rows="3" maxlength="500" data-i18n-aria="notesLabel" data-i18n-placeholder="notesPlaceholder" placeholder="Notas (opcional): horno, hidratación, cómo quedó…"></textarea>
+      <div class="recipe-photo-picker" id="recipePhotoPicker">
+        <input type="file" id="saveRecipePhotoInput" accept="image/*" hidden>
+        <button type="button" id="saveRecipePhotoAddBtn" class="recipe-photo-add-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          <span data-i18n="photoAddBtn">Añadir foto de tu pizza (opcional)</span>
+        </button>
+        <div id="saveRecipePhotoPreview" class="recipe-photo-preview-row" style="display:none;">
+          <button type="button" id="saveRecipePhotoViewBtn" class="recipe-photo-thumb-btn" data-i18n-aria="photoViewAria" data-i18n-title="photoViewAria" aria-label="Ver foto de la pizza en grande" title="Ver foto de la pizza en grande">
+            <img id="saveRecipePhotoImg" class="recipe-photo-thumb" src="" alt="">
+          </button>
+          <div class="recipe-photo-actions">
+            <button type="button" id="saveRecipePhotoChangeBtn" class="recipe-photo-act-btn" data-i18n="photoChangeBtn">Cambiar foto</button>
+            <button type="button" id="saveRecipePhotoRemoveBtn" class="recipe-photo-act-btn delete" data-i18n="photoRemoveBtn">Quitar</button>
+          </div>
+        </div>
+      </div>
       <div class="modal-actions modal-actions-stack" id="saveModalActions">
         <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
         <button type="button" id="saveRecipeNewBtn" class="btn-outline" data-i18n="modalSaveAsNew" style="display:none;">Guardar como nueva</button>
@@ -733,7 +749,7 @@
       </div>
       <div class="modal-body scroll-faded">
         <ul class="whatsnew-list">
-          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="pizza-slice.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Planificador de horarios con avisos.</b> Olvídate de calcular a qué hora tienes que empezar a amasar para comerte la pizza, la calculadora organiza tus tiempos y te avisa cuándo amasar, bolear y hornear.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="whatsnew-slice.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Planificador de horarios con avisos.</b> Olvídate de calcular a qué hora tienes que empezar a amasar para comerte la pizza, la calculadora organiza tus tiempos y te avisa cuándo amasar, bolear y hornear.</span></li>
           <li class="wn-item"><span class="wn-ico" aria-hidden="true">📋</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Paso a paso con tus cantidades exactas.</b> Instrucciones detalladas de amasado directo integradas con los ingredientes y porcentajes calculados para tu receta.</span></li>
           <li class="wn-item"><span class="wn-ico" aria-hidden="true">🔗</span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Comparte tus recetas por enlace.</b> Guarda o envía cualquier receta configurada directamente a tus amigos mediante una URL lista para abrir.</span></li>
           <li class="wn-item"><span class="wn-ico" aria-hidden="true">🫧</span><span class="wn-text" data-i18n-html="whatsNewLi4"><b>Un toque más artesanal.</b> Nueva tipografía clásica y texturas sutiles en la interfaz.</span></li>
@@ -760,6 +776,16 @@
       </div>
       <div id="recipeListContainer" class="recipe-list scroll-faded"></div>
       <p id="recipeListEmpty" class="modal-sub recipe-list-empty" data-i18n="noRecipesYet" style="display:none;">Aún no tienes recetas guardadas.</p>
+    </div>
+  </div>
+
+  <div id="photoViewerModal" class="modal-overlay photo-viewer-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="photoViewerCaption">
+    <div class="photo-viewer-box" tabindex="-1">
+      <button type="button" id="photoViewerCloseBtn" class="photo-viewer-close" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar" title="Cerrar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <img id="photoViewerImg" class="photo-viewer-img" src="" alt="">
+      <p id="photoViewerCaption" class="photo-viewer-caption"></p>
     </div>
   </div>
 

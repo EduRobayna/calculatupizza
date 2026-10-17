@@ -291,10 +291,11 @@ window.stepColdTemp = function(dir) {
     if (el.summaryFerm){
       const atW = I18N.t('fermAt');
       const sep = '<span class="card-sum-sep" aria-hidden="true"></span>';
-      const parts = ['<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>'];
+      const parts = [];
       if (el.fridgeToggle && el.fridgeToggle.checked){
         parts.push('<span class="ferm-sum-phase">' + U.formatNumber(coldH, 0) + ' h ' + atW + ' ' + U.tempValue(coldT) + U.tempUnit() + '</span>');
       }
+      parts.push('<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>');
       // La levadura va con el MISMO estilo que las fases (texto + mismo separador vertical),
       // y una chispa ✦ verde como único indicador de "automático" (sin píldora ni icono
       // propio, para que la fila tenga la misma estructura de principio a fin).
@@ -578,8 +579,8 @@ window.stepColdTemp = function(dir) {
     const coldStr = U.formatNumber(coldH, 0) + ' h · ' + Math.round(U.tempValue(coldTempC())) + U.tempUnit();
     const rows = [];
     if (el.fridgeToggle.checked) {
-      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
       rows.push([I18N.t('fermControlledLabel'), coldStr]);
+      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     } else {
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     }
@@ -1383,20 +1384,7 @@ window.stepColdTemp = function(dir) {
     if (el.flourWarn && el.flourWarnText) {
       el.flourWarn.hidden = true;
       if (wEff != null) {
-        const ambH = parseFloat(el.horas.value) || 0;
-        const ambTVal = parseFloat(el.tempValue.value) || 21;
-        const ambT = (window.U && window.U.isFahrenheit()) ? (ambTVal - 32) * 5/9 : ambTVal;
-        
-        const isMixta = (document.getElementById('fridgeToggle') && document.getElementById('fridgeToggle').checked);
-        const coldH = isMixta ? (parseFloat(document.getElementById('horasFrio').value) || 0) : 0;
-        
-        let coldT = 4;
-        if (isMixta) {
-          const cv = parseFloat(document.getElementById('tempFrio').value);
-          if (!isNaN(cv)) coldT = (window.U && window.U.isFahrenheit()) ? (cv - 32) * 5/9 : cv;
-        }
-        
-        const structH = D.structuralHours(ambH, ambT, coldH, coldT);
+        const structH = D.structuralHours(horas, temp, coldH, coldT);
         const warnType = D.flourTimeWarning(wEff, structH);
         
         if (warnType) {
@@ -1943,6 +1931,17 @@ window.stepColdTemp = function(dir) {
   const saveModalSub = document.getElementById('saveModalSub');
   const saveModalError = document.getElementById('saveModalError');
   const saveRecipeNotesInput = document.getElementById('saveRecipeNotesInput');
+  const saveRecipePhotoInput = document.getElementById('saveRecipePhotoInput');
+  const saveRecipePhotoAddBtn = document.getElementById('saveRecipePhotoAddBtn');
+  const saveRecipePhotoPreview = document.getElementById('saveRecipePhotoPreview');
+  const saveRecipePhotoViewBtn = document.getElementById('saveRecipePhotoViewBtn');
+  const saveRecipePhotoImg = document.getElementById('saveRecipePhotoImg');
+  const saveRecipePhotoChangeBtn = document.getElementById('saveRecipePhotoChangeBtn');
+  const saveRecipePhotoRemoveBtn = document.getElementById('saveRecipePhotoRemoveBtn');
+  const photoViewerModal = document.getElementById('photoViewerModal');
+  const photoViewerCloseBtn = document.getElementById('photoViewerCloseBtn');
+  const photoViewerImg = document.getElementById('photoViewerImg');
+  const photoViewerCaption = document.getElementById('photoViewerCaption');
   const recipeNotesDisplay = document.getElementById('recipeNotesDisplay');
   const recipeStatusEl = document.getElementById('recipeStatus');
   const exportRecipesBtn = document.getElementById('exportRecipesBtn');
@@ -1950,8 +1949,10 @@ window.stepColdTemp = function(dir) {
   const importRecipesInput = document.getElementById('importRecipesInput');
   // id de la receta seleccionada al abrir el modal (para "Actualizar"); null = crear nueva
   let editingRecipeId = null;
-  // "Editar" desde la lista actualiza solo nombre+notas, sin tocar los parámetros de la masa.
+  // "Editar" desde la lista actualiza solo nombre+notas+foto, sin tocar los parámetros de la masa.
   let saveMetaOnly = false;
+  // Foto (data URL JPEG comprimida) pendiente de guardar en el modal actual; null = sin foto.
+  let pendingRecipePhoto = null;
   // Texto del buscador de la lista de recetas.
   let recipeSearchQuery = '';
   // id de la receta actualmente cargada en la calculadora (la "receta activa");
@@ -1966,7 +1967,12 @@ window.stepColdTemp = function(dir) {
   }
 
   function setSavedRecipes(list) {
-    try { localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list)); } catch (e) {}
+    try {
+      localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Clave de contenido de una receta, ignorando el id interno de cada harina
@@ -2021,6 +2027,62 @@ window.stepColdTemp = function(dir) {
   }
   window.showToast = showToast;
 
+  // ---- Visor de foto a pantalla completa (se abre por encima de cualquier modal sin cerrarlo) ----
+  let photoViewerLastFocus = null;
+  function openPhotoViewer(src, caption) {
+    if (!photoViewerModal || !photoViewerImg || !src) return;
+    photoViewerLastFocus = document.activeElement;
+    photoViewerImg.src = src;
+    photoViewerImg.alt = caption || I18N.t('photoViewAria');
+    if (photoViewerCaption) photoViewerCaption.textContent = caption || '';
+    photoViewerModal.style.display = 'flex';
+    syncScrollLock();
+    setTimeout(() => {
+      if (photoViewerCloseBtn && typeof photoViewerCloseBtn.focus === 'function') {
+        try { photoViewerCloseBtn.focus({ preventScroll: true }); } catch (e) { photoViewerCloseBtn.focus(); }
+      }
+    }, 30);
+  }
+  function closePhotoViewer() {
+    if (!photoViewerModal) return;
+    photoViewerModal.style.display = 'none';
+    if (photoViewerImg) photoViewerImg.src = '';
+    syncScrollLock();
+    if (photoViewerLastFocus && typeof photoViewerLastFocus.focus === 'function') {
+      try { photoViewerLastFocus.focus({ preventScroll: true }); } catch (e) { photoViewerLastFocus.focus(); }
+    }
+    photoViewerLastFocus = null;
+  }
+  if (photoViewerCloseBtn) photoViewerCloseBtn.addEventListener('click', closePhotoViewer);
+  if (photoViewerModal) {
+    photoViewerModal.addEventListener('click', (e) => {
+      if (e.target === photoViewerModal || (e.target && e.target.classList && e.target.classList.contains('photo-viewer-box'))) {
+        closePhotoViewer();
+      }
+    });
+    photoViewerModal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePhotoViewer(); }
+    });
+  }
+
+  function createPhotoThumbBtn(src, caption, extraClass) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'recipe-photo-thumb-btn' + (extraClass ? ' ' + extraClass : '');
+    btn.title = I18N.t('photoViewAria');
+    btn.setAttribute('aria-label', I18N.t('photoViewAria'));
+    const img = document.createElement('img');
+    img.className = 'recipe-photo-thumb';
+    img.src = src;
+    img.alt = caption || '';
+    btn.appendChild(img);
+    btn.addEventListener('click', (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      openPhotoViewer(src, caption || '');
+    });
+    return btn;
+  }
+
   // Devuelve la receta activa (la cargada en la calculadora) o null.
   function getActiveRecipe() {
     if (activeRecipeId == null) return null;
@@ -2052,13 +2114,33 @@ window.stepColdTemp = function(dir) {
     updateRecipeStatus();
   }
 
-  // Muestra las notas de la receta activa (si tiene) bajo la fila de acciones.
+  // Muestra las notas y/o la foto de la receta activa bajo la fila de acciones.
   function updateNotesDisplay() {
     if (!recipeNotesDisplay) return;
     const recipe = getActiveRecipe();
     const notes = recipe && recipe.notes ? String(recipe.notes).trim() : '';
-    recipeNotesDisplay.textContent = notes;
-    recipeNotesDisplay.style.display = notes ? '' : 'none';
+    const photo = recipe && recipe.photo ? String(recipe.photo) : '';
+    recipeNotesDisplay.innerHTML = '';
+    if (!notes && !photo) {
+      recipeNotesDisplay.textContent = '';
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.remove('has-photo');
+      recipeNotesDisplay.style.display = 'none';
+      return;
+    }
+    if (photo) {
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.add('has-photo');
+      recipeNotesDisplay.appendChild(createPhotoThumbBtn(photo, recipe.name));
+      if (notes) {
+        const txt = document.createElement('span');
+        txt.className = 'recipe-notes-text';
+        txt.textContent = notes;
+        recipeNotesDisplay.appendChild(txt);
+      }
+    } else {
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.remove('has-photo');
+      recipeNotesDisplay.textContent = notes;
+    }
+    recipeNotesDisplay.style.display = '';
   }
 
   // Añade una celda "ETIQUETA + valor" a la rejilla de la tarjeta. En lugar de
@@ -2122,7 +2204,15 @@ window.stepColdTemp = function(dir) {
         badge.textContent = I18N.t('statusActive');
         nameRow.appendChild(badge);
       }
-      item.appendChild(nameRow);
+      if (recipe.photo) {
+        const head = document.createElement('div');
+        head.className = 'recipe-item-head';
+        head.appendChild(nameRow);
+        head.appendChild(createPhotoThumbBtn(recipe.photo, recipe.name, 'recipe-item-thumb-btn'));
+        item.appendChild(head);
+      } else {
+        item.appendChild(nameRow);
+      }
 
       const d = recipe.data || {};
       const num = parseDecimal(d.numPaneteos) || 0;
@@ -2148,13 +2238,12 @@ window.stepColdTemp = function(dir) {
         addRecipeCell(grid, I18N.t('recipeYeastShort'),
           U.formatNumber((parseFloat(d.manualYeastPerKg) || 0) / 10, 2) + '%');
       }
-      // Fermentación (fila completa): ambiente y, si la receta la tiene, la fase controlada.
+      // Fermentación (fila completa): si tiene fase controlada va primero, y luego ambiente.
       const fAmb = U.formatNumber(d.horas != null ? d.horas : 0, 0) + ' h · ' +
         U.tempValue(parseInt(d.temperatura, 10) || 18) + U.tempUnit();
-      const fermTxt = d.fridgeOn
-        ? fAmb + ' + ' + U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
-          Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit()
-        : fAmb;
+      const fCold = U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
+        Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit();
+      const fermTxt = d.fridgeOn ? (fCold + ' + ' + fAmb) : fAmb;
       addRecipeCell(grid, I18N.t('recipeFermentation'), fermTxt, true);
       // Harina (fila completa): el nombre si es una sola; el número si es mezcla. El detalle
       // completo (cada harina con su %) se ve al cargar la receta.
@@ -2320,8 +2409,69 @@ window.stepColdTemp = function(dir) {
     }
   }
 
+  // Comprime una imagen elegida por el usuario a JPEG (máx. 700 px de lado, calidad 0.75)
+  // para que ocupe solo ~40-60 KB en localStorage y quepan decenas de recetas con foto.
+  function compressRecipePhoto(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) { reject(new Error('no-file')); return; }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read-error'));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (typeof Image === 'undefined') {
+          if (/^data:image\//i.test(dataUrl)) resolve(dataUrl);
+          else reject(new Error('invalid-image'));
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => reject(new Error('decode-error'));
+        img.onload = () => {
+          try {
+            const MAX_SIDE = 700;
+            let w = img.naturalWidth || img.width || 700;
+            let h = img.naturalHeight || img.height || 700;
+            if (w > MAX_SIDE || h > MAX_SIDE) {
+              if (w >= h) { h = Math.max(1, Math.round(h * (MAX_SIDE / w))); w = MAX_SIDE; }
+              else { w = Math.max(1, Math.round(w * (MAX_SIDE / h))); h = MAX_SIDE; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext && canvas.getContext('2d');
+            if (!ctx || typeof canvas.toDataURL !== 'function') {
+              resolve(dataUrl);
+              return;
+            }
+            ctx.fillStyle = '#14110f';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            const out = canvas.toDataURL('image/jpeg', 0.75);
+            resolve(out && /^data:image\//i.test(out) ? out : dataUrl);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderSavePhotoPreview() {
+    if (!saveRecipePhotoAddBtn || !saveRecipePhotoPreview || !saveRecipePhotoImg) return;
+    if (pendingRecipePhoto) {
+      saveRecipePhotoImg.src = pendingRecipePhoto;
+      saveRecipePhotoAddBtn.style.display = 'none';
+      saveRecipePhotoPreview.style.display = 'flex';
+    } else {
+      saveRecipePhotoImg.src = '';
+      saveRecipePhotoAddBtn.style.display = '';
+      saveRecipePhotoPreview.style.display = 'none';
+    }
+  }
+
   // ---- Modal "Guardar receta": crear nueva, actualizar la activa, o (desde la
-  //      lista) editar solo el nombre y las notas de una receta concreta. ----
+  //      lista) editar solo el nombre, las notas y la foto de una receta concreta. ----
   function openSaveModal(opts) {
     opts = opts || {};
     const editMeta = opts.editMeta || null;   // receta a editar desde la lista
@@ -2331,6 +2481,7 @@ window.stepColdTemp = function(dir) {
       editingRecipeId = editMeta.id;
       saveRecipeNameInput.value = editMeta.name;
       saveRecipeNotesInput.value = editMeta.notes || '';
+      pendingRecipePhoto = editMeta.photo || null;
       if (saveModalTitle) saveModalTitle.textContent = I18N.t('editRecipeTitle');
       saveModalSub.textContent = I18N.t('editRecipeSub');
       saveRecipeConfirmBtn.textContent = I18N.t('modalSaveChanges');
@@ -2340,6 +2491,7 @@ window.stepColdTemp = function(dir) {
       // se guarda como nueva.
       const seleccionada = getActiveRecipe();
       editingRecipeId = seleccionada ? seleccionada.id : null;
+      pendingRecipePhoto = seleccionada ? (seleccionada.photo || null) : null;
       if (saveModalTitle) saveModalTitle.textContent = I18N.t('saveModalTitle');
       if (seleccionada) {
         saveRecipeNameInput.value = seleccionada.name;
@@ -2355,6 +2507,8 @@ window.stepColdTemp = function(dir) {
         saveRecipeNewBtn.style.display = 'none';
       }
     }
+    if (saveRecipePhotoInput) saveRecipePhotoInput.value = '';
+    renderSavePhotoPreview();
     updateSaveButtons();
     // Enfocamos la tarjeta del diálogo (no el campo de nombre): así el popup se
     // abre sin desplegar el teclado en móvil, pero el foco sigue dentro del modal
@@ -2365,6 +2519,38 @@ window.stepColdTemp = function(dir) {
     closeModal(saveRecipeModal);
     // Si estábamos editando desde la lista, volvemos a ella al cerrar.
     if (saveMetaOnly) { saveMetaOnly = false; openLoadModal(); }
+  }
+
+  if (saveRecipePhotoAddBtn && saveRecipePhotoInput) {
+    saveRecipePhotoAddBtn.addEventListener('click', () => saveRecipePhotoInput.click());
+  }
+  if (saveRecipePhotoChangeBtn && saveRecipePhotoInput) {
+    saveRecipePhotoChangeBtn.addEventListener('click', () => saveRecipePhotoInput.click());
+  }
+  if (saveRecipePhotoRemoveBtn) {
+    saveRecipePhotoRemoveBtn.addEventListener('click', () => {
+      pendingRecipePhoto = null;
+      if (saveRecipePhotoInput) saveRecipePhotoInput.value = '';
+      renderSavePhotoPreview();
+    });
+  }
+  if (saveRecipePhotoViewBtn) {
+    saveRecipePhotoViewBtn.addEventListener('click', () => {
+      if (pendingRecipePhoto) openPhotoViewer(pendingRecipePhoto, saveRecipeNameInput.value.trim());
+    });
+  }
+  if (saveRecipePhotoInput) {
+    saveRecipePhotoInput.addEventListener('change', (e) => {
+      const file = e.target && e.target.files && e.target.files[0];
+      if (!file) return;
+      compressRecipePhoto(file).then((dataUrl) => {
+        pendingRecipePhoto = dataUrl;
+        renderSavePhotoPreview();
+      }).catch(() => {
+        showToast(I18N.t('photoErrorFormat'));
+      });
+      saveRecipePhotoInput.value = '';
+    });
   }
 
   saveRecipeBtn.addEventListener('click', () => openSaveModal());
@@ -2450,43 +2636,62 @@ window.stepColdTemp = function(dir) {
     const notes = saveRecipeNotesInput.value.trim().slice(0, 500);
     const list = getSavedRecipes();
 
-    // Modo "editar metadatos" (desde la lista): actualiza solo nombre y notas, sin
+    // Modo "editar metadatos" (desde la lista): actualiza solo nombre, notas y foto, sin
     // tocar los parámetros de la masa ni cambiar cuál es la receta activa.
     if (opts.metaOnly) {
       const r = list.find(x => String(x.id) === String(opts.overwriteId));
+      let quotaFallback = false;
       if (r) {
         r.name = name;
         r.notes = notes;
+        if (pendingRecipePhoto) r.photo = pendingRecipePhoto;
+        else delete r.photo;
         r.updatedAt = new Date().toISOString();
-        setSavedRecipes(list);
+        if (!setSavedRecipes(list) && pendingRecipePhoto) {
+          delete r.photo;
+          setSavedRecipes(list);
+          quotaFallback = true;
+        }
       }
       closeSaveModal();       // saveMetaOnly sigue en true -> vuelve a la lista
       refreshRecipesUI();
-      showToast(I18N.t('recipeUpdatedToast'));
+      showToast(quotaFallback ? I18N.t('photoErrorQuota') : I18N.t('recipeUpdatedToast'));
       return;
     }
 
     const existente = opts.overwriteId != null ? list.find(r => r.id === opts.overwriteId) : null;
-    let targetId;
+    let targetRecipe;
     if (existente) {
       existente.name = name;
       existente.notes = notes;
+      if (pendingRecipePhoto) existente.photo = pendingRecipePhoto;
+      else delete existente.photo;
       existente.data = currentData();
       existente.updatedAt = new Date().toISOString();
-      targetId = existente.id;
+      targetRecipe = existente;
     } else {
       const ids = new Set(list.map(r => String(r.id)));
       const nueva = { id: nuevoId(ids), name: name, notes: notes, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: currentData() };
+      if (pendingRecipePhoto) nueva.photo = pendingRecipePhoto;
       list.push(nueva);
-      targetId = nueva.id;
+      targetRecipe = nueva;
     }
-    setSavedRecipes(list);
+    let quotaFallback = false;
+    if (!setSavedRecipes(list) && pendingRecipePhoto) {
+      delete targetRecipe.photo;
+      setSavedRecipes(list);
+      quotaFallback = true;
+    }
     // La receta guardada pasa a ser la activa. Cerramos el modal antes de repintar
     // para que el cierre nunca dependa de pasos de UI posteriores.
-    activeRecipeId = targetId;
+    activeRecipeId = targetRecipe.id;
     closeSaveModal();
     refreshRecipesUI();
-    showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
+    if (quotaFallback) {
+      showToast(I18N.t('photoErrorQuota'));
+    } else {
+      showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
+    }
   }
 
   saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId, metaOnly: saveMetaOnly }));
@@ -2605,7 +2810,10 @@ window.stepColdTemp = function(dir) {
       ? raw.name.trim().slice(0, 40)
       : I18N.t('importedRecipeName');
     const notes = (typeof raw.notes === 'string') ? raw.notes.slice(0, 500) : '';
-    return {
+    const photo = (typeof raw.photo === 'string' && /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(raw.photo.trim()) && raw.photo.length <= 600000)
+      ? raw.photo.trim()
+      : null;
+    const normalized = {
       name: name,
       notes: notes,
       savedAt: (typeof raw.savedAt === 'string') ? raw.savedAt : new Date().toISOString(),
@@ -2626,6 +2834,8 @@ window.stepColdTemp = function(dir) {
         flours: flours
       }
     };
+    if (photo) normalized.photo = photo;
+    return normalized;
   }
 
   // Firma de "misma receta" para deduplicar al importar (nombre + notas +
@@ -3192,7 +3402,7 @@ window.stepColdTemp = function(dir) {
     if (coldTempEl) {
       let v = parseFloat(coldTempEl.value);
       if (!isNaN(v)) {
-        coldTVal = window.U ? (window.U.isFahrenheit() ? (v - 32) * 5/9 : v) : v;
+        coldTVal = (U && U.isFahrenheit && U.isFahrenheit()) ? (v - 32) * 5/9 : v;
       }
     }
 
