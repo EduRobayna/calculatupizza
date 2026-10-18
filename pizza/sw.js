@@ -37,7 +37,11 @@ const ASSETS_TO_CACHE = [
   './icon-maskable-512.png',
   './pizza-slice.png',
   './planner-slice.png',
-  './whatsnew-slice.png'
+  './whatsnew-slice.png',
+  './ing-harina.png',
+  './ing-agua.png',
+  './ing-sal.png',
+  './ing-levadura.png'
 ];
 
 self.addEventListener('install', (event) => {
