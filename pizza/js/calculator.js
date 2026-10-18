@@ -2102,6 +2102,7 @@ window.stepColdTemp = function(dir) {
     if (activeRecipeId == null) return null;
     return getSavedRecipes().find(r => String(r.id) === String(activeRecipeId)) || null;
   }
+  window.getActiveRecipe = getActiveRecipe;
 
   // Refresca toda la UI de recetas: línea de "receta activa", estado guardada/sin
   // guardar, notas y disponibilidad de los botones. Sustituye al antiguo <select>.
@@ -4086,16 +4087,20 @@ window.stepColdTemp = function(dir) {
 
   function getActiveRecipeName() {
     const I18N = window.PizzaI18N;
-    if (typeof getActiveRecipe === 'function') {
-      const active = getActiveRecipe();
-      if (active && active.name && active.name.trim()) return active.name.trim();
+    if (typeof window.getActiveRecipe === 'function') {
+      try {
+        const active = window.getActiveRecipe();
+        if (active && active.name && active.name.trim()) return active.name.trim();
+      } catch(e) {}
     }
     if (window.__sharedRecipeName && window.__sharedRecipeName.trim()) {
       return window.__sharedRecipeName.trim();
     }
-    if (el && el.numPaneteos) {
-      const num = Math.max(1, parseDecimal(el.numPaneteos.value) || 0);
-      const peso = Math.round(pesoG || 280);
+    const numPanEl = document.getElementById('numPaneteos');
+    const pesoPanEl = document.getElementById('pesoPaneto');
+    if (numPanEl) {
+      const num = Math.max(1, parseDecimal(numPanEl.value) || 0);
+      const peso = Math.round(parseDecimal(pesoPanEl ? pesoPanEl.value : null) || 280);
       const pizzaLabel = I18N ? I18N.t(num === 1 ? 'recipePizzaOne' : 'recipePizzas') : (num === 1 ? 'pizza' : 'pizzas');
       const ofLabel = I18N ? I18N.t('recipeOf') : 'de';
       return `${num} ${pizzaLabel.toLowerCase()} ${ofLabel} ${peso} g`;
@@ -4301,20 +4306,39 @@ window.stepColdTemp = function(dir) {
 
   async function scheduleNotifications() {
     const I18N = window.PizzaI18N;
-    if (typeof Notification === 'undefined') {
+    const inIframe = (function() {
+      try { return window.self !== window.top; } catch(e) { return true; }
+    })();
+
+    if (typeof Notification === 'undefined' && !inIframe) {
       showUnsupportedWarning();
       return;
     }
 
-    let perm = Notification.permission;
-    if (perm !== 'granted') {
-      try {
-        perm = await Notification.requestPermission();
-      } catch(e) {}
+    let perm = 'granted';
+    if (!inIframe && typeof Notification !== 'undefined') {
+      perm = Notification.permission;
+      if (perm !== 'granted') {
+        try {
+          perm = await Notification.requestPermission();
+        } catch(e) {}
+      }
+      if (perm !== 'granted') {
+        if (I18N) window.showToast?.(I18N.t('plannerNotifyPermissionDenied'));
+        return;
+      }
     }
-    if (perm !== 'granted') {
-      if (I18N) window.showToast?.(I18N.t('plannerNotifyPermissionDenied'));
-      return;
+
+    const pDt = document.getElementById('plannerDt');
+    if ((!pDt || !pDt.value || !window.__plannerTimeline || window.__plannerTimeline.length === 0) && typeof window.__renderPlanner === 'function') {
+      if (pDt && !pDt.value) {
+        const n = new Date();
+        n.setMinutes(0, 0, 0);
+        n.setHours(n.getHours() + 1);
+        const o = new Date(n.getTime() - n.getTimezoneOffset() * 6e4);
+        pDt.value = o.toISOString().slice(0, 16);
+      }
+      window.__renderPlanner();
     }
 
     const items = window.__plannerTimeline || [];
@@ -4332,7 +4356,7 @@ window.stepColdTemp = function(dir) {
       if (tag.includes('reposo') || desc.includes('reposo')) {
         title = I18N.t('notifRestTitle');
         body = I18N.t('notifRestBody');
-      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole')) {
+      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole') || desc.includes('bollo') || desc.includes('bola')) {
         title = I18N.t('notifBolearTitle');
         body = I18N.t('notifBolearBody');
       } else if (tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) {
@@ -4341,6 +4365,9 @@ window.stepColdTemp = function(dir) {
       } else if (desc.includes('lista') || desc.includes('ready') || tag.includes('hornear') || tag.includes('bake')) {
         title = I18N.t('notifHornearTitle');
         body = I18N.t('notifHornearBody');
+      } else {
+        title = it.x.replace(/<[^>]*>?/gm, '').replace(/\s*\([^)]*\)/, '').trim();
+        body = it.x.replace(/<[^>]*>?/gm, '').trim();
       }
 
       if (title) {
@@ -4368,12 +4395,16 @@ window.stepColdTemp = function(dir) {
     if (I18N) window.showToast?.(I18N.t('plannerNotifyScheduledToast').replace('{n}', futureMilestones.length));
   }
 
-  btn.addEventListener('click', () => {
-    const current = getSavedReminders().filter(m => m.time > Date.now());
-    if (current.length > 0) {
-      cancelAllNotifications(true);
-    } else {
-      scheduleNotifications();
+  btn.addEventListener('click', async () => {
+    try {
+      const current = getSavedReminders().filter(m => m.time > Date.now());
+      if (current.length > 0) {
+        cancelAllNotifications(true);
+      } else {
+        await scheduleNotifications();
+      }
+    } catch(err) {
+      console.error('Error on btnPlannerNotify click:', err);
     }
   });
 
