@@ -3312,8 +3312,7 @@ window.stepColdTemp = function(dir) {
         try {
           await navigator.share({
             title: shareTitle,
-            text: shareText,
-            url: shareUrl
+            text: shareText
           });
         } catch (e) {
           if (e.name !== 'AbortError') {
