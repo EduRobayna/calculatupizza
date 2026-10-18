@@ -134,7 +134,7 @@ h1 em{ font-style: italic; color: var(--pomodoro); }
 
 /* Layout y Paneles */
 .layout{ display:grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: start; }
-@media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
+@media (max-width: 900px){ .layout{ grid-template-columns: minmax(0, 1fr); } }
 .panel{ background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); overflow: hidden; transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
 .section{ padding: 34px 28px; border-bottom: 1px solid var(--border); }
 .section:last-child{ border-bottom:none; }
@@ -198,7 +198,8 @@ html[data-theme="dark"] .ferm-sum-magic{ color: #8fb37e; }
 .panel.stacked{ background: transparent; border: none; box-shadow: none; overflow: visible; display: flex; flex-direction: column; gap: 14px; }
 .panel.stacked > .section{ background: var(--surface); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: var(--card-shadow-sm); overflow: hidden; scroll-margin-top: 14px; transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
 html[data-theme="dark"] .panel.stacked > .section{ box-shadow: var(--card-shadow-sm); }
-@media (max-width:520px){ .grid-2{ grid-template-columns: 1fr; } }
+@media (max-width:520px){ .grid-2{ grid-template-columns: minmax(0, 1fr); } }
+.grid-2 > *{ min-width: 0; }
 label{ display:block; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--text-soft); margin-bottom: 7px; }
 
 /* Stepper & Inputs */
@@ -211,7 +212,7 @@ label{ display:block; font-size: 13px; font-weight: 600; letter-spacing: 0; colo
    asomaban como un cuadrado dentro del stepper. El oscurecido de fondo ya
    da feedback de pulsación. */
 .stepper-btn:active { background: var(--tint-c); }
-.stepper input { flex: 1; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; font-variant-numeric: tabular-nums; color: var(--text); }
+.stepper input { flex: 1; min-width: 0; border: none; border-radius: 0; text-align: center; padding: 0; height: 44px; background: transparent; font-family: var(--font-mono); font-size: 16px; font-variant-numeric: tabular-nums; color: var(--text); }
 .stepper input:focus { box-shadow: none; outline: none; }
 
 select, input[type="number"].plain-input, input[type="text"].plain-input { width:100%; padding: 11px 13px; border-radius: 10px; border: 1.5px solid var(--control-border); background: var(--surface-2); font-family: var(--font-mono); font-size: 16px; color: var(--text); transition: border-color var(--t-hover) var(--ease-out), box-shadow var(--t-hover) var(--ease-out), background-color 0.25s ease; }
@@ -873,6 +874,8 @@ html[data-theme="dark"] .recipe-status.unsaved{ color:#f0a44e; }
 .icon-btn-square:active:not(:disabled){ transform: scale(0.9); }
 .icon-btn-square:disabled{ opacity: 0.4; cursor: not-allowed; }
 .icon-btn-square.delete:hover:not(:disabled){ color: var(--pomodoro); border-color: var(--pomodoro); background: rgba(193,67,46,0.08); }
+@keyframes saveAttentionPulse{ 0%, 100%{ transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 124, 89, 0.4); } 50%{ transform: scale(1.08); box-shadow: 0 0 0 6px rgba(74, 124, 89, 0); } }
+.icon-btn-square.save-attention{ animation: saveAttentionPulse 1.6s ease-in-out 3; border-color: var(--basilico); color: var(--basilico); }
 
 /* ===== Sistema «Mis recetas» (receta activa + acciones + lista) ===== */
 .active-recipe-line{ display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--text-soft); margin-bottom:12px; min-width:0; }
@@ -1400,9 +1403,9 @@ body::after {
 }
 
 .planner-icon {
-  width: 44px;
-  height: 44px;
-  max-height: 44px;
+  width: auto;
+  height: 32px;
+  max-width: 72px;
   object-fit: contain;
   display: block;
   margin: 0 auto 6px;
@@ -1780,8 +1783,12 @@ body::after {
   margin-bottom: 4px;
 }
 .ios-inline-ico {
-  vertical-align: middle;
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  vertical-align: -3px;
   margin: 0 2px;
+  flex-shrink: 0;
 }
 .btn-install {
   margin-top: 20px;

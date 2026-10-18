@@ -135,9 +135,9 @@
 
     // -- Genéricas de supermercado (para quien no tiene acceso a harinas de molino;
     //    además las referencian recetas antiguas por su id: NO borrar) --
-    { id: 'fuerza-supermercado', brand: 'Supermercado', line: '', type: 'Fuerza', wMin: 280, wMax: 320,
+    { id: 'fuerza-supermercado', brand: 'Supermercado', line: '', type: 'Fuerza', wMin: 280, wMax: 320, approx: true,
       name: { es: 'Harina de Fuerza (Supermercado)', en: 'Bread/Strong Flour (Supermarket)' } },
-    { id: 'comun-supermercado', brand: 'Supermercado', line: '', type: 'Común', wMin: 180, wMax: 220,
+    { id: 'comun-supermercado', brand: 'Supermercado', line: '', type: 'Común', wMin: 180, wMax: 220, approx: true,
       name: { es: 'Harina de Trigo Común (Supermercado)', en: 'All-Purpose Wheat Flour (Supermarket)' } }
   ];
 
@@ -213,6 +213,12 @@
     if (!f || (!f.wMin && !f.wMax)) return '';
     if (f.wMin && f.wMax && f.wMin !== f.wMax) return 'W' + f.wMin + '/' + f.wMax;
     return 'W' + (f.wMax || f.wMin);
+  }
+  // true si la W de esta harina es una estimación genérica (supermercado), no el dato
+  // de una harina concreta. La UI lo rotula como "W aproximado".
+  function isApprox(id) {
+    const f = byId.get(id);
+    return !!(f && f.approx);
   }
 
   // Valor NUMÉRICO de fuerza W para cálculo (no presentación): punto medio del rango
@@ -426,7 +432,7 @@
 
   const api = {
     all: all, get: get, name: name, mainName: mainName, subLabel: subLabel,
-    typeLabel: typeLabel, w: w, wValue: wValue, band: band, bandsOrder: BANDS,
+    typeLabel: typeLabel, w: w, isApprox: isApprox, wValue: wValue, band: band, bandsOrder: BANDS,
     brands: brands, types: types, search: search,
     migrateRef: migrateRef, firstUnused: firstUnused,
     isUserFlour: isUserFlour, addUserFlour: addUserFlour,

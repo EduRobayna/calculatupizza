@@ -116,9 +116,11 @@ window.stepColdTemp = function(dir) {
   function flourTagsHtml(id){
     const sub = F.subLabel(id, I18N.getLang()); // "Tipo 00" / "Integrale" / "Supermercado"
     const wv = F.w(id);
+    // Harinas genéricas (supermercado): la W es una estimación, no el dato de una marca.
+    const wTxt = (wv && F.isApprox(id)) ? (I18N.t('flourWApprox') + ' ' + wv.slice(1)) : wv;
     let h = '';
     if (sub) h += `<span class="flour-tag flour-tag-type">${sub}</span>`;
-    if (wv) h += `<span class="flour-tag flour-tag-w fp-band--${F.band(id)}">${wv}</span>`;
+    if (wv) h += `<span class="flour-tag flour-tag-w fp-band--${F.band(id)}">${wTxt}</span>`;
     return h;
   }
 
@@ -2029,8 +2031,10 @@ window.stepColdTemp = function(dir) {
     document.body.appendChild(toast);
     const t1 = setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(10px)';
-      const t2 = setTimeout(() => toast.remove(), 300);
+      const t2 = setTimeout(() => {
+        if (typeof toast.remove === 'function') toast.remove();
+        else if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 300);
       if (t2 && typeof t2.unref === 'function') t2.unref();
     }, 1800);
     if (t1 && typeof t1.unref === 'function') t1.unref();
@@ -2510,8 +2514,8 @@ window.stepColdTemp = function(dir) {
         saveRecipeConfirmBtn.textContent = I18N.t('modalUpdate');
         saveRecipeNewBtn.style.display = '';
       } else {
-        saveRecipeNameInput.value = '';
-        saveRecipeNotesInput.value = '';
+        saveRecipeNameInput.value = window.__sharedRecipeName || '';
+        saveRecipeNotesInput.value = window.__sharedRecipeNotes || '';
         saveModalSub.textContent = I18N.t('saveModalSub');
         saveRecipeConfirmBtn.textContent = I18N.t('modalSave');
         saveRecipeNewBtn.style.display = 'none';
@@ -2695,6 +2699,8 @@ window.stepColdTemp = function(dir) {
     // La receta guardada pasa a ser la activa. Cerramos el modal antes de repintar
     // para que el cierre nunca dependa de pasos de UI posteriores.
     activeRecipeId = targetRecipe.id;
+    window.__sharedRecipeName = null;
+    window.__sharedRecipeNotes = null;
     closeSaveModal();
     refreshRecipesUI();
     if (quotaFallback) {
@@ -2964,6 +2970,14 @@ window.stepColdTemp = function(dir) {
     const params = new URLParams(window.location.search);
     if (!params.has('pizzas') && !params.has('hid') && !params.has('horas') && !params.has('harinas') && !params.has('fridge') && !params.has('peso')) return false;
     try {
+      if (params.has('nombre') || params.has('name')) {
+        const n = (params.get('nombre') || params.get('name')).trim();
+        if (n) window.__sharedRecipeName = n;
+      }
+      if (params.has('notas') || params.has('notes')) {
+        const nt = (params.get('notas') || params.get('notes')).trim();
+        if (nt) window.__sharedRecipeNotes = nt;
+      }
       if (params.has('pizzas')) {
         const v = parseInt(params.get('pizzas'), 10);
         if (!isNaN(v) && v >= 1 && v <= 100) el.numPaneteos.value = v;
@@ -3107,6 +3121,19 @@ window.stepColdTemp = function(dir) {
   refreshRecipesUI();
   onConfigChange = updateRecipeStatus; // a partir de aquí, cada recálculo refresca el estado
   updateRecipeStatus();
+  if (loadedFromUrl) {
+    if (typeof showToast === 'function') {
+      showToast(I18N.t('recipeLoadedFromUrl'));
+    }
+    const saveBtn = document.getElementById('saveRecipeBtn');
+    if (saveBtn && !activeRecipeId) {
+      saveBtn.classList.add('save-attention');
+      saveBtn.addEventListener('click', function onSaveClick() {
+        saveBtn.classList.remove('save-attention');
+        saveBtn.removeEventListener('click', onSaveClick);
+      }, { once: true });
+    }
+  }
 
   // Genera el texto de la receta (compartido por Copiar y Compartir).
   function buildRecipeText() {
@@ -3257,29 +3284,44 @@ window.stepColdTemp = function(dir) {
     if (flours && flours.length > 0) {
       p.set('harinas', flours.map(f => `${f.flourId}:${f.pct}`).join(','));
     }
-    return window.location.origin + window.location.pathname + '?' + p.toString();
+    const active = getActiveRecipe();
+    if (active && active.name) {
+      p.set('nombre', active.name);
+    }
+    if (active && active.notes) {
+      p.set('notas', String(active.notes).slice(0, 300));
+    }
+    const base = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null')
+      ? (window.location.origin + window.location.pathname)
+      : ((typeof window !== 'undefined' && window.location && window.location.href) ? window.location.href.split('?')[0] : 'https://calculatupizza.com/');
+    return base + '?' + p.toString();
   }
   window.generateRecipeShareUrl = generateRecipeShareUrl;
 
   // Compartir receta (Web Share API con fallback a copiar)
-  // Utiliza exactamente el mismo string unificado con \n que el botón de copiar receta
+  // Genera un enlace que, al abrirlo, carga la receta en la calculadora con opción de guardarla
   const btnCompartir = document.getElementById('btnCompartir');
   if (btnCompartir) {
     btnCompartir.addEventListener('click', async () => {
+      const shareUrl = generateRecipeShareUrl();
       const recipeText = buildRecipeText();
+      const shareTitle = I18N.t('recipeHeader');
+      const shareText = `${recipeText}\n\n🔗 ${I18N.t('shareRecipeUrlText')}\n${shareUrl}`;
+
       if (navigator.share) {
         try {
           await navigator.share({
-            title: I18N.t('recipeHeader'),
-            text: recipeText
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl
           });
         } catch (e) {
           if (e.name !== 'AbortError') {
-            copyText(recipeText, () => flashButtonCopied(btnCompartir));
+            copyText(shareText, () => flashButtonCopied(btnCompartir));
           }
         }
       } else {
-        copyText(recipeText, () => flashButtonCopied(btnCompartir));
+        copyText(shareText, () => flashButtonCopied(btnCompartir));
       }
     });
   }
