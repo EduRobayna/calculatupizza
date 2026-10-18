@@ -1750,6 +1750,128 @@ body::after {
   text-wrap: pretty;
 }
 
+/* Lista de avisos activos en el planificador */
+.planner-active-notifs {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.planner-active-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.planner-active-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--farina);
+}
+.btn-planner-cancel-all {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fca597;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color var(--t-hover) var(--ease-out);
+}
+.btn-planner-cancel-all:hover {
+  color: #fff;
+}
+.planner-active-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.planner-active-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  min-width: 0;
+}
+.pan-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
+}
+.pan-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(74, 124, 89, 0.25);
+  border: 1px solid rgba(74, 124, 89, 0.5);
+  color: #a9cfa0;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.pan-step {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--farina);
+  white-space: nowrap;
+}
+.pan-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(243, 234, 217, 0.7);
+  white-space: nowrap;
+}
+.pan-del-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(243, 234, 217, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--t-hover) var(--ease-out);
+}
+.pan-del-btn:hover {
+  border-color: var(--pomodoro);
+  color: #fff;
+  background: rgba(193, 67, 46, 0.3);
+}
+.pan-del-btn:active {
+  transform: scale(0.9);
+}
+.planner-active-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(243, 234, 217, 0.65);
+  margin: 2px 0 0;
+  text-wrap: pretty;
+}
+
 /* ===== Clases extraídas de estilos en línea (index.html) ===== */
 .tips-list {
   padding-left: 20px;
