@@ -32,6 +32,8 @@ const ASSETS_TO_CACHE = [
   './manifest.webmanifest',
   './favicon.png',
   './logo-hero.png',
+  './apple-touch-icon.png',
+  './apple-touch-icon-180.png',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png',
