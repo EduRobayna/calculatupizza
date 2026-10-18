@@ -2127,6 +2127,9 @@ window.stepColdTemp = function(dir) {
 
     updateNotesDisplay();
     updateRecipeStatus();
+    if (typeof window.__updatePlannerNotifications === 'function') {
+      window.__updatePlannerNotifications();
+    }
   }
 
   // Muestra las notas y/o la foto de la receta activa bajo la fila de acciones.
@@ -4053,10 +4056,32 @@ window.stepColdTemp = function(dir) {
   const activeContainer = document.getElementById('plannerActiveNotifs');
   const activeTitle = document.getElementById('plannerActiveTitle');
   const activeList = document.getElementById('plannerActiveList');
-  const btnCancelAll = document.getElementById('btnPlannerCancelAll');
+  const diffNotice = document.getElementById('plannerDiffRecipeNotice');
+  const btnCancelDiff = document.getElementById('btnPlannerCancelDiffRecipe');
   if (!btn || !txt) return;
 
   let activeTimersMap = {};
+
+  if (btnCancelDiff) {
+    btnCancelDiff.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelAllNotifications(true);
+    });
+  }
+
+  function getSavedRemindersMeta() {
+    try {
+      const raw = localStorage.getItem('pizza_scheduled_notifs');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+      return null;
+    } catch(e) {
+      return null;
+    }
+  }
 
   function getSavedReminders() {
     try {
@@ -4071,14 +4096,20 @@ window.stepColdTemp = function(dir) {
     }
   }
 
-  function saveReminders(list) {
+  function saveReminders(list, extraMeta) {
     try {
       if (!list || list.length === 0) {
         localStorage.removeItem('pizza_scheduled_notifs');
       } else {
+        const curActive = (typeof window.getActiveRecipe === 'function') ? window.getActiveRecipe() : null;
+        const curRecipeId = curActive ? String(curActive.id) : null;
+        const curRecipeName = getActiveRecipeName();
+        const meta = extraMeta || {};
         localStorage.setItem('pizza_scheduled_notifs', JSON.stringify({
           count: list.length,
-          createdAt: Date.now(),
+          createdAt: meta.createdAt || Date.now(),
+          recipeName: meta.recipeName || (list[0] && list[0].recipeName) || curRecipeName,
+          recipeId: meta.recipeId !== undefined ? meta.recipeId : (list[0] && list[0].recipeId !== undefined ? list[0].recipeId : curRecipeId),
           list: list
         }));
       }
@@ -4159,8 +4190,9 @@ window.stepColdTemp = function(dir) {
       delete activeTimersMap[id];
     }
     const current = getSavedReminders();
+    const meta = getSavedRemindersMeta();
     const filtered = current.filter(m => String(m.id) !== String(id) && m.time > Date.now());
-    saveReminders(filtered);
+    saveReminders(filtered, meta);
     updateUI();
     if (showToastMsg) {
       const I18N = window.PizzaI18N;
@@ -4177,6 +4209,34 @@ window.stepColdTemp = function(dir) {
     saveReminders([]);
     updateUI();
     if (showToastMsg && I18N) window.showToast?.(I18N.t('plannerNotifyCancelledToast'));
+  }
+
+  function isDifferentRecipe(validSaved) {
+    if (!validSaved || validSaved.length === 0) return false;
+    const meta = getSavedRemindersMeta();
+    const savedRecipeId = (meta && meta.recipeId != null) ? String(meta.recipeId) : (validSaved[0] && validSaved[0].recipeId != null ? String(validSaved[0].recipeId) : null);
+    const savedRecipeName = (meta && meta.recipeName) || (validSaved[0] && validSaved[0].recipeName) || '';
+
+    const curActive = (typeof window.getActiveRecipe === 'function') ? window.getActiveRecipe() : null;
+    const curRecipeId = curActive ? String(curActive.id) : null;
+    const curRecipeName = getActiveRecipeName();
+
+    if (savedRecipeId) {
+      if (curRecipeId) {
+        return curRecipeId !== savedRecipeId;
+      }
+      return true;
+    }
+
+    if (curRecipeId) {
+      return true;
+    }
+
+    if (savedRecipeName && curRecipeName) {
+      return savedRecipeName.trim().toLowerCase() !== curRecipeName.trim().toLowerCase();
+    }
+
+    return false;
   }
 
   function updateUI() {
@@ -4202,6 +4262,10 @@ window.stepColdTemp = function(dir) {
         activeContainer.style.display = 'flex';
         if (activeTitle) {
           activeTitle.textContent = `${I18N.t('plannerActiveTitle')} (${validSaved.length})`;
+        }
+        if (diffNotice) {
+          const isDiff = isDifferentRecipe(validSaved);
+          diffNotice.style.display = isDiff ? 'flex' : 'none';
         }
         activeList.innerHTML = '';
         validSaved.forEach(m => {
@@ -4248,7 +4312,9 @@ window.stepColdTemp = function(dir) {
       btn.classList.remove('is-active');
       txt.textContent = I18N.t('plannerNotifyBtn');
       if (status) status.style.display = 'none';
+      if (diffNotice) diffNotice.style.display = 'none';
       if (activeContainer) activeContainer.style.display = 'none';
+      if (activeList) activeList.innerHTML = '';
     }
   }
 
@@ -4345,9 +4411,16 @@ window.stepColdTemp = function(dir) {
     const now = Date.now();
     const futureMilestones = [];
     const recipeName = getActiveRecipeName();
+    const curActive = (typeof window.getActiveRecipe === 'function') ? window.getActiveRecipe() : null;
+    const recipeId = curActive ? String(curActive.id) : null;
+    const seenTimes = new Set();
 
     items.forEach((it, idx) => {
       if (!it.t || it.t.getTime() <= now) return;
+      // Si dos pasos coinciden en hora, que se cree un solo aviso
+      const minuteKey = Math.floor(it.t.getTime() / 60000);
+      if (seenTimes.has(minuteKey)) return;
+
       const desc = (it.x || '').toLowerCase();
       const tag = (it.g || '').toLowerCase();
       let title = '';
@@ -4356,7 +4429,7 @@ window.stepColdTemp = function(dir) {
       if (tag.includes('reposo') || desc.includes('reposo')) {
         title = I18N.t('notifRestTitle');
         body = I18N.t('notifRestBody');
-      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole') || desc.includes('bollo') || desc.includes('bola')) {
+      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole') || desc.includes('bollo')) {
         title = I18N.t('notifBolearTitle');
         body = I18N.t('notifBolearBody');
       } else if (tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) {
@@ -4371,9 +4444,11 @@ window.stepColdTemp = function(dir) {
       }
 
       if (title) {
+        seenTimes.add(minuteKey);
         futureMilestones.push({
           id: 'notif-' + it.t.getTime() + '-' + idx,
           recipeName: recipeName,
+          recipeId: recipeId,
           title: title,
           body: body,
           time: it.t.getTime()
@@ -4388,7 +4463,7 @@ window.stepColdTemp = function(dir) {
 
     cancelAllNotifications(false);
 
-    saveReminders(futureMilestones);
+    saveReminders(futureMilestones, { recipeName: recipeName, recipeId: recipeId });
     armTimers(futureMilestones);
 
     updateUI();
@@ -4408,13 +4483,6 @@ window.stepColdTemp = function(dir) {
     }
   });
 
-  if (btnCancelAll) {
-    btnCancelAll.addEventListener('click', (e) => {
-      e.stopPropagation();
-      cancelAllNotifications(true);
-    });
-  }
-
   // Re-armar avisos futuros pendientes de localStorage al arrancar
   const initial = getSavedReminders().filter(m => m.time > Date.now());
   saveReminders(initial);
@@ -4425,4 +4493,13 @@ window.stepColdTemp = function(dir) {
   window.__updatePlannerNotifications = updateUI;
   window.addEventListener('pizzaLangChange', updateUI);
   updateUI();
+
+  // Asegurar que tras la carga completa del DOM y ejecución de app.js (applyStaticDom)
+  // el botón refleje el estado real de los avisos guardados.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateUI);
+  } else {
+    setTimeout(updateUI, 0);
+  }
+  setTimeout(updateUI, 100);
 })();

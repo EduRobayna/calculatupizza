@@ -576,14 +576,20 @@
           <div class="planner-notify-wrap" id="plannerNotifyWrap">
             <button type="button" id="btnPlannerNotify" class="btn-planner-notify">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              <span id="btnPlannerNotifyText" data-i18n="plannerNotifyBtn">Avisarme de cada paso</span>
+              <span id="btnPlannerNotifyText">Avisarme de cada paso</span>
             </button>
             <div class="planner-notify-status" id="plannerNotifyStatus" style="display:none;"></div>
             <div class="planner-notify-warn" id="plannerNotifyWarn" role="alert" style="display:none;"></div>
             <div class="planner-active-notifs" id="plannerActiveNotifs" style="display:none;">
               <div class="planner-active-head">
                 <span class="planner-active-title" id="plannerActiveTitle" data-i18n="plannerActiveTitle">Avisos activos</span>
-                <button type="button" id="btnPlannerCancelAll" class="btn-planner-cancel-all" data-i18n="plannerCancelAllBtn">Cancelar todos</button>
+              </div>
+              <div class="planner-diff-recipe-banner" id="plannerDiffRecipeNotice" style="display:none;">
+                <span class="pdr-text">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <span id="plannerDiffRecipeText" data-i18n="plannerDiffRecipeNotice">Tienes avisos de otra receta</span>
+                </span>
+                <button type="button" class="btn-planner-cancel-diff" id="btnPlannerCancelDiffRecipe" data-i18n="plannerDiffRecipeCancel">Cancelar</button>
               </div>
               <ul class="planner-active-list" id="plannerActiveList"></ul>
               <p class="planner-active-note" data-i18n="plannerActiveNote">Los avisos solo suenan si la app está abierta o en segundo plano.</p>

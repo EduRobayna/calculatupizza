@@ -1788,6 +1788,48 @@ body::after {
 .btn-planner-cancel-all:hover {
   color: #fff;
 }
+.planner-diff-recipe-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(224, 158, 74, 0.12);
+  border: 1px solid rgba(224, 158, 74, 0.35);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  color: #f2c27f;
+  line-height: 1.35;
+}
+.planner-diff-recipe-banner .pdr-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  min-width: 0;
+}
+.btn-planner-cancel-diff {
+  background: transparent;
+  border: 1px solid rgba(252, 165, 151, 0.35);
+  padding: 2px 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  color: #fca597;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--t-hover) var(--ease-out);
+}
+.btn-planner-cancel-diff:hover {
+  color: #fff;
+  border-color: #fca597;
+  background: rgba(193, 67, 46, 0.3);
+}
+.btn-planner-cancel-diff:active {
+  transform: scale(0.96);
+}
 .planner-active-list {
   list-style: none;
   margin: 0;
