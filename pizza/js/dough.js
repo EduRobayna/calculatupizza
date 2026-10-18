@@ -232,52 +232,73 @@
     return pctSum > 0 ? Math.round(wSum / pctSum) : null;
   }
 
-  // Bandas de compatibilidad fuerza (W) ↔ horas de fermentación de RELOJ (RN-02).
-  const W_BANDS = [
-    { max: 219, minH: 4, maxH: 8 },
-    { max: 259, minH: 8, maxH: 16 },
-    { max: 309, minH: 16, maxH: 30 },
-    { max: 350, minH: 24, maxH: 48 },
-    { max: Infinity, minH: 36, maxH: 72 }
+  // Curva continua de compatibilidad fuerza (W) ↔ horas estructurales.
+  // Modelado según bibliografía estándar de panadería y pizzería artesanal.
+  const W_CURVE = [
+    { w: 150, minH: 2, maxH: 4 },
+    { w: 200, minH: 4, maxH: 10 },
+    { w: 250, minH: 8, maxH: 24 },
+    { w: 300, minH: 14, maxH: 40 },
+    { w: 350, minH: 24, maxH: 72 },
+    { w: 400, minH: 36, maxH: 120 }
   ];
-  // Veredicto: 'weak' (harina floja para tanto tiempo · H>maxH), 'strong' (harina
-  // fuerte para tan poco tiempo · H<minH) o null (dentro de banda → sin aviso).
+
+  function getWLimits(W) {
+    const pts = W_CURVE;
+    if (W <= pts[0].w) return { minH: pts[0].minH, maxH: pts[0].maxH };
+    if (W >= pts[pts.length - 1].w) return { minH: pts[pts.length - 1].minH, maxH: pts[pts.length - 1].maxH };
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (W >= pts[i].w && W <= pts[i + 1].w) {
+        const t = (W - pts[i].w) / (pts[i + 1].w - pts[i].w);
+        const minH = pts[i].minH + t * (pts[i + 1].minH - pts[i].minH);
+        const maxH = pts[i].maxH + t * (pts[i + 1].maxH - pts[i].maxH); // wait, typo: points -> pts
+        return { minH, maxH };
+      }
+    }
+    return { minH: 0, maxH: 999 };
+  }
+  
+  // Veredicto: 'weak' (harina floja para tanto tiempo), 'strong' (harina fuerte para tan poco), o null.
   function flourTimeWarning(W, H) {
     const w = toNum(W), h = toNum(H);
-    const band = W_BANDS.find(function (b) { return w <= b.max; });
-    if (!band) return null;
-    if (h > band.maxH) return 'weak';
-    if (h < band.minH) return 'strong';
+    const lim = getWLimits(w);
+    if (h > lim.maxH) return 'weak';
+    if (h < lim.minH) return 'strong';
+    return null;
+  }
+
+  // Inversas para recomendaciones
+  function minWForHours(H) {
+    const h = toNum(H), pts = W_CURVE;
+    if (h <= pts[0].maxH) return null; 
+    if (h >= pts[pts.length - 1].maxH) return pts[pts.length - 1].w; 
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (h >= pts[i].maxH && h <= pts[i + 1].maxH) {
+        const t = (h - pts[i].maxH) / (pts[i + 1].maxH - pts[i].maxH);
+        return Math.round(pts[i].w + t * (pts[i + 1].w - pts[i].w));
+      }
+    }
+    return null;
+  }
+
+  function maxWForHours(H) {
+    const h = toNum(H), pts = W_CURVE;
+    if (h <= pts[0].minH) return pts[0].w; 
+    if (h >= pts[pts.length - 1].minH) return null; 
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (h >= pts[i].minH && h <= pts[i + 1].minH) {
+        const t = (h - pts[i].minH) / (pts[i + 1].minH - pts[i].minH);
+        return Math.round(pts[i].w + t * (pts[i + 1].w - pts[i].w));
+      }
+    }
     return null;
   }
 
   // ---- Recomendaciones concretas para los avisos de compatibilidad W↔tiempo ----
   // Banda de fuerza para un W (la primera cuyo tope no se supera; nunca null: la última
   // tiene tope Infinity). Expone { max, minH, maxH }.
-  function flourBand(W) {
-    const w = toNum(W);
-    return W_BANDS.find(function (b) { return w <= b.max; }) || W_BANDS[W_BANDS.length - 1];
-  }
-  // Cota INFERIOR de W de la banda i (= tope de la anterior + 1; 0 para la primera).
-  function bandMinW(i) { return i <= 0 ? 0 : W_BANDS[i - 1].max + 1; }
-  // 'weak' (harina demasiado floja): W MÍNIMO de una harina cuya banda aguanta H horas
-  // estructurales (maxH >= H). null si ni la más fuerte lo aguanta (solo cabe bajar el tiempo).
-  function minWForHours(H) {
-    const h = toNum(H);
-    for (var i = 0; i < W_BANDS.length; i++) {
-      if (W_BANDS[i].maxH >= h) return bandMinW(i);
-    }
-    return null;
-  }
-  // 'strong' (harina demasiado fuerte): W MÁXIMO de una harina cuya banda necesita como
-  // mucho H horas estructurales (minH <= H). null si ni la más floja necesita tan poco.
-  function maxWForHours(H) {
-    const h = toNum(H);
-    for (var i = W_BANDS.length - 1; i >= 0; i--) {
-      if (W_BANDS[i].minH <= h) return (W_BANDS[i].max === Infinity) ? null : W_BANDS[i].max;
-    }
-    return null;
-  }
+  function flourBand(W) { return getWLimits(W); }
+  
 
   // Horas ESTRUCTURALES de desgaste del gluten mediante el coeficiente Q10 (Arrhenius):
   // la velocidad de las proteasas se reduce a la mitad por cada 10 °C de caída (y se duplica
@@ -315,6 +336,6 @@
     maxWForHours: maxWForHours,
     structuralHours: structuralHours,
     isHighYeast: isHighYeast,
-    W_BANDS: W_BANDS
+    W_CURVE: W_CURVE
   };
 });

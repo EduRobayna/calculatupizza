@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Masa de Pizza Napolitana · Edu Robayna</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&display=swap" rel="stylesheet">
 
 <!-- theme-color por tema; el script de abajo fija el color exacto antes de pintar -->
 <meta name="theme-color" id="themeColorMeta" content="#f3ead9">
@@ -44,12 +45,12 @@
 </script>
 
 <!-- Meta Etiquetas SEO y Open Graph -->
-<meta name="description" content="Calculadora exacta para masa de pizza napolitana (24h). Ajusta hidratación, sal y tu propia mezcla de harinas.">
+<meta name="description" content="Calculadora de masa de pizza napolitana. Gratis, sin registro y sin anuncios.">
 <link rel="canonical" href="https://calculatupizza.com/">
 <meta property="og:site_name" content="CalculaTuPizza">
-<meta property="og:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta property="og:description" content="Calcula levadura, hidratación y harinas al instante para hacer la auténtica masa de pizza napolitana en casa.">
-<meta property="og:image" content="https://calculatupizza.com/og-image.png">
+<meta property="og:title" content="Calculadora de masa de pizza napolitana">
+<meta property="og:description" content="Planifica paso a paso. Gratis. Sin registro y sin anuncios.">
+<meta property="og:image" content="https://calculatupizza.com/og-image.png?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Calculadora de masa de pizza napolitana de Edu Robayna">
@@ -58,9 +59,9 @@
 <meta property="og:locale" content="es_ES">
 <meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Calculadora de Masa de Pizza Napolitana · Edu Robayna">
-<meta name="twitter:description" content="Calcula levadura, hidratación y harinas al instante para la auténtica masa napolitana.">
-<meta name="twitter:image" content="https://calculatupizza.com/og-image.png">
+<meta name="twitter:title" content="Calculadora de masa de pizza napolitana">
+<meta name="twitter:description" content="Planifica paso a paso. Gratis. Sin registro y sin anuncios.">
+<meta name="twitter:image" content="https://calculatupizza.com/og-image.png?v=4">
 <link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
 
 <!-- Datos estructurados (JSON-LD) para enriquecer el resultado en buscadores -->
@@ -74,7 +75,7 @@
   "applicationCategory": "LifestyleApplication",
   "operatingSystem": "Any",
   "inLanguage": ["es", "en"],
-  "image": "https://calculatupizza.com/og-image.png",
+  "image": "https://calculatupizza.com/og-image.png?v=4",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
   "author": { "@type": "Person", "name": "Edu Robayna" }
 }
@@ -84,12 +85,12 @@
      ignoran http-equiv="Cache-Control" para el propio documento, así que no se ponen aquí. -->
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=51">
 </head>
 <body>
 <div class="wrap">
@@ -101,17 +102,18 @@
     <div class="beta-badge" title="Versión de pruebas — no es la versión estable (calculatupizza.com)">
       <span class="beta-badge__dot" aria-hidden="true"></span>
       <span class="beta-badge__label">BETA</span>
-      <span class="beta-badge__ver">v62</span>
+      <span class="beta-badge__ver">v51</span>
     </div>
     <div class="hero-controls">
     <button type="button" id="settingsToggle" class="settings-toggle" aria-label="Abrir configuración" data-i18n-aria="settingsToggleAria" title="Configuración" data-i18n-title="settingsTitle" aria-haspopup="dialog">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </button>
     </div>
-    <img src="logo-hero.png" alt="Logo de Edu Robayna" class="hero-logo" width="85" height="85" data-i18n-alt="heroLogoAlt">
-    <h1 data-i18n-html="h1">Calculadora de <em>masa</em> de pizza napolitana</h1>
-    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite y sin prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">La calculadora está programada para ofrecer las cantidades exactas en cuatro pasos. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
-    <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false">Leer más</button>
+    <img src="pizza-slice.png" alt="Logo de Edu Robayna" class="hero-logo" width="128" height="128" data-i18n-alt="heroLogoAlt">
+    <h1 data-i18n-html="h1">Calculadora de masa de pizza napolitana</h1>
+    <p class="hero-slogan" data-i18n="heroSlogan">Gratis. Sin registro y sin anuncios.</p>
+    <p id="heroSub" class="sub clamped"><span data-i18n="subShort">Pensada para principiantes y profesionales. Amasado directo, sin aceite ni prefermentos. Solo harina, agua, sal y levadura.</span> <span class="sub-more" data-i18n="subMore">Consigue tu masa perfecta en cuatro pasos. Ajusta tus ingredientes y la calculadora hará el resto por ti. Si lo prefieres, puedes introducir tus propios parámetros. Elige entre fermentación a temperatura ambiente (TA) o mixta (TA + nevera, vinoteca o fermentadora).</span></p>
+    <button type="button" id="subToggle" class="sub-toggle" aria-controls="heroSub" aria-expanded="false" data-i18n="readMore">Leer más</button>
   </header>
 
   <div class="layout">
@@ -163,7 +165,7 @@
         <summary class="card-head">
           <span class="card-head-top">
             <span class="section-num">01</span>
-            <h2 class="section-title" data-i18n="section1Title">Tamaño de la tanda</h2>
+            <h2 class="section-title" data-i18n="section1Title">Elige el tamaño y la cantidad</h2>
             <span class="card-warn-dot" hidden aria-hidden="true"></span>
             <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </span>
@@ -206,46 +208,14 @@
         <summary class="card-head">
           <span class="card-head-top">
             <span class="section-num">02</span>
-            <h2 class="section-title" data-i18n="section2Title">Fermentación</h2>
+            <h2 class="section-title" data-i18n="section2Title">Tiempo y temperatura</h2>
             <span class="card-warn-dot" hidden aria-hidden="true"></span>
             <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </span>
           <span class="card-summary" id="summaryFerm"></span>
         </summary>
         <div class="card-body">
-        <p class="section-sub" data-i18n="section2Sub">La levadura se ajusta según el tiempo y la temperatura.</p>
-        <div class="param-head">
-          <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
-          <div class="temp-readout"><input type="text" id="tempValue" class="temp-input" value="23" maxlength="3" inputmode="numeric" autocomplete="off" aria-label="Escribe la temperatura ambiente" data-i18n-aria="tempInputAria"><span id="tempUnit">°C</span></div>
-        </div>
-        <div class="temp-slider-wrap">
-          <input type="range" id="temperatura" min="15" max="35" step="1" value="23" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
-        </div>
-        <p class="ctx-warn" id="tempNote" role="status" hidden>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span id="tempNoteText"></span>
-        </p>
-        <div class="param param-hours">
-          <div class="param-head">
-            <label for="horas" data-i18n="horasLabel">Tiempo a temperatura ambiente</label>
-          </div>
-          <div class="hours-row">
-            <div class="stepper">
-              <button type="button" class="stepper-btn" onclick="stepValue('horas', -1, ambHorasMin(), 96)" aria-label="Restar 1 hora" data-i18n-aria="restarHoras">−</button>
-              <div class="stepper-unit-wrap">
-                <input type="text" id="horas" value="24" min="0" max="96" step="1" inputmode="numeric" aria-label="Horas de fermentación" data-i18n-aria="horasAria">
-                <span class="unit-tag" data-i18n="horasUnit">h</span>
-              </div>
-              <button type="button" class="stepper-btn" onclick="stepValue('horas', 1, ambHorasMin(), 96)" aria-label="Añadir 1 hora" data-i18n-aria="sumarHoras">+</button>
-            </div>
-            <p class="ambient-rest-tip" id="ambientRestTip" data-i18n="fridgePhaseTip" hidden>Es muy recomendable dejar la masa reposar 1 o 2 horas a temperatura ambiente antes de meterla en la nevera, para que la levadura se active.</p>
-          </div>
-          <p class="ctx-warn" id="ambientLongNote" role="status" hidden>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <span data-i18n="ambientLongNote">Para fermentaciones de más de 24 horas, debes usar el método en frío.</span>
-          </p>
-        </div>
-
+        <p class="section-sub" data-i18n="section2Sub">Introduce el tiempo y la temperatura ambiente. Si usas nevera, activa la fase controlada. Recuerda: la masa irá primero al frío y luego atemperará fuera. La levadura se ajusta automáticamente.</p>
         <div class="controlled-phase">
           <label class="switch controlled-phase-toggle">
             <input type="checkbox" id="fridgeToggle">
@@ -286,11 +256,44 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <span id="coldNoteText"></span>
             </p>
-            <div class="ferm-total" id="fermTotal" hidden>
-              <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
-              <span class="ferm-total-value" id="fermTotalValue">—</span>
-            </div>
           </div>
+        </div>
+
+        <div class="param-head">
+          <label for="temperatura" data-i18n="temperaturaLabel">Temperatura ambiente</label>
+          <div class="temp-readout"><input type="text" id="tempValue" class="temp-input" value="23" maxlength="3" inputmode="numeric" autocomplete="off" aria-label="Escribe la temperatura ambiente" data-i18n-aria="tempInputAria"><span id="tempUnit">°C</span></div>
+        </div>
+        <div class="temp-slider-wrap">
+          <input type="range" id="temperatura" min="15" max="35" step="1" value="23" inputmode="none" aria-label="Temperatura ambiente en grados centígrados" data-i18n-aria="temperaturaAria">
+        </div>
+        <p class="ctx-warn" id="tempNote" role="status" hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="tempNoteText"></span>
+        </p>
+        <div class="param param-hours">
+          <div class="param-head">
+            <label for="horas" data-i18n="horasLabel">Tiempo a temperatura ambiente</label>
+          </div>
+          <div class="hours-row">
+            <div class="stepper">
+              <button type="button" class="stepper-btn" onclick="stepValue('horas', -1, ambHorasMin(), 96)" aria-label="Restar 1 hora" data-i18n-aria="restarHoras">−</button>
+              <div class="stepper-unit-wrap">
+                <input type="text" id="horas" value="24" min="0" max="96" step="1" inputmode="numeric" aria-label="Horas de fermentación" data-i18n-aria="horasAria">
+                <span class="unit-tag" data-i18n="horasUnit">h</span>
+              </div>
+              <button type="button" class="stepper-btn" onclick="stepValue('horas', 1, ambHorasMin(), 96)" aria-label="Añadir 1 hora" data-i18n-aria="sumarHoras">+</button>
+            </div>
+            <p class="ambient-rest-tip" id="ambientRestTip" data-i18n="fridgePhaseTip" hidden>Es muy recomendable dejar la masa reposar 1 o 2 horas a temperatura ambiente antes de meterla en la nevera, para que la levadura se active.</p>
+          </div>
+          <p class="ctx-warn" id="ambientLongNote" role="status" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span data-i18n="ambientLongNote">Para fermentaciones de más de 24 horas, debes usar el método en frío.</span>
+          </p>
+        </div>
+
+        <div class="ferm-total" id="fermTotal">
+          <span class="ferm-total-label" data-i18n="fermTotalLabel">Fermentación total</span>
+          <span class="ferm-total-value" id="fermTotalValue">—</span>
         </div>
 
         <div class="param param-yeast">
@@ -327,7 +330,7 @@
         <summary class="card-head">
           <span class="card-head-top">
             <span class="section-num">03</span>
-            <h2 class="section-title" data-i18n="section3Title">Parámetros de la masa</h2>
+            <h2 class="section-title" data-i18n="section3Title">Agua y sal</h2>
             <span class="card-warn-dot" hidden aria-hidden="true"></span>
             <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </span>
@@ -372,7 +375,7 @@
           </div>
           <!-- La pista la gestiona renderParamModes() según base (g/L o % harina) y
                modo (Auto/Manual); sin data-i18n para que applyStaticDom no la pise. -->
-          <p class="param-hint" id="salHint">4 % del peso del agua (cantidad recomendada).</p>
+          <p class="param-hint" id="salHint" data-i18n="salAutoHintFlour">2,5 % de la harina (cantidad recomendada).</p>
         </div>
         </div>
       </details>
@@ -381,7 +384,7 @@
         <summary class="card-head">
           <span class="card-head-top">
             <span class="section-num">04</span>
-            <h2 class="section-title" data-i18n="section4Title">Mezcla de harinas</h2>
+            <h2 class="section-title" data-i18n="section4Title">Harinas</h2>
             <span class="card-warn-dot" hidden aria-hidden="true"></span>
             <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </span>
@@ -398,12 +401,12 @@
           <p id="progressStatus" class="progress-status" role="status"></p>
         </div>
 
+        <div id="flourRowsContainer"></div>
+
         <p class="ctx-warn" id="flourWarn" role="status" hidden>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span id="flourWarnText"></span>
         </p>
-
-        <div id="flourRowsContainer"></div>
 
         <p class="flour-hint">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -424,6 +427,50 @@
         </div>
       </details>
 
+  <div class="panel">
+    <details class="accordion">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+        </span>
+        <h2 class="section-title" data-i18n="kneadTitle">Consejos sobre el amasado</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul class="tips-list">
+        <li data-i18n-html="kneadLi1">Empieza siempre por el agua, y utilízala lo más fría posible. Si es verano o vas a hacer mucha cantidad de masa, un buen truco es sustituir parte del agua por hielo. Así evitarás que la fricción de la amasadora sobrecaliente la masa.</li>
+        <li data-i18n-html="kneadLi2">Si usas levadura fresca, puedes deshacerla directamente en el agua con los dedos. Si es seca, dale un par de minutos en un vasito con un chorro de agua para que se active bien.</li>
+        <li data-i18n-html="kneadLi3">Añade un par de gramos de harina extra de regalo. Durante el amasado y los reposos siempre se pierde algo de masa por el camino (se queda pegada al bol o en las manos), así te aseguras de tener el peso final exacto.</li>
+        <li data-i18n-html="kneadLi4">Deja la sal para el final. Incorpórala solo cuando la harina y el agua ya estén bien integradas. La sal no solo da sabor a la pizza, sino que ayuda a tensar la malla de gluten.</li>
+        <li data-i18n-html="kneadLi5">Sabrás que la masa está lista cuando deje de pegarse a las paredes del bol, tenga un aspecto liso y su temperatura interior ronde los 23-25 ºC.</li>
+        <li data-i18n-html="kneadLi6">Al terminar, saca la masa, dale un poco de tensión formando una bola grande y déjala reposar unos 20-30 minutos cubierta con un bol o un paño húmedo. A esto lo llamamos el reposo en bloque.</li>
+        <li data-i18n-html="kneadLi7">Después de este merecido descanso, la masa ya está lista para empezar su largo proceso de fermentación.</li>
+      </ul>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel">
+    <details class="accordion" id="fermentTips">
+      <summary class="accordion-summary">
+        <span class="section-num section-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </span>
+        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
+        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </summary>
+      <div class="accordion-body">
+      <ul class="tips-list">
+        <li data-i18n-html="fermentLi1">Te recomiendo dividir la fermentación en dos grandes fases: una primera con toda la masa junta (en bloque) y una segunda con las bolas ya formadas (los bollos). Lo ideal es que el bloque se lleve la mayor parte del tiempo.</li>
+        <li data-i18n-html="fermentLi2">Yo adapto la levadura matemáticamente a tu entorno. Tú solo tienes que decidir a qué hora quieres comer pizza y a qué temperatura está tu cocina, y yo me encargo de calcular el resto (aunque te recomiendo un mínimo de 8 horas de paciencia).</li>
+        <li data-i18n-html="fermentLi3">Si vas a meter la masa en la nevera, dale antes unos 30 minutos de reposo a temperatura ambiente para que la levadura despierte. Y muy importante: saca la masa (o las bolas) de la nevera unas 3 o 4 horas antes de hornear para que se atempere bien y termine de fermentar.</li>
+        <li data-i18n-html="fermentLi4">No te obsesiones con el reloj, fíjate en la masa. Durante el bloque, no hace falta que duplique su tamaño; con que crezca entre un 50% y un 70% está perfecta para bolear sin agotar la red de gluten.</li>
+        <li data-i18n-html="fermentLi5">El aire y el oxígeno son los grandes enemigos de la masa. Mantenla siempre bien tapada y hermética para evitar que se reseque y forme una costra. Si se hace costra, la pizza no estirará bien y se romperá.</li>
+        <li data-i18n-html="fermentLi6">Para saber si un bollo está listo para el horno, presiónalo suavemente con el dedo. Si la masa recupera su forma lentamente dejando una leve marca, está en su punto perfecto.</li>
+      </ul>
+      </div>
+    </details>
+  </div>
     </div>
 
     <div class="results">
@@ -443,7 +490,7 @@
 
         <div class="ing-row">
           <span class="ing-lead">
-            <span class="ing-ico ing-ico-harina" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22 16 8"></path><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"></path><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"></path></svg></span>
+            <span class="ing-ico ing-ico-harina" aria-hidden="true"><img src="ing-harina.png" alt="" width="22" height="22"></span>
             <span class="ing-name" data-i18n="statHarinaTotal">Harina total</span>
           </span>
           <span class="ing-pct">100%</span>
@@ -454,7 +501,7 @@
 
         <div class="ing-row">
           <span class="ing-lead">
-            <span class="ing-ico ing-ico-agua" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"></path></svg></span>
+            <span class="ing-ico ing-ico-agua" aria-hidden="true"><img src="ing-agua.png" alt="" width="22" height="22"></span>
             <span class="ing-name" data-i18n="statAgua">Agua</span>
           </span>
           <span class="ing-pct" id="aguaPct"></span>
@@ -462,7 +509,7 @@
         </div>
         <div class="ing-row">
           <span class="ing-lead">
-            <span class="ing-ico ing-ico-sal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8a1 1 0 0 0 1-1.08L16.3 9H7.7l-.7 10.92A1 1 0 0 0 8 21Z"></path><path d="M8.5 9V6a3.5 3.5 0 0 1 7 0v3"></path><path d="M10.5 13h.01"></path><path d="M13.5 13h.01"></path><path d="M12 16h.01"></path></svg></span>
+            <span class="ing-ico ing-ico-sal" aria-hidden="true"><img src="ing-sal.png" alt="" width="22" height="22"></span>
             <span class="ing-name" data-i18n="statSal">Sal</span>
           </span>
           <span class="ing-pct" id="salPct"></span>
@@ -470,7 +517,7 @@
         </div>
         <div class="ing-row ing-row-last">
           <span class="ing-lead">
-            <span class="ing-ico ing-ico-levadura" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14" r="4"></circle><circle cx="16.5" cy="8.5" r="2.5"></circle><circle cx="17" cy="16" r="1.5"></circle></svg></span>
+            <span class="ing-ico ing-ico-levadura" aria-hidden="true"><img src="ing-levadura.png" alt="" width="22" height="22"></span>
             <span class="ing-name" data-i18n="statLevaduraFresca">Levadura fresca</span>
           </span>
           <span class="ing-pct" id="levaduraPct"></span>
@@ -483,6 +530,56 @@
         <div class="result-ferment" id="resultFerment">
           <span class="result-ferment-title" data-i18n="recipeFermentation">Fermentación</span>
           <div class="result-ferment-body" id="resultFermentBody"></div>
+        </div>
+
+        <!-- Planificador de fermentación -->
+        <div class="planner-panel" id="plannerPanel">
+          <div class="planner-title"><img src="planner-slice.png" alt="" class="planner-icon" width="44" height="44" aria-hidden="true"> <span data-i18n="plannerTitle">Planifica tu pizza</span></div>
+          <div class="planner-lab" data-i18n="plannerTypeLabel">TIPO DE FERMENTACIÓN</div>
+          <div class="planner-seg" id="plannerTypes">
+            <button type="button" data-r="a" data-i18n="plannerTypeA">Bloque + bollos</button>
+            <button type="button" data-r="b" class="on" data-i18n="plannerTypeB">Solo en bollos</button>
+          </div>
+          <div id="plannerBlWrap" style="display:none">
+            <label for="plannerBl" data-i18n="plannerBlLabel">Horas en bloque</label>
+            <input type="number" id="plannerBl" min="0.5" step="0.5" value="12">
+            <div class="planner-tot planner-bl-hint" id="plannerBlHint"></div>
+          </div>
+          <div class="planner-lab" data-i18n="plannerTimeLabel">FIJA TU HORA Y DÍA</div>
+          <div class="planner-seg">
+            <button type="button" id="plannerM1" class="on" data-i18n="plannerMode1">Empiezo a las…</button>
+            <button type="button" id="plannerM2" data-i18n="plannerMode2">Quiero comer a las…</button>
+          </div>
+          <label id="plannerDtLabel" for="plannerDt" data-i18n="plannerDtLabel1">Hora de inicio de la fermentación</label>
+          <input type="datetime-local" id="plannerDt">
+          <div class="planner-intro-note" id="plannerIntroNote" data-i18n="plannerIntroNote">Una vez tienes la masa lista, comienza la fase de fermentación.</div>
+          <ul class="planner-tl" id="plannerTl"></ul>
+          <div class="planner-tot" id="plannerTotal"></div>
+
+          <!-- Sección Paso a paso (plegable) -->
+          <div class="step-by-step-section" id="stepByStepSection">
+            <button type="button" class="btn-step-by-step" id="stepByStepToggle" aria-expanded="false" aria-controls="stepByStepBody">
+              <span class="step-toggle-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span data-i18n="stepByStepBtn">Paso a paso</span>
+              </span>
+              <svg class="accordion-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="step-by-step-body" id="stepByStepBody" style="display:none;">
+              <ol class="step-list" id="stepList"></ol>
+            </div>
+          </div>
+
+          <!-- Notificaciones de pasos del planificador -->
+          <div class="planner-notify-wrap" id="plannerNotifyWrap">
+            <button type="button" id="btnPlannerNotify" class="btn-planner-notify">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span id="btnPlannerNotifyText" data-i18n="plannerNotifyBtn">Avisarme de cada paso</span>
+            </button>
+            <div class="planner-notify-status" id="plannerNotifyStatus" style="display:none;"></div>
+            <div class="planner-notify-warn" id="plannerNotifyWarn" role="alert" style="display:none;"></div>
+            <p class="planner-notify-disclaimer" id="plannerNotifyDisclaimer" data-i18n="plannerNotifyDisclaimer">Aviso: las notificaciones dependen del sistema operativo. Con la app cerrada o el móvil bloqueado (sobre todo en iPhone) pueden no sonar si no mantienes la web abierta o instalada.</p>
+          </div>
         </div>
       </div>
 
@@ -503,12 +600,12 @@
         </button>
       </div>
 
-      <div id="iosInstallBanner" style="display:none; margin-top:20px; padding:15px; background:rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); border-radius:10px; font-size:13.5px; color: var(--farina); line-height: 1.4;">
-        <strong style="display:block; margin-bottom:8px; color: white;" data-i18n="iosInstallTitle">Instalar en iPhone / iPad</strong>
-        <span data-i18n="iosInstallStep1">Para instalar la app, abre esta web en</span> <strong>Safari</strong>, <span data-i18n="iosInstallStep2">pulsa el botón Compartir</span> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> <span data-i18n="iosInstallStep3">en el menú inferior y selecciona</span> <strong data-i18n="iosInstallStep4">"Añadir a la pantalla de inicio"</strong> <svg style="vertical-align: sub; width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>.
+      <div id="iosInstallBanner" class="ios-install-banner" style="display:none;">
+        <strong class="ios-install-title" data-i18n="iosInstallTitle">Instalar en iPhone / iPad</strong>
+        <span data-i18n="iosInstallStep1">Para instalar la app, abre esta web en</span> <strong>Safari</strong>, <span data-i18n="iosInstallStep2">pulsa el botón Compartir</span> <svg class="ios-inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> <span data-i18n="iosInstallStep3">en el menú inferior y selecciona</span> <strong data-i18n="iosInstallStep4">"Añadir a la pantalla de inicio"</strong> <svg class="ios-inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>.
       </div>
 
-      <button id="btnInstalar" style="display:none; width:100%; margin-top:20px; padding:15px; background:var(--pomodoro); color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; transition: background 0.15s;" data-i18n="instalarBtn">
+      <button id="btnInstalar" class="btn-install" style="display:none;" data-i18n="instalarBtn">
         Instalar Calculadora
       </button>
 
@@ -516,49 +613,6 @@
 
   </div>
 
-  <div class="panel" style="margin-top: 20px;">
-    <details class="accordion">
-      <summary class="accordion-summary">
-        <span class="section-num section-icon" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
-        </span>
-        <h2 class="section-title" data-i18n="kneadTitle">Consejos sobre el amasado</h2>
-        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </summary>
-      <div class="accordion-body">
-      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi1"><b>Empieza por el agua.</b> Utilízala lo más fría posible; si es del grifo, mejor. Si hace mucho calor o vas a hacer mucha cantidad, puedes usar hielos (descontándolos del peso del agua) para evitar sobrecalentar la amasadora y la masa.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi2"><b>Disuelve la levadura</b> fresca directamente en el agua. Si es levadura seca, mézclala con un poco de agua y remueve bien.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi3"><b>¡Pon unos pocos gramos (1-2) más de harina</b> de lo que marca la receta! Muchas veces se pierde algo de harina durante el amasado o se queda masa en los tuppers tras la fermentación, así que así te aseguras de no tener menos masa de la prevista.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi4"><b>La sal, lo último.</b> Échala cuando todos los ingredientes estén bien integrados y la masa empiece a coger forma. La sal no solo da sabor: también tensa y ayuda a desarrollar la malla de gluten.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi5"><b>El punto exacto de la masa.</b> Para saber si está lista, comprueba que ya no se pega a las paredes de la amasadora, que tiene una textura lisa y que su temperatura interior ronda los 23-25 ºC.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi6"><b>El reposo en bloque.</b> Una vez la masa esté lista, dale un poco de tensión formando una única bola y déjala reposar 20-30 minutos cubierta con un paño húmedo.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="kneadLi7"><b>A fermentar.</b> Después de este reposo, arranca la fermentación. Ve a la sección «Consejos sobre la fermentación» para más ideas.</li>
-      </ul>
-      </div>
-    </details>
-  </div>
-
-  <div class="panel" style="margin-top: 20px;">
-    <details class="accordion" id="fermentTips">
-      <summary class="accordion-summary">
-        <span class="section-num section-icon" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        </span>
-        <h2 class="section-title" data-i18n="fermentTitle">Consejos sobre la fermentación</h2>
-        <svg class="accordion-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </summary>
-      <div class="accordion-body">
-      <ul style="padding-left: 20px; line-height: 1.6; color: var(--text-soft); font-size: 14px;">
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi1">Haz <b>doble fermentación</b>: una primera en bloque (toda la masa junta) y una segunda ya con los bollos (bolas) formados. Para una fermentación de 24 horas: 10-16 horas en bloque y 8-14 horas en bollos. Si lo prefieres, puedes hacer una breve fermentación en bloque (dos horas) y fermentar el resto del tiempo con los bollos hechos.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi2"><b>Temperatura y tiempos:</b> la fermentación la puedes hacer a temperatura ambiente o mixta. La calculadora utiliza un motor matemático que adapta la cantidad exacta de levadura a tus horarios y temperatura. Tú decides cuándo quieres comer pizza (aunque recomendamos mínimo 8 horas de fermentación).</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi3"><b>Referencia visual (el volumen):</b> los tiempos son solo una guía. Durante la fermentación en bloque, la masa no necesariamente tiene que duplicar su tamaño; un crecimiento del 50% al 70% suele ser el punto óptimo antes de formar los bollos para evitar que la red de gluten se agote.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi4"><b>Protección contra el aire:</b> es vital mantener la masa herméticamente tapada (con tapa o film transparente) tanto en bloque como en bollos. Si el aire entra en contacto continuo con la masa, se formará una costra dura que arruinará la elasticidad de los bordes al estirar.</li>
-        <li style="margin-bottom: 10px;" data-i18n-html="fermentLi5"><b>El test del dedo:</b> para saber si el bollo está listo para hornear, presiona ligeramente la masa con un dedo. Si la huella vuelve a su sitio lentamente y queda una ligera marca, está perfecta. Si rebota de inmediato, le falta tiempo; si se queda hundida, se ha pasado.</li>
-      </ul>
-      </div>
-    </details>
-  </div>
 
   <div id="settingsModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
     <div class="modal-card settings-card">
@@ -636,7 +690,7 @@
       </div>
       </div>
 
-      <div class="modal-actions" style="margin-top:20px;">
+      <div class="modal-actions settings-modal-actions">
         <button type="button" id="settingsDoneBtn" class="btn-secondary modal-confirm" data-i18n="settingsDone">Hecho</button>
       </div>
     </div>
@@ -649,6 +703,22 @@
       <input type="text" id="saveRecipeNameInput" class="plain-input" data-i18n-placeholder="saveModalPlaceholder" placeholder="Nombre de la receta" maxlength="40">
       <p id="saveModalError" class="modal-error" role="alert" style="display:none;"></p>
       <textarea id="saveRecipeNotesInput" class="recipe-notes-input" rows="3" maxlength="500" data-i18n-aria="notesLabel" data-i18n-placeholder="notesPlaceholder" placeholder="Notas (opcional): horno, hidratación, cómo quedó…"></textarea>
+      <div class="recipe-photo-picker" id="recipePhotoPicker">
+        <input type="file" id="saveRecipePhotoInput" accept="image/*" hidden>
+        <button type="button" id="saveRecipePhotoAddBtn" class="recipe-photo-add-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          <span data-i18n="photoAddBtn">Añadir foto de tu pizza (opcional)</span>
+        </button>
+        <div id="saveRecipePhotoPreview" class="recipe-photo-preview-row" style="display:none;">
+          <button type="button" id="saveRecipePhotoViewBtn" class="recipe-photo-thumb-btn" data-i18n-aria="photoViewAria" data-i18n-title="photoViewAria" aria-label="Ver foto de la pizza en grande" title="Ver foto de la pizza en grande">
+            <img id="saveRecipePhotoImg" class="recipe-photo-thumb" src="" alt="">
+          </button>
+          <div class="recipe-photo-actions">
+            <button type="button" id="saveRecipePhotoChangeBtn" class="recipe-photo-act-btn" data-i18n="photoChangeBtn">Cambiar foto</button>
+            <button type="button" id="saveRecipePhotoRemoveBtn" class="recipe-photo-act-btn delete" data-i18n="photoRemoveBtn">Quitar</button>
+          </div>
+        </div>
+      </div>
       <div class="modal-actions modal-actions-stack" id="saveModalActions">
         <button type="button" id="saveRecipeConfirmBtn" class="btn-secondary modal-confirm" data-i18n="modalSave">Guardar</button>
         <button type="button" id="saveRecipeNewBtn" class="btn-outline" data-i18n="modalSaveAsNew" style="display:none;">Guardar como nueva</button>
@@ -659,7 +729,7 @@
 
   <div id="confirmModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="confirmModalText">
     <div class="modal-card">
-      <p class="modal-sub" id="confirmModalText" style="margin-top:0;"></p>
+      <p class="modal-sub confirm-modal-text" id="confirmModalText"></p>
       <div class="modal-actions">
         <button type="button" id="confirmCancelBtn" class="btn-outline" data-i18n="modalCancel">Cancelar</button>
         <button type="button" id="confirmOkBtn" class="btn-secondary modal-confirm">Eliminar</button>
@@ -673,20 +743,19 @@
   <div id="whatsNewModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle">
     <div class="modal-card whatsnew-card" tabindex="-1">
       <div class="whatsnew-head">
-        <span class="whatsnew-badge" aria-hidden="true">2.0</span>
+        <span class="whatsnew-badge" aria-hidden="true">3.0</span>
         <h3 class="modal-title" id="whatsNewTitle" data-i18n="whatsNewTitle">Novedades</h3>
         <p class="modal-sub" data-i18n="whatsNewIntro">La calculadora ha dado un gran salto. Esto es lo nuevo:</p>
       </div>
       <div class="modal-body scroll-faded">
-      <ul class="whatsnew-list">
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🍕</span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Fermentación por fases.</b> Combina temperatura ambiente con nevera, vinoteca o fermentadora, cada fase con su tiempo y su temperatura.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🫧</span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Levadura automática.</b> Un motor matemático calcula la cantidad exacta según tus horas y temperatura, o la ajustas tú a mano.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">💧</span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Guía de hidratación.</b> Consejos según el porcentaje de agua que elijas, con una escala visual de estilo napolitano.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">🌾</span><span class="wn-text" data-i18n-html="whatsNewLi4"><b>Muchas más harinas.</b> Base de datos ampliada con buscador y filtros por marca, tipo y fuerza (W). Y puedes añadir y guardar las tuyas.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">📚</span><span class="wn-text" data-i18n-html="whatsNewLi5"><b>Mis recetas.</b> Guarda tus masas y vuelve a ellas cuando quieras: búscalas, edítalas, compártelas e impórtalas o expórtalas.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">💡</span><span class="wn-text" data-i18n-html="whatsNewLi6"><b>Avisos inteligentes.</b> Te avisa si la temperatura, el tiempo o la fuerza de la harina no encajan, con recomendaciones concretas.</span></li>
-        <li class="wn-item"><span class="wn-ico" aria-hidden="true">📖</span><span class="wn-text" data-i18n-html="whatsNewLi7"><b>Consejos paso a paso.</b> Amasado y fermentación explicados con detalle, y ahora también en inglés.</span></li>
-      </ul>
+        <ul class="whatsnew-list">
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-reloj.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi1"><b>Planificador de horarios con avisos.</b> Olvídate de calcular a qué hora tienes que empezar a amasar para comerte la pizza, la calculadora organiza tus tiempos y te avisa cuándo amasar, bolear y hornear.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-paso.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi2"><b>Paso a paso con tus cantidades exactas.</b> Instrucciones detalladas de amasado directo integradas con los ingredientes y porcentajes calculados para tu receta.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-compartir.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi3"><b>Comparte o copia tu receta completa.</b> Envía tu receta con sus ingredientes y el plan de fermentación listo para WhatsApp o redes.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-camara.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi6"><b>Añade fotos a tus recetas.</b> Sube una foto de tu pizza al guardar cada receta para recordar cómo te quedó con esos parámetros.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-estrella.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi4"><b>Un toque más artesanal.</b> Nueva tipografía clásica y texturas sutiles en la interfaz.</span></li>
+          <li class="wn-item"><span class="wn-ico" aria-hidden="true"><img src="wn-martillo.png" alt="" class="wn-ico-img"></span><span class="wn-text" data-i18n-html="whatsNewLi5"><b>Pequeñas correcciones.</b> Ajustes menores y mejoras que no se ven a simple vista para que la calculadora funcione aún más rápido y sin fallos.</span></li>
+        </ul>
       </div>
       <div class="modal-actions">
         <button type="button" id="whatsNewOkBtn" class="btn-secondary modal-confirm" data-i18n="whatsNewCta">¡Empezar!</button>
@@ -708,6 +777,16 @@
       </div>
       <div id="recipeListContainer" class="recipe-list scroll-faded"></div>
       <p id="recipeListEmpty" class="modal-sub recipe-list-empty" data-i18n="noRecipesYet" style="display:none;">Aún no tienes recetas guardadas.</p>
+    </div>
+  </div>
+
+  <div id="photoViewerModal" class="modal-overlay photo-viewer-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="photoViewerCaption">
+    <div class="photo-viewer-box" tabindex="-1">
+      <button type="button" id="photoViewerCloseBtn" class="photo-viewer-close" data-i18n-aria="settingsClose" data-i18n-title="settingsClose" aria-label="Cerrar" title="Cerrar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      <img id="photoViewerImg" class="photo-viewer-img" src="" alt="">
+      <p id="photoViewerCaption" class="photo-viewer-caption"></p>
     </div>
   </div>
 
@@ -776,9 +855,9 @@
     </div>
   </div>
 
-  <div id="update-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--forno); color:var(--farina); padding:16px 20px; border-radius:14px; z-index:9999; box-shadow:0 12px 30px -8px rgba(36,26,21,0.5); border:1px solid rgba(255,255,255,0.12); font-family:var(--font-body); font-size:13.5px; text-align:center; width:calc(100% - 40px); max-width:340px;">
+  <div id="update-banner" class="update-banner" style="display:none;">
     <span data-i18n="updateBannerText">Hay una nueva versión de la calculadora disponible.</span>
-    <button id="update-btn" style="margin-top:10px; padding:9px 16px; background:var(--pomodoro); color:white; border:none; border-radius:8px; font-weight:700; font-size:13.5px; cursor:pointer; width:100%;" data-i18n="updateBtn">
+    <button id="update-btn" class="update-btn" data-i18n="updateBtn">
       Actualizar ahora
     </button>
   </div>
@@ -827,12 +906,12 @@
 
 <!-- Módulos JS. Orden importante: i18n define window.PizzaI18N y units define
      window.PizzaUnits; de ambos dependen calculator y app. -->
-<script src="js/i18n.js"></script>
-<script src="js/units.js"></script>
-<script src="js/dough.js"></script>
-<script src="js/flours.js"></script>
-<script src="js/calculator.js"></script>
-<script src="js/app.js"></script>
+<script src="js/i18n.js?v=51"></script>
+<script src="js/units.js?v=51"></script>
+<script src="js/dough.js?v=51"></script>
+<script src="js/flours.js?v=51"></script>
+<script src="js/calculator.js?v=51"></script>
+<script src="js/app.js?v=51"></script>
 
 </body>
 </html>

@@ -17,29 +17,44 @@
 //   * El handler de fetch NUNCA relanza un error en una navegación: si no hay
 //     red ni caché, devuelve una respuesta controlada. Una promesa rechazada en
 //     respondWith se traduce en ERR_FAILED, justo lo que queremos evitar.
-const CACHE_NAME = 'pizza-calc-v62';
+const CACHE_NAME = 'pizza-calc-v51';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './css/styles.css',
-  './js/i18n.js',
-  './js/units.js',
-  './js/dough.js',
-  './js/flours.js',
-  './js/calculator.js',
-  './js/app.js',
+  './css/styles.css?v=51',
+  './js/i18n.js?v=51',
+  './js/units.js?v=51',
+  './js/dough.js?v=51',
+  './js/flours.js?v=51',
+  './js/calculator.js?v=51',
+  './js/app.js?v=51',
   './manifest.json',
+  './manifest.webmanifest',
   './favicon.png',
   './logo-hero.png',
   './icon-192.png',
   './icon-512.png',
-  './icon-maskable-512.png'
+  './icon-maskable-512.png',
+  './pizza-slice.png',
+  './planner-slice.png',
+  './whatsnew-slice.png',
+  './ing-harina.png',
+  './ing-agua.png',
+  './ing-sal.png',
+  './ing-levadura.png',
+  './wn-reloj.png',
+  './wn-paso.png',
+  './wn-compartir.png',
+  './wn-camara.png',
+  './wn-estrella.png',
+  './wn-martillo.png'
 ];
 
 self.addEventListener('install', (event) => {
-  // Precachea la versión nueva y se queda EN ESPERA (ciclo de vida estándar).
-  // NO llamamos a skipWaiting aquí: así el usuario controla cuándo se aplica
-  // la actualización, mediante el banner "Actualizar ahora" (ver app.js).
+  // FUERZA A SACO: skipWaiting automático. 
+  // Al instalarse la nueva versión, toma el control de inmediato.
+  // app.js detectará el cambio y forzará un reload automático de la pestaña.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).catch(() => {})
   );
@@ -50,6 +65,19 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.action === 'skipWaiting') {
     self.skipWaiting();
   }
+});
+
+// Manejo de clic en notificaciones locales programadas
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('./');
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -101,7 +129,7 @@ self.addEventListener('fetch', (event) => {
       return response;
     } catch (e) {
       // Sin red: servir de caché. Para navegaciones, caer al shell de la app.
-      const cached = await caches.match(req);
+      const cached = await caches.match(req, { ignoreSearch: true });
       if (cached) return cached;
       if (isNavigate) {
         const shell = (await caches.match('./index.html')) || (await caches.match('./')) || (await caches.match('/'));

@@ -10,6 +10,9 @@
 /manifest.json
   Cache-Control: no-cache, no-store, must-revalidate
 
+/manifest.webmanifest
+  Cache-Control: no-cache, no-store, must-revalidate
+
 # Comodines: cubre todos los JS/CSS (incluidos units.js y dough.js, que antes
 # faltaban) y cualquier archivo futuro, para no volver a servir uno cacheado.
 /css/*

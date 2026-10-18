@@ -268,7 +268,7 @@ window.stepColdTemp = function(dir) {
   function updateCards(){
     if (el.summaryTanda){
       const n = Math.max(1, parseDecimal(el.numPaneteos.value) || 0);
-      el.summaryTanda.textContent = n + ' ' + I18N.t('recipePizzas').toLowerCase() + ' ' +
+      el.summaryTanda.textContent = n + ' ' + I18N.t(n === 1 ? 'recipePizzaOne' : 'recipePizzas').toLowerCase() + ' ' +
         I18N.t('recipeOf') + ' ' + U.formatWeight(pesoG);
     }
     // Valores para el resumen de Fermentación y los avisos resumidos.
@@ -291,10 +291,11 @@ window.stepColdTemp = function(dir) {
     if (el.summaryFerm){
       const atW = I18N.t('fermAt');
       const sep = '<span class="card-sum-sep" aria-hidden="true"></span>';
-      const parts = ['<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>'];
+      const parts = [];
       if (el.fridgeToggle && el.fridgeToggle.checked){
         parts.push('<span class="ferm-sum-phase">' + U.formatNumber(coldH, 0) + ' h ' + atW + ' ' + U.tempValue(coldT) + U.tempUnit() + '</span>');
       }
+      parts.push('<span class="ferm-sum-phase">' + U.formatNumber(horas, 0) + ' h ' + atW + ' ' + U.tempValue(temp) + U.tempUnit() + '</span>');
       // La levadura va con el MISMO estilo que las fases (texto + mismo separador vertical),
       // y una chispa ✦ verde como único indicador de "automático" (sin píldora ni icono
       // propio, para que la fila tenga la misma estructura de principio a fin).
@@ -578,8 +579,8 @@ window.stepColdTemp = function(dir) {
     const coldStr = U.formatNumber(coldH, 0) + ' h · ' + Math.round(U.tempValue(coldTempC())) + U.tempUnit();
     const rows = [];
     if (el.fridgeToggle.checked) {
-      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
       rows.push([I18N.t('fermControlledLabel'), coldStr]);
+      rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     } else {
       rows.push([I18N.t('fermAmbientLabel'), ambStr]);
     }
@@ -1331,11 +1332,10 @@ window.stepColdTemp = function(dir) {
       el.levadura.value = pct; // el input (bloqueado) ES la lectura visible del valor Auto
     }
 
-    // Lector del tiempo total de fermentación (ambiente + nevera): solo con la nevera activa
-    // (con una sola fase el total = ese tiempo). Ayuda a decidir el tiempo de nevera viendo
-    // el total al vuelo. Ya no hay tope de 96 h: ambiente y nevera son fases independientes.
+    // Lector del tiempo total de fermentación (ambiente + nevera): colocado al final
+    // de la sección de tiempos como resumen del conjunto, tanto si la nevera está activa como si no.
     if (el.fermTotal) {
-      el.fermTotal.hidden = !el.fridgeToggle.checked;
+      el.fermTotal.hidden = false;
       if (el.fermTotalValue) el.fermTotalValue.textContent = U.formatNumber(horas + coldH, 0) + ' h';
     }
     // Avisos por temperatura ambiente extrema (>28 °C frenético · 15-16 °C baja).
@@ -1377,52 +1377,31 @@ window.stepColdTemp = function(dir) {
     // Fuerza (W) efectiva de la mezcla: media ponderada por % de las harinas con dato
     // (null si ninguna lo tiene). Se muestra junto a la barra de proporción y alimenta
     // el aviso de compatibilidad W↔tiempo (RN-02).
-    const wEff = D.effectiveW(flours.map(function (f) { return { w: F.wValue(f.flourId), pct: f.pct }; }));
-    if (el.flourStrengthValue) el.flourStrengthValue.textContent = (wEff != null) ? ('W' + wEff) : '—';
+    const flourWItems = flours.map(function (f) { return { w: F.wValue(f.flourId), pct: f.pct }; });
+    const wEff = D.effectiveW(flourWItems);
+    const knownWPct = flourWItems.reduce(function (s, x) { return s + ((x.w > 0 && x.pct > 0) ? x.pct : 0); }, 0);
+    const totalMixPct = flourWItems.reduce(function (s, x) { return s + (x.pct > 0 ? x.pct : 0); }, 0);
+    const isPartialW = (wEff != null) && (totalMixPct - knownWPct > 0.05);
+    if (el.flourStrengthValue) {
+      el.flourStrengthValue.textContent = (wEff != null)
+        ? ('W' + wEff + (isPartialW ? ' (' + I18N.t('flourStrengthPartial') + ')' : ''))
+        : '—';
+    }
     // Compatibilidad fuerza de la harina ↔ tiempo de fermentación de RELOJ total
-    // (ambiente + nevera activa). Sin dato de W en la mezcla → sin aviso.
-    if (el.flourWarn) {
-      let show = false;
-      if (wEff != null) {
-        // Horas estructurales de desgaste del gluten (modelo Q10/Arrhenius: AMBAS fases se
-        // ponderan por su temperatura; ver structuralHours en dough.js). EXCLUSIVO para
-        // validar contra la tabla de rangos W. temp = °C ambiente (#temperatura); coldT =
-        // °C CANÓNICA de la fría (convertida desde °F). Ambiente y nevera son fases
-        // independientes (sin tope combinado de reloj).
-        const H = D.structuralHours(horas, temp, coldH, coldT);
-        const clockHours = horas + coldH; // tiempo de reloj real configurado por el usuario
-        const verdict = D.flourTimeWarning(wEff, H);
-        if (verdict) {
-          const band = D.flourBand(wEff);
-          // Damos DOS arreglos concretos: fuerza de harina (de la tabla de bandas) y tiempo
-          // total de reloj. El tiempo es proporcional a H manteniendo la mezcla de
-          // temperaturas actual (escala lineal: reloj · objetivo_estructural / H).
-          const opts = [];
-          let head;
-          if (verdict === 'weak') {
-            head = I18N.t('warnFlourWeakHead').replace('{W_value}', wEff);
-            const minW = D.minWForHours(H);
-            if (minW != null) opts.push(I18N.t('adviceFlourMin').replace('{w}', minW));
-            if (H > 0 && clockHours > 0) {
-              const maxHours = Math.max(1, Math.floor(clockHours * band.maxH / H));
-              opts.push(I18N.t('adviceTimeMax').replace('{h}', maxHours));
-            }
-          } else { // strong
-            head = I18N.t('warnFlourStrongHead').replace('{W_value}', wEff);
-            const maxW = D.maxWForHours(H);
-            if (maxW != null) opts.push(I18N.t('adviceFlourMax').replace('{w}', maxW));
-            if (H > 0 && clockHours > 0) {
-              const minHours = Math.ceil(clockHours * band.minH / H);
-              if (minHours <= 96) opts.push(I18N.t('adviceTimeMin').replace('{h}', minHours));
-            }
-          }
-          let text = head;
-          if (opts.length) text += ' ' + I18N.t('adviceNeed') + ' ' + opts.join(I18N.t('adviceOr')) + '.';
-          if (el.flourWarnText) el.flourWarnText.textContent = text;
-          show = true;
+    // (ambiente + nevera activa). Sin dato de W completo en la mezcla → sin aviso.
+    if (el.flourWarn && el.flourWarnText) {
+      el.flourWarn.hidden = true;
+      if (wEff != null && !isPartialW) {
+        const structH = D.structuralHours(horas, temp, coldH, coldT);
+        const warnType = D.flourTimeWarning(wEff, structH);
+        
+        if (warnType) {
+          el.flourWarn.hidden = false;
+          el.flourWarnText.innerHTML = warnType === 'weak'
+            ? I18N.t('warnFlourWeakHead').replace('{W_value}', Math.round(wEff))
+            : I18N.t('warnFlourStrongHead').replace('{W_value}', Math.round(wEff));
         }
       }
-      el.flourWarn.hidden = !show;
     }
 
     // No pisar el campo mientras el usuario lo está escribiendo (lo confirma al salir).
@@ -1535,13 +1514,14 @@ window.stepColdTemp = function(dir) {
     el.totalLevadura.textContent = U.formatWeightPrecise(levaduraTotal);
     el.totalLevaduraSeca.textContent = U.formatWeightPrecise(levaduraSecaTotal);
 
-    // Contexto de la tanda bajo el titular: "6 pizzas de 280 g".
+    // Contexto de la tanda bajo el titular: "6 pizzas de 280 g" (o "1 pizza de 280 g").
     if (el.batchContext) {
       el.batchContext.textContent = numPaneteos + ' ' +
-        I18N.t('recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
+        I18N.t(numPaneteos === 1 ? 'recipePizzaOne' : 'recipePizzas').toLowerCase() + ' ' + I18N.t('recipeOf') + ' ' +
         U.formatWeight(pesoPaneto);
     }
-    renderResultFerment(); // resumen de fermentación (tiempos + temperaturas) en el resultado
+    renderResultFerment();
+    if (window.__triggerPlanner) window.__triggerPlanner();
 
     // Porcentajes de panadero (relativos a la harina = 100%).
     if (el.aguaPct) el.aguaPct.textContent = pctSobreHarina(aguaTotal, harinaTotal, 1);
@@ -1576,7 +1556,9 @@ window.stepColdTemp = function(dir) {
     }
     masaInitialized = true;
     updateCards();
-  }
+    if (window.__updateStepByStep) window.__updateStepByStep();
+  
+}
 
   [el.numPaneteos, el.temperatura, el.tempFrio, el.hidratacion].forEach(input => {
     input.addEventListener('input', calcular);
@@ -1957,6 +1939,17 @@ window.stepColdTemp = function(dir) {
   const saveModalSub = document.getElementById('saveModalSub');
   const saveModalError = document.getElementById('saveModalError');
   const saveRecipeNotesInput = document.getElementById('saveRecipeNotesInput');
+  const saveRecipePhotoInput = document.getElementById('saveRecipePhotoInput');
+  const saveRecipePhotoAddBtn = document.getElementById('saveRecipePhotoAddBtn');
+  const saveRecipePhotoPreview = document.getElementById('saveRecipePhotoPreview');
+  const saveRecipePhotoViewBtn = document.getElementById('saveRecipePhotoViewBtn');
+  const saveRecipePhotoImg = document.getElementById('saveRecipePhotoImg');
+  const saveRecipePhotoChangeBtn = document.getElementById('saveRecipePhotoChangeBtn');
+  const saveRecipePhotoRemoveBtn = document.getElementById('saveRecipePhotoRemoveBtn');
+  const photoViewerModal = document.getElementById('photoViewerModal');
+  const photoViewerCloseBtn = document.getElementById('photoViewerCloseBtn');
+  const photoViewerImg = document.getElementById('photoViewerImg');
+  const photoViewerCaption = document.getElementById('photoViewerCaption');
   const recipeNotesDisplay = document.getElementById('recipeNotesDisplay');
   const recipeStatusEl = document.getElementById('recipeStatus');
   const exportRecipesBtn = document.getElementById('exportRecipesBtn');
@@ -1964,8 +1957,10 @@ window.stepColdTemp = function(dir) {
   const importRecipesInput = document.getElementById('importRecipesInput');
   // id de la receta seleccionada al abrir el modal (para "Actualizar"); null = crear nueva
   let editingRecipeId = null;
-  // "Editar" desde la lista actualiza solo nombre+notas, sin tocar los parámetros de la masa.
+  // "Editar" desde la lista actualiza solo nombre+notas+foto, sin tocar los parámetros de la masa.
   let saveMetaOnly = false;
+  // Foto (data URL JPEG comprimida) pendiente de guardar en el modal actual; null = sin foto.
+  let pendingRecipePhoto = null;
   // Texto del buscador de la lista de recetas.
   let recipeSearchQuery = '';
   // id de la receta actualmente cargada en la calculadora (la "receta activa");
@@ -1980,7 +1975,12 @@ window.stepColdTemp = function(dir) {
   }
 
   function setSavedRecipes(list) {
-    try { localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list)); } catch (e) {}
+    try {
+      localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Clave de contenido de una receta, ignorando el id interno de cada harina
@@ -2027,11 +2027,70 @@ window.stepColdTemp = function(dir) {
     toast.textContent = message;
     toast.style.cssText = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(0); background:var(--forno); color:var(--farina); padding:12px 20px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:10001; box-shadow:0 12px 30px -8px rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.12); transition: opacity 0.3s ease, transform 0.3s ease; opacity:1;';
     document.body.appendChild(toast);
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(-50%) translateY(10px)';
-      setTimeout(() => toast.remove(), 300);
+      const t2 = setTimeout(() => toast.remove(), 300);
+      if (t2 && typeof t2.unref === 'function') t2.unref();
     }, 1800);
+    if (t1 && typeof t1.unref === 'function') t1.unref();
+  }
+  window.showToast = showToast;
+
+  // ---- Visor de foto a pantalla completa (se abre por encima de cualquier modal sin cerrarlo) ----
+  let photoViewerLastFocus = null;
+  function openPhotoViewer(src, caption) {
+    if (!photoViewerModal || !photoViewerImg || !src) return;
+    photoViewerLastFocus = document.activeElement;
+    photoViewerImg.src = src;
+    photoViewerImg.alt = caption || I18N.t('photoViewAria');
+    if (photoViewerCaption) photoViewerCaption.textContent = caption || '';
+    photoViewerModal.style.display = 'flex';
+    syncScrollLock();
+    setTimeout(() => {
+      if (photoViewerCloseBtn && typeof photoViewerCloseBtn.focus === 'function') {
+        try { photoViewerCloseBtn.focus({ preventScroll: true }); } catch (e) { photoViewerCloseBtn.focus(); }
+      }
+    }, 30);
+  }
+  function closePhotoViewer() {
+    if (!photoViewerModal) return;
+    photoViewerModal.style.display = 'none';
+    if (photoViewerImg) photoViewerImg.src = '';
+    syncScrollLock();
+    if (photoViewerLastFocus && typeof photoViewerLastFocus.focus === 'function') {
+      try { photoViewerLastFocus.focus({ preventScroll: true }); } catch (e) { photoViewerLastFocus.focus(); }
+    }
+    photoViewerLastFocus = null;
+  }
+  if (photoViewerCloseBtn) photoViewerCloseBtn.addEventListener('click', closePhotoViewer);
+  if (photoViewerModal) {
+    photoViewerModal.addEventListener('click', (e) => {
+      if (e.target === photoViewerModal || (e.target && e.target.classList && e.target.classList.contains('photo-viewer-box'))) {
+        closePhotoViewer();
+      }
+    });
+    photoViewerModal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePhotoViewer(); }
+    });
+  }
+
+  function createPhotoThumbBtn(src, caption, extraClass) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'recipe-photo-thumb-btn' + (extraClass ? ' ' + extraClass : '');
+    btn.title = I18N.t('photoViewAria');
+    btn.setAttribute('aria-label', I18N.t('photoViewAria'));
+    const img = document.createElement('img');
+    img.className = 'recipe-photo-thumb';
+    img.src = src;
+    img.alt = caption || '';
+    btn.appendChild(img);
+    btn.addEventListener('click', (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      openPhotoViewer(src, caption || '');
+    });
+    return btn;
   }
 
   // Devuelve la receta activa (la cargada en la calculadora) o null.
@@ -2065,13 +2124,33 @@ window.stepColdTemp = function(dir) {
     updateRecipeStatus();
   }
 
-  // Muestra las notas de la receta activa (si tiene) bajo la fila de acciones.
+  // Muestra las notas y/o la foto de la receta activa bajo la fila de acciones.
   function updateNotesDisplay() {
     if (!recipeNotesDisplay) return;
     const recipe = getActiveRecipe();
     const notes = recipe && recipe.notes ? String(recipe.notes).trim() : '';
-    recipeNotesDisplay.textContent = notes;
-    recipeNotesDisplay.style.display = notes ? '' : 'none';
+    const photo = recipe && recipe.photo ? String(recipe.photo) : '';
+    recipeNotesDisplay.innerHTML = '';
+    if (!notes && !photo) {
+      recipeNotesDisplay.textContent = '';
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.remove('has-photo');
+      recipeNotesDisplay.style.display = 'none';
+      return;
+    }
+    if (photo) {
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.add('has-photo');
+      recipeNotesDisplay.appendChild(createPhotoThumbBtn(photo, recipe.name));
+      if (notes) {
+        const txt = document.createElement('span');
+        txt.className = 'recipe-notes-text';
+        txt.textContent = notes;
+        recipeNotesDisplay.appendChild(txt);
+      }
+    } else {
+      if (recipeNotesDisplay.classList) recipeNotesDisplay.classList.remove('has-photo');
+      recipeNotesDisplay.textContent = notes;
+    }
+    recipeNotesDisplay.style.display = '';
   }
 
   // Añade una celda "ETIQUETA + valor" a la rejilla de la tarjeta. En lugar de
@@ -2135,7 +2214,15 @@ window.stepColdTemp = function(dir) {
         badge.textContent = I18N.t('statusActive');
         nameRow.appendChild(badge);
       }
-      item.appendChild(nameRow);
+      if (recipe.photo) {
+        const head = document.createElement('div');
+        head.className = 'recipe-item-head';
+        head.appendChild(nameRow);
+        head.appendChild(createPhotoThumbBtn(recipe.photo, recipe.name, 'recipe-item-thumb-btn'));
+        item.appendChild(head);
+      } else {
+        item.appendChild(nameRow);
+      }
 
       const d = recipe.data || {};
       const num = parseDecimal(d.numPaneteos) || 0;
@@ -2161,13 +2248,12 @@ window.stepColdTemp = function(dir) {
         addRecipeCell(grid, I18N.t('recipeYeastShort'),
           U.formatNumber((parseFloat(d.manualYeastPerKg) || 0) / 10, 2) + '%');
       }
-      // Fermentación (fila completa): ambiente y, si la receta la tiene, la fase controlada.
+      // Fermentación (fila completa): si tiene fase controlada va primero, y luego ambiente.
       const fAmb = U.formatNumber(d.horas != null ? d.horas : 0, 0) + ' h · ' +
         U.tempValue(parseInt(d.temperatura, 10) || 18) + U.tempUnit();
-      const fermTxt = d.fridgeOn
-        ? fAmb + ' + ' + U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
-          Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit()
-        : fAmb;
+      const fCold = U.formatNumber(d.horasFrio != null ? d.horasFrio : 0, 0) + ' h · ' +
+        Math.round(U.tempValue(parseFloat(d.tempFrio) || 4)) + U.tempUnit();
+      const fermTxt = d.fridgeOn ? (fCold + ' + ' + fAmb) : fAmb;
       addRecipeCell(grid, I18N.t('recipeFermentation'), fermTxt, true);
       // Harina (fila completa): el nombre si es una sola; el número si es mezcla. El detalle
       // completo (cada harina con su %) se ve al cargar la receta.
@@ -2333,8 +2419,69 @@ window.stepColdTemp = function(dir) {
     }
   }
 
+  // Comprime una imagen elegida por el usuario a JPEG (máx. 700 px de lado, calidad 0.75)
+  // para que ocupe solo ~40-60 KB en localStorage y quepan decenas de recetas con foto.
+  function compressRecipePhoto(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) { reject(new Error('no-file')); return; }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('read-error'));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (typeof Image === 'undefined') {
+          if (/^data:image\//i.test(dataUrl)) resolve(dataUrl);
+          else reject(new Error('invalid-image'));
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => reject(new Error('decode-error'));
+        img.onload = () => {
+          try {
+            const MAX_SIDE = 700;
+            let w = img.naturalWidth || img.width || 700;
+            let h = img.naturalHeight || img.height || 700;
+            if (w > MAX_SIDE || h > MAX_SIDE) {
+              if (w >= h) { h = Math.max(1, Math.round(h * (MAX_SIDE / w))); w = MAX_SIDE; }
+              else { w = Math.max(1, Math.round(w * (MAX_SIDE / h))); h = MAX_SIDE; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext && canvas.getContext('2d');
+            if (!ctx || typeof canvas.toDataURL !== 'function') {
+              resolve(dataUrl);
+              return;
+            }
+            ctx.fillStyle = '#14110f';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            const out = canvas.toDataURL('image/jpeg', 0.75);
+            resolve(out && /^data:image\//i.test(out) ? out : dataUrl);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderSavePhotoPreview() {
+    if (!saveRecipePhotoAddBtn || !saveRecipePhotoPreview || !saveRecipePhotoImg) return;
+    if (pendingRecipePhoto) {
+      saveRecipePhotoImg.src = pendingRecipePhoto;
+      saveRecipePhotoAddBtn.style.display = 'none';
+      saveRecipePhotoPreview.style.display = 'flex';
+    } else {
+      saveRecipePhotoImg.src = '';
+      saveRecipePhotoAddBtn.style.display = '';
+      saveRecipePhotoPreview.style.display = 'none';
+    }
+  }
+
   // ---- Modal "Guardar receta": crear nueva, actualizar la activa, o (desde la
-  //      lista) editar solo el nombre y las notas de una receta concreta. ----
+  //      lista) editar solo el nombre, las notas y la foto de una receta concreta. ----
   function openSaveModal(opts) {
     opts = opts || {};
     const editMeta = opts.editMeta || null;   // receta a editar desde la lista
@@ -2344,6 +2491,7 @@ window.stepColdTemp = function(dir) {
       editingRecipeId = editMeta.id;
       saveRecipeNameInput.value = editMeta.name;
       saveRecipeNotesInput.value = editMeta.notes || '';
+      pendingRecipePhoto = editMeta.photo || null;
       if (saveModalTitle) saveModalTitle.textContent = I18N.t('editRecipeTitle');
       saveModalSub.textContent = I18N.t('editRecipeSub');
       saveRecipeConfirmBtn.textContent = I18N.t('modalSaveChanges');
@@ -2353,6 +2501,7 @@ window.stepColdTemp = function(dir) {
       // se guarda como nueva.
       const seleccionada = getActiveRecipe();
       editingRecipeId = seleccionada ? seleccionada.id : null;
+      pendingRecipePhoto = seleccionada ? (seleccionada.photo || null) : null;
       if (saveModalTitle) saveModalTitle.textContent = I18N.t('saveModalTitle');
       if (seleccionada) {
         saveRecipeNameInput.value = seleccionada.name;
@@ -2368,6 +2517,8 @@ window.stepColdTemp = function(dir) {
         saveRecipeNewBtn.style.display = 'none';
       }
     }
+    if (saveRecipePhotoInput) saveRecipePhotoInput.value = '';
+    renderSavePhotoPreview();
     updateSaveButtons();
     // Enfocamos la tarjeta del diálogo (no el campo de nombre): así el popup se
     // abre sin desplegar el teclado en móvil, pero el foco sigue dentro del modal
@@ -2378,6 +2529,38 @@ window.stepColdTemp = function(dir) {
     closeModal(saveRecipeModal);
     // Si estábamos editando desde la lista, volvemos a ella al cerrar.
     if (saveMetaOnly) { saveMetaOnly = false; openLoadModal(); }
+  }
+
+  if (saveRecipePhotoAddBtn && saveRecipePhotoInput) {
+    saveRecipePhotoAddBtn.addEventListener('click', () => saveRecipePhotoInput.click());
+  }
+  if (saveRecipePhotoChangeBtn && saveRecipePhotoInput) {
+    saveRecipePhotoChangeBtn.addEventListener('click', () => saveRecipePhotoInput.click());
+  }
+  if (saveRecipePhotoRemoveBtn) {
+    saveRecipePhotoRemoveBtn.addEventListener('click', () => {
+      pendingRecipePhoto = null;
+      if (saveRecipePhotoInput) saveRecipePhotoInput.value = '';
+      renderSavePhotoPreview();
+    });
+  }
+  if (saveRecipePhotoViewBtn) {
+    saveRecipePhotoViewBtn.addEventListener('click', () => {
+      if (pendingRecipePhoto) openPhotoViewer(pendingRecipePhoto, saveRecipeNameInput.value.trim());
+    });
+  }
+  if (saveRecipePhotoInput) {
+    saveRecipePhotoInput.addEventListener('change', (e) => {
+      const file = e.target && e.target.files && e.target.files[0];
+      if (!file) return;
+      compressRecipePhoto(file).then((dataUrl) => {
+        pendingRecipePhoto = dataUrl;
+        renderSavePhotoPreview();
+      }).catch(() => {
+        showToast(I18N.t('photoErrorFormat'));
+      });
+      saveRecipePhotoInput.value = '';
+    });
   }
 
   saveRecipeBtn.addEventListener('click', () => openSaveModal());
@@ -2463,43 +2646,62 @@ window.stepColdTemp = function(dir) {
     const notes = saveRecipeNotesInput.value.trim().slice(0, 500);
     const list = getSavedRecipes();
 
-    // Modo "editar metadatos" (desde la lista): actualiza solo nombre y notas, sin
+    // Modo "editar metadatos" (desde la lista): actualiza solo nombre, notas y foto, sin
     // tocar los parámetros de la masa ni cambiar cuál es la receta activa.
     if (opts.metaOnly) {
       const r = list.find(x => String(x.id) === String(opts.overwriteId));
+      let quotaFallback = false;
       if (r) {
         r.name = name;
         r.notes = notes;
+        if (pendingRecipePhoto) r.photo = pendingRecipePhoto;
+        else delete r.photo;
         r.updatedAt = new Date().toISOString();
-        setSavedRecipes(list);
+        if (!setSavedRecipes(list) && pendingRecipePhoto) {
+          delete r.photo;
+          setSavedRecipes(list);
+          quotaFallback = true;
+        }
       }
       closeSaveModal();       // saveMetaOnly sigue en true -> vuelve a la lista
       refreshRecipesUI();
-      showToast(I18N.t('recipeUpdatedToast'));
+      showToast(quotaFallback ? I18N.t('photoErrorQuota') : I18N.t('recipeUpdatedToast'));
       return;
     }
 
     const existente = opts.overwriteId != null ? list.find(r => r.id === opts.overwriteId) : null;
-    let targetId;
+    let targetRecipe;
     if (existente) {
       existente.name = name;
       existente.notes = notes;
+      if (pendingRecipePhoto) existente.photo = pendingRecipePhoto;
+      else delete existente.photo;
       existente.data = currentData();
       existente.updatedAt = new Date().toISOString();
-      targetId = existente.id;
+      targetRecipe = existente;
     } else {
       const ids = new Set(list.map(r => String(r.id)));
       const nueva = { id: nuevoId(ids), name: name, notes: notes, savedAt: new Date().toISOString(), updatedAt: new Date().toISOString(), data: currentData() };
+      if (pendingRecipePhoto) nueva.photo = pendingRecipePhoto;
       list.push(nueva);
-      targetId = nueva.id;
+      targetRecipe = nueva;
     }
-    setSavedRecipes(list);
+    let quotaFallback = false;
+    if (!setSavedRecipes(list) && pendingRecipePhoto) {
+      delete targetRecipe.photo;
+      setSavedRecipes(list);
+      quotaFallback = true;
+    }
     // La receta guardada pasa a ser la activa. Cerramos el modal antes de repintar
     // para que el cierre nunca dependa de pasos de UI posteriores.
-    activeRecipeId = targetId;
+    activeRecipeId = targetRecipe.id;
     closeSaveModal();
     refreshRecipesUI();
-    showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
+    if (quotaFallback) {
+      showToast(I18N.t('photoErrorQuota'));
+    } else {
+      showToast(existente ? I18N.t('recipeUpdatedToast') : I18N.t('recipeSavedToast'));
+    }
   }
 
   saveRecipeConfirmBtn.addEventListener('click', () => guardarReceta({ overwriteId: editingRecipeId, metaOnly: saveMetaOnly }));
@@ -2618,7 +2820,10 @@ window.stepColdTemp = function(dir) {
       ? raw.name.trim().slice(0, 40)
       : I18N.t('importedRecipeName');
     const notes = (typeof raw.notes === 'string') ? raw.notes.slice(0, 500) : '';
-    return {
+    const photo = (typeof raw.photo === 'string' && /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(raw.photo.trim()) && raw.photo.length <= 600000)
+      ? raw.photo.trim()
+      : null;
+    const normalized = {
       name: name,
       notes: notes,
       savedAt: (typeof raw.savedAt === 'string') ? raw.savedAt : new Date().toISOString(),
@@ -2639,6 +2844,8 @@ window.stepColdTemp = function(dir) {
         flours: flours
       }
     };
+    if (photo) normalized.photo = photo;
+    return normalized;
   }
 
   // Firma de "misma receta" para deduplicar al importar (nombre + notas +
@@ -2728,8 +2935,171 @@ window.stepColdTemp = function(dir) {
     reader.readAsText(file);
   });
 
-  // Al arrancar, si la config actual coincide con una receta guardada, la marca
-  // como activa (p. ej. tras recargar la página con una receta cargada).
+  // Expone los parámetros calculados y entradas para módulos satélite (paso a paso, planificador)
+  window.__getRecipeInputs = function() {
+    return {
+      numPizzas: parseInt(el.numPaneteos.value, 10) || 1,
+      pesoG: Math.round(pesoG),
+      tempC: parseInt(el.temperatura.value, 10),
+      horas: clampHoras(el.horas.value),
+      coldH: coldHoursActive(),
+      coldT: coldTempC(),
+      fridgeOn: el.fridgeToggle.checked,
+      flours: flours.slice(),
+      flourName: flourName,
+      lastRecipe: lastRecipe,
+      saltIsFlour: saltIsFlour(),
+      salPctFlour: salPctFlour,
+      salGL: salGL,
+      yeastMode: yeastMode,
+      manualYeastPerKg: manualYeastPerKg,
+      autoYeastGkg: autoYeastGkg()
+    };
+  };
+
+  // Cargar receta desde parámetros de consulta en la URL (ej. ?pizzas=4&peso=280&hid=65...)
+  function loadRecipeFromUrl() {
+    const URLParams = (typeof URLSearchParams !== 'undefined') ? URLSearchParams : (typeof window !== 'undefined' ? window.URLSearchParams : null);
+    if (!URLParams || typeof window === 'undefined' || !window.location || !window.location.search) return false;
+    const params = new URLParams(window.location.search);
+    if (!params.has('pizzas') && !params.has('hid') && !params.has('horas') && !params.has('harinas') && !params.has('fridge') && !params.has('peso')) return false;
+    try {
+      if (params.has('pizzas')) {
+        const v = parseInt(params.get('pizzas'), 10);
+        if (!isNaN(v) && v >= 1 && v <= 100) el.numPaneteos.value = v;
+      }
+      if (params.has('peso')) {
+        const v = parseDecimal(params.get('peso'));
+        if (!isNaN(v) && v >= 50 && v <= 1000) pesoG = v;
+      }
+      if (params.has('hid')) {
+        const v = parseDecimal(params.get('hid'));
+        if (!isNaN(v) && v >= 40 && v <= 100) el.hidratacion.value = v;
+      }
+      if (params.has('temp') || params.has('ta')) {
+        const v = parseInt(params.get('temp') || params.get('ta'), 10);
+        if (!isNaN(v) && v >= 10 && v <= 40) {
+          el.temperatura.value = v;
+          if (el.tempValue) el.tempValue.value = U.tempValue(v);
+        }
+      }
+
+      // IMPORTANTE: la fase fría debe leerse ANTES de clampHoras para que ambHorasMin()
+      // permita 0 h a temperatura ambiente si la nevera está activa.
+      if (params.has('fridge')) {
+        const f = params.get('fridge');
+        el.fridgeToggle.checked = (f === '1' || f === 'true');
+      }
+      if (params.has('tempFrio') || params.has('tfrio')) {
+        const v = parseDecimal(params.get('tempFrio') || params.get('tfrio'));
+        if (!isNaN(v)) renderColdTempField(clampColdTempC(v));
+      } else if (el.fridgeToggle.checked && (!el.tempFrio || !el.tempFrio.value)) {
+        renderColdTempField(4);
+      }
+      if (params.has('horasFrio') || params.has('hfrio')) {
+        const v = parseDecimal(params.get('horasFrio') || params.get('hfrio'));
+        if (!isNaN(v)) el.horasFrio.value = clampColdHoras(v);
+      } else if (el.fridgeToggle.checked && (!el.horasFrio || !el.horasFrio.value || el.horasFrio.value === '0')) {
+        el.horasFrio.value = 24;
+      }
+      applyFridgeVisibility();
+
+      if (params.has('horas')) {
+        const v = parseDecimal(params.get('horas'));
+        if (!isNaN(v) && v >= 0 && v <= 96) el.horas.value = clampHoras(v);
+      }
+
+      // Sincronización de la unidad de sal: fijar en PizzaUnits ANTES de leer el valor de la sal
+      if (params.has('salUnit')) {
+        const u = params.get('salUnit');
+        if (u === 'harina' || u === 'gl') {
+          if (window.PizzaUnits && window.PizzaUnits.setSaltUnit) {
+            window.PizzaUnits.setSaltUnit(u);
+          }
+          const btnH = document.querySelector('#saltUnitToggle button[data-salt="harina"]');
+          const btnG = document.querySelector('#saltUnitToggle button[data-salt="gl"]');
+          if (btnH && btnG) {
+            btnH.classList.toggle('active', u === 'harina');
+            btnG.classList.toggle('active', u === 'gl');
+          }
+        }
+      }
+      if (params.has('sal')) {
+        const v = parseDecimal(params.get('sal'));
+        if (!isNaN(v) && v > 0) {
+          if (saltIsFlour()) {
+            salPctFlour = v;
+            const h = (parseDecimal(el.hidratacion.value) || 0) / 100;
+            salGL = h > 0 ? (v * 10 / h) : 40;
+          } else {
+            salGL = v;
+            const h = (parseDecimal(el.hidratacion.value) || 0) / 100;
+            salPctFlour = h > 0 ? (h * salGL / 10) : 2.5;
+          }
+        }
+      }
+
+      if (params.has('levMode')) {
+        const lm = params.get('levMode');
+        if (lm === 'auto' || lm === 'manual') yeastMode = lm;
+      }
+      if (params.has('lev')) {
+        const v = parseDecimal(params.get('lev'));
+        if (!isNaN(v) && v > 0) manualYeastPerKg = v;
+      }
+
+      if (params.has('harinas')) {
+        const raw = params.get('harinas').split(',');
+        const parsedFlours = [];
+        let nextId = 1;
+        raw.forEach(chunk => {
+          const lastColon = chunk.lastIndexOf(':');
+          if (lastColon > 0) {
+            const fid = chunk.slice(0, lastColon).trim();
+            const pct = parseDecimal(chunk.slice(lastColon + 1));
+            if (fid && !isNaN(pct) && pct > 0) {
+              parsedFlours.push({ id: nextId++, flourId: fid, pct: pct, locked: false });
+            }
+          }
+        });
+        if (parsedFlours.length > 0) {
+          const sum = parsedFlours.reduce((a, b) => a + b.pct, 0);
+          if (Math.abs(sum - 100) < 1.0) {
+            // Forzar suma exacta a 100 en la última harina para evitar bloqueo de esValidoHarina
+            const diff = 100 - sum;
+            parsedFlours[parsedFlours.length - 1].pct = Math.round((parsedFlours[parsedFlours.length - 1].pct + diff) * 100) / 100;
+            flours = parsedFlours;
+            flourIdCounter = nextId;
+          }
+        }
+      }
+
+      // Salvaguarda: garantizar que flours siempre suma 100 para que resultsBody nunca quede bloqueado
+      const floursSum = flours.reduce((a, b) => a + b.pct, 0);
+      if (Math.abs(floursSum - 100) >= 0.001) {
+        if (flours.length > 0) {
+          const diff = 100 - floursSum;
+          flours[flours.length - 1].pct = Math.round((flours[flours.length - 1].pct + diff) * 100) / 100;
+        } else {
+          flours = migrateFlours(defaultSettings.flours);
+        }
+      }
+
+      renderInputUnits();
+      renderParamModes();
+      renderFlours();
+      calcular();
+      if (window.__triggerPlanner) window.__triggerPlanner();
+      if (window.__updateStepByStep) window.__updateStepByStep();
+      return true;
+    } catch (err) {
+      console.error('Error loading recipe from URL:', err);
+      return false;
+    }
+  }
+
+  // Al arrancar, si viene una receta en la URL la aplica; si no, comprueba si coincide con una guardada.
+  const loadedFromUrl = loadRecipeFromUrl();
   (function detectActiveOnLoad(){
     const match = findMatchingRecipe();
     if (match) activeRecipeId = match.id;
@@ -2793,18 +3163,33 @@ window.stepColdTemp = function(dir) {
       flours.forEach((f) => L.push('🔸 ' + noSp(U.formatWeight(harinaT * (f.pct / 100))) +
         ' (' + U.formatNumber(f.pct) + '%) ' + flourName(f.flourId)));
     }
-    return L.join('\n');
+    if (!window.__plannerPlanText && typeof window.__renderPlanner === 'function') {
+      try { window.__renderPlanner(); } catch (e) {}
+    }
+    if (window.__plannerPlanText && window.__plannerPlanText.trim()) {
+      L.push('');
+      L.push(window.__plannerPlanText.trim());
+    }
+    return L.join('\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   }
+  window.buildRecipeText = buildRecipeText;
 
   // Fallback para contextos no seguros (HTTP) o navegadores sin Clipboard API.
   function fallbackCopy(str) {
     const ta = document.createElement('textarea');
     ta.value = str;
     ta.setAttribute('readonly', '');
-    ta.style.cssText = 'position:fixed; top:-9999px; left:-9999px;';
+    ta.style.fontSize = '12pt';
+    ta.style.border = '0';
+    ta.style.padding = '0';
+    ta.style.margin = '0';
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
+    ta.setSelectionRange(0, str.length);
     let ok = false;
     try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
     ta.remove();
@@ -2820,28 +3205,81 @@ window.stepColdTemp = function(dir) {
     else { showToast(I18N.t('copyError')); }
   }
 
-  // Copiar receta
-  document.getElementById('btnCopiarReceta').addEventListener('click', function() {
-    const btn = this;
-    const showCopied = () => {
-      const originalHtml = btn.innerHTML;
+  function flashButtonCopied(btn) {
+    if (btn) {
+      if (btn._origHtml == null) btn._origHtml = btn.innerHTML;
+      if (btn._copiedTimer) clearTimeout(btn._copiedTimer);
       btn.innerHTML = I18N.t('copiado');
       btn.classList.add('btn-on-dark-ok');
-      setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.remove('btn-on-dark-ok'); }, 2500);
-    };
-    copyText(buildRecipeText(), showCopied);
-  });
+      const t = setTimeout(() => {
+        btn.innerHTML = btn._origHtml;
+        btn.classList.remove('btn-on-dark-ok');
+        btn._copiedTimer = null;
+      }, 2500);
+      if (t && typeof t.unref === 'function') t.unref();
+      btn._copiedTimer = t;
+    }
+    showToast(I18N.t('copiado'));
+  }
 
-  // Compartir receta (Web Share API con fallback a copiar) — D2
+  // Copiar receta
+  const btnCopiarReceta = document.getElementById('btnCopiarReceta');
+  if (btnCopiarReceta) {
+    btnCopiarReceta.addEventListener('click', function() {
+      const btn = this || btnCopiarReceta;
+      copyText(buildRecipeText(), () => flashButtonCopied(btn));
+    });
+  }
+
+  // Generar URL con todos los parámetros de la receta codificados
+  function generateRecipeShareUrl() {
+    const URLParams = (typeof URLSearchParams !== 'undefined') ? URLSearchParams : (typeof window !== 'undefined' ? window.URLSearchParams : null);
+    if (!URLParams) return '';
+    const p = new URLParams();
+    p.set('pizzas', el.numPaneteos.value);
+    p.set('peso', Math.round(pesoG));
+    p.set('hid', el.hidratacion.value);
+    p.set('sal', el.sal.value);
+    p.set('salUnit', saltIsFlour() ? 'harina' : 'gl');
+    p.set('temp', el.temperatura.value);
+    p.set('horas', el.horas.value);
+    if (el.fridgeToggle.checked) {
+      p.set('fridge', '1');
+      p.set('tempFrio', coldTempC());
+      p.set('horasFrio', el.horasFrio.value);
+    } else {
+      p.set('fridge', '0');
+    }
+    p.set('levMode', yeastMode);
+    if (yeastMode === 'manual') {
+      p.set('lev', manualYeastPerKg);
+    }
+    if (flours && flours.length > 0) {
+      p.set('harinas', flours.map(f => `${f.flourId}:${f.pct}`).join(','));
+    }
+    return window.location.origin + window.location.pathname + '?' + p.toString();
+  }
+  window.generateRecipeShareUrl = generateRecipeShareUrl;
+
+  // Compartir receta (Web Share API con fallback a copiar)
+  // Utiliza exactamente el mismo string unificado con \n que el botón de copiar receta
   const btnCompartir = document.getElementById('btnCompartir');
   if (btnCompartir) {
     btnCompartir.addEventListener('click', async () => {
-      const text = buildRecipeText();
+      const recipeText = buildRecipeText();
       if (navigator.share) {
-        try { await navigator.share({ title: I18N.t('recipeHeader'), text: text }); }
-        catch (e) { /* el usuario canceló el diálogo de compartir */ }
+        try {
+          await navigator.share({
+            title: I18N.t('recipeHeader'),
+            text: recipeText
+          });
+        } catch (e) {
+          if (e.name !== 'AbortError') {
+            copyText(recipeText, () => flashButtonCopied(btnCompartir));
+          }
+        }
       } else {
-        copyText(text, () => showToast(I18N.t('shareFallbackToast')));
+        copyText(recipeText, () => flashButtonCopied(btnCompartir));
       }
     });
   }
@@ -2853,7 +3291,7 @@ window.stepColdTemp = function(dir) {
   (function initWhatsNew(){
     const modal = document.getElementById('whatsNewModal');
     if (!modal) return;
-    const KEY = 'edu_pizza_whatsnew_v2';
+    const KEY = 'edu_pizza_whatsnew_v3';
     let seen = false;
     try { seen = localStorage.getItem(KEY) === '1'; } catch (e) {}
     if (seen) return;
@@ -2874,4 +3312,891 @@ window.stepColdTemp = function(dir) {
     openModal(modal, modal.querySelector('.modal-card'));
   })();
 
+})();
+// --- LÓGICA DEL PLANIFICADOR DE FERMENTACIÓN ---
+(function initPlanner() {
+  const I18N = window.PizzaI18N;
+  const U = window.PizzaUnits;
+  const pTypes = document.getElementById('plannerTypes');
+  const pBlWrap = document.getElementById('plannerBlWrap');
+  const pBl = document.getElementById('plannerBl');
+  const pBlHint = document.getElementById('plannerBlHint');
+  const pM1 = document.getElementById('plannerM1');
+  const pM2 = document.getElementById('plannerM2');
+  const pDt = document.getElementById('plannerDt');
+  const pDtLabel = document.getElementById('plannerDtLabel');
+  const pTl = document.getElementById('plannerTl');
+  const pTotal = document.getElementById('plannerTotal');
+  if (!pTypes || !pDt) return;
+
+  let planCur = 'b'; // 'a' = bloque+bollos, 'b' = solo bollos
+  let planMode = 1;  // 1 = empiezo, 2 = como
+
+  function toLocalInput(d){
+    const o = new Date(d.getTime() - d.getTimezoneOffset() * 6e4);
+    return o.toISOString().slice(0,16);
+  }
+
+  function setMode(m){
+    planMode = m;
+    pM1.className = m === 1 ? 'on' : '';
+    pM2.className = m === 2 ? 'on' : '';
+    pDtLabel.textContent = m === 1 ? I18N.t('plannerDtLabel1') : I18N.t('plannerDtLabel2');
+    const n = new Date();
+    n.setMinutes(0,0,0);
+    if(m===1){
+      n.setHours(n.getHours() + 1); // proxima hora
+    } else {
+      n.setDate(n.getDate() + 2);
+      n.setHours(21);
+    }
+    pDt.value = toLocalInput(n);
+    renderPlanner();
+  }
+
+  pM1.addEventListener('click', () => setMode(1));
+  pM2.addEventListener('click', () => setMode(2));
+  pDt.addEventListener('input', renderPlanner);
+  pBl.addEventListener('input', renderPlanner);
+
+  pTypes.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      planCur = b.getAttribute('data-r');
+      pTypes.querySelectorAll('button').forEach(x => x.className = x === b ? 'on' : '');
+      renderPlanner();
+    });
+  });
+
+  const getName = () => ({ n: I18N.t('plannerControladaName'), t: I18N.t('plannerAmbienteName') });
+  const COL = { n: '#7db3da', t: '#e3c58a', r: '#d8cec2', h: '#d0452f' };
+  const getTag = () => ({ n: I18N.t('plannerControladaTag'), t: I18N.t('plannerAmbienteTag'), r: I18N.t('plannerReposoTag') });
+
+  function fmtDate(d){
+    const fmt = new Intl.DateTimeFormat(document.documentElement.lang === 'en' ? 'en-US' : 'es-ES', {
+      hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', hour12: false
+    });
+    const p = fmt.formatToParts(d);
+    const g = (t) => {
+      const part = p.find(x => x.type === t);
+      return part ? part.value : '';
+    };
+    return g('hour')+':'+g('minute')+', '+g('day')+' '+g('month');
+  }
+
+  function durFmt(h){
+    if (h < 1) return Math.round(h * 60) + ' min';
+    const num = (Math.round(h * 100) / 100);
+    return document.documentElement.lang === 'es' ? num.toString().replace('.', ',') + ' h' : num + ' h';
+  }
+
+  function getD(){
+    const coldH = (document.getElementById('fridgeToggle') && document.getElementById('fridgeToggle').checked) 
+      ? Math.max(0, parseFloat(document.getElementById('horasFrio').value) || 0) : 0;
+    const ambH = Math.max(0, parseFloat(document.getElementById('horas').value) || 0);
+
+    let d = { bloque: { n: 0, t: 0 }, bollos: { n: 0, t: 0 } };
+    if (planCur === 'b') { // solo bollos
+      d.bollos.n = coldH;
+      d.bollos.t = ambH;
+    } else { // bloque + bollos
+      if (coldH > 0) { // mixta
+        d.bloque.n = coldH;
+        d.bollos.t = ambH;
+      } else { // todo a TA
+        const tot = ambH;
+        let b = parseFloat(pBl.value);
+        if (isNaN(b)) b = Math.max(0.5, tot / 2);
+        b = Math.min(Math.max(b, 0.5), tot - 0.5);
+        d.bloque.t = b;
+        d.bollos.t = tot - b;
+      }
+    }
+    return d;
+  }
+
+  function getPhases(){
+    const d = getD();
+    const out = [];
+    let done = false;
+    
+    // Si fridgeToggle off, temp = lo que haya pero asumimos >=15 por defecto si no hay nevera.
+    // Wait, D.coldT in calculator is coldTempC(). We can compute it:
+    let coldTVal = 4;
+    const coldTempEl = document.getElementById('tempFrio');
+    if (coldTempEl) {
+      let v = parseFloat(coldTempEl.value);
+      if (!isNaN(v)) {
+        coldTVal = (U && U.isFahrenheit && U.isFahrenheit()) ? (v - 32) * 5/9 : v;
+      }
+    }
+
+    ['bloque', 'bollos'].forEach(st => {
+      if (st === 'bollos') {
+        if (planCur === 'b' && !done && (d.bollos.n + d.bollos.t) > 0) {
+          done = true;
+          out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
+        }
+        out.push(['h', I18N.t('plannerFormarPhase')]);
+      }
+      ['n', 't'].forEach(w => {
+        const h = d[st][w];
+        if (!h) return;
+        if (w === 'n' && coldTVal < 15 && !done) {
+          done = true;
+          out.push(['f', I18N.t('plannerReposoPhase'), 0.5, 'r']);
+        }
+        const stageName = st === 'bloque' ? I18N.t('plannerBloque') : I18N.t('plannerBollos');
+        // 5.º elemento = etapa (bloque / bollos): lo usa el paso a paso para asignar
+        // a cada paso la fase (temperatura y rango horario) que de verdad le corresponde.
+        out.push(['f', stageName + getName()[w], h, w, st]);
+      });
+    });
+    return out;
+  }
+
+  // Fases estructuradas del plan (misma fuente que la línea de tiempo) para el paso a paso:
+  // [{ kind:'ferment', stage:'bloque'|'bollos', w:'n'|'t'|'r', hours, start, end }, { kind:'shape', start }].
+  // startMs = null cuando no hay fecha elegida (entonces no hay rangos horarios, solo horas).
+  function buildSegments(startMs){
+    let t = startMs;
+    const list = [];
+    getPhases().forEach(x => {
+      if (x[0] === 'h') {
+        list.push({ kind: 'shape', start: t == null ? null : new Date(t) });
+        return;
+      }
+      const seg = { kind: 'ferment', stage: x[4] || null, w: x[3], hours: x[2], start: t == null ? null : new Date(t), end: null };
+      if (t != null) { t += x[2] * 36e5; seg.end = new Date(t); }
+      list.push(seg);
+    });
+    return { list: list, bakeAt: t == null ? null : new Date(t) };
+  }
+  // Siempre se reconstruye con las fases actuales y el último inicio calculado por el
+  // planificador (null si no hay fecha elegida).
+  window.__getPlannerSegments = function(){ return buildSegments(window.__plannerStartMs == null ? null : window.__plannerStartMs); };
+
+  window.__getPlannerD = getD;
+  window.__triggerPlanner = renderPlanner;
+  function renderPlanner(){
+    if (!pDt) return;
+    const isMixta = (document.getElementById('fridgeToggle') && document.getElementById('fridgeToggle').checked) 
+      ? (parseFloat(document.getElementById('horasFrio').value) > 0) : false;
+      
+    const showBl = (planCur === 'a' && !isMixta);
+    pBlWrap.style.display = showBl ? 'block' : 'none';
+    if (showBl) {
+      const dd0 = getD();
+      pBlHint.textContent = I18N.t('plannerBlHint').replace('{h}', durFmt(dd0.bollos.t));
+    }
+    
+    const v = pDt.value;
+    const pIntro = document.getElementById('plannerIntroNote');
+    if (!v) {
+      pTl.innerHTML = '';
+      pTotal.textContent = '';
+      if (pIntro) pIntro.style.display = 'none';
+      window.__plannerPlanText = '';
+      window.__plannerTimeline = [];
+      window.__plannerStartMs = null;
+      if (window.__updateStepByStep) window.__updateStepByStep();
+      if (window.__updatePlannerNotifications) window.__updatePlannerNotifications();
+      return;
+    }
+    if (pIntro) pIntro.style.display = '';
+    
+    const ph = getPhases();
+    const tot = ph.reduce((a, x) => a + (x[0] === 'f' ? x[2] : 0), 0);
+    const dtDate = new Date(v);
+    let t = (planMode === 1 ? dtDate : new Date(dtDate.getTime() - tot * 36e5)).getTime();
+    window.__plannerStartMs = t;
+    
+    const items = [];
+    ph.forEach(x => {
+      if (x[0] === 'h') items.push({ t: new Date(t), x: x[1], c: COL.h, g: '' });
+      else { items.push({ t: new Date(t), x: x[1] + ' (' + durFmt(x[2]) + ')', c: COL[x[3]], g: getTag()[x[3]] }); t += x[2] * 36e5; }
+    });
+    items.push({ t: new Date(t), x: I18N.t('plannerLista'), c: '#6cc17e', g: I18N.t('plannerAHornear') });
+    
+    pTl.innerHTML = items.map(s => {
+      if (s.t) {
+        return '<li style="--c:' + s.c + '"><span class="dot"></span><div class="when">' + fmtDate(s.t) + (s.g ? '<span class="tag">' + s.g + '</span>' : '') + '</div><div class="what">' + s.x + '</div></li>';
+      }
+      return '<li style="--c:' + s.c + '"><span class="dot"></span><div class="when">' + s.x + '</div></li>';
+    }).join('');
+    
+    pTotal.textContent = I18N.t('plannerTotal') + ': ' + durFmt(tot);
+    
+    window.__plannerPlanText = I18N.t('plannerHeader') + ' 🕐\n' + items.map(s => {
+      const txtX = s.x.replace(/<[^>]*>?/gm, '').trim();
+      return s.t ? fmtDate(s.t) + ' – ' + txtX : '· ' + txtX;
+    }).join('\n');
+
+    window.__plannerTimeline = items;
+    if (window.__updateStepByStep) window.__updateStepByStep();
+    if (window.__updatePlannerNotifications) window.__updatePlannerNotifications();
+  }
+  window.__renderPlanner = renderPlanner;
+
+  // Hook into D or global recalculation
+  const origCalcular = window.calcular || function(){};
+  window.calcular = function() {
+    origCalcular.apply(this, arguments);
+    renderPlanner();
+  };
+  
+  // Try hook the button inputs directly if possible since calculator.js hides them.
+  document.getElementById('fridgeToggle')?.addEventListener('change', renderPlanner);
+  document.getElementById('horasFrio')?.addEventListener('input', renderPlanner);
+  document.getElementById('horas')?.addEventListener('input', renderPlanner);
+  
+  // initial mode
+  setTimeout(() => setMode(1), 500);
+
+})();
+
+// --- SECCIÓN PASO A PASO (RESULTADO) ---
+(function initStepByStep() {
+  const stepToggle = document.getElementById('stepByStepToggle');
+  const stepBody = document.getElementById('stepByStepBody');
+  const container = document.getElementById('stepList');
+  if (!stepToggle || !stepBody || !container) return;
+
+  stepToggle.addEventListener('click', () => {
+    const isClosed = (stepBody.style.display === 'none' || !stepBody.style.display);
+    stepBody.style.display = isClosed ? 'block' : 'none';
+    stepToggle.setAttribute('aria-expanded', String(isClosed));
+  });
+
+  function fmtPlannerTime(d, isEn) {
+    if (!d) return '';
+    const dateObj = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    const fmt = new Intl.DateTimeFormat(isEn ? 'en-US' : 'es-ES', {
+      hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12: false
+    });
+    const parts = fmt.formatToParts(dateObj);
+    const getPart = (type) => {
+      const p = parts.find(x => x.type === type);
+      return p ? p.value : '';
+    };
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const day = getPart('day');
+    const month = getPart('month');
+    if (!hour || !minute) return '';
+    const timeStr = `${hour}:${minute}`;
+    if (day && month) {
+      return isEn ? `${timeStr} on ${month} ${day}` : `${timeStr} del ${day} ${month}`;
+    }
+    return timeStr;
+  }
+
+  function renderStepByStep() {
+    if (!container || !window.__getRecipeInputs) return;
+    const inputs = window.__getRecipeInputs();
+    const D = window.PizzaDough;
+    const U = window.PizzaUnits;
+    if (!D || !U) return;
+
+    const isEn = (document.documentElement.lang === 'en');
+    const tempC = inputs.tempC;
+    const horas = inputs.horas;
+    const coldH = inputs.coldH;
+    const coldT = inputs.coldT;
+    const numPizzas = inputs.numPizzas;
+    const pesoBola = inputs.pesoG;
+    const flours = inputs.flours || [];
+    const flourName = inputs.flourName || (id => id);
+
+    const hidInput = document.getElementById('hidratacion');
+    const hidVal = hidInput ? (parseFloat(hidInput.value) || 65) : 65;
+
+    const rec = (inputs.lastRecipe && isFinite(inputs.lastRecipe.harinaTotal)) ? inputs.lastRecipe : D.computeRecipe({
+      numPizzas: numPizzas, pesoG: pesoBola,
+      ambTemp: tempC, ambHours: horas, coldHours: coldH, coldTemp: coldT,
+      hidPct: hidVal,
+      salGL: inputs.salGL, salPctFlour: inputs.saltIsFlour ? inputs.salPctFlour : null,
+      levPorKgHarina: (inputs.yeastMode === 'manual') ? inputs.manualYeastPerKg : inputs.autoYeastGkg,
+      flours: flours
+    });
+
+    const rawHarina = (rec && rec.harinaTotal != null) ? rec.harinaTotal : (rec ? rec.harina : NaN);
+    const rawAgua = (rec && rec.aguaTotal != null) ? rec.aguaTotal : (rec ? rec.agua : NaN);
+    const rawSal = (rec && rec.salTotal != null) ? rec.salTotal : (rec ? rec.sal : NaN);
+    const rawLev = (rec && rec.levaduraFresca != null) ? rec.levaduraFresca : (rec ? rec.levadura : NaN);
+
+    const harinaTotal = Math.round(rawHarina);
+    const aguaTotal = Math.round(rawAgua);
+    const agua80 = Math.round(aguaTotal * 0.8);
+    const aguaRestante = aguaTotal - agua80;
+    const aguaMitad = Math.round(aguaRestante / 2);
+    const aguaFinal = aguaRestante - aguaMitad;
+
+    const salTotal = Math.round(rawSal);
+    const levNum = (typeof rawLev === 'number') ? rawLev : parseFloat(rawLev);
+    const levTotal = (isFinite(levNum) && levNum >= 0) ? U.formatNumber(levNum, levNum < 1 ? 2 : 1) : '';
+
+    const numPizzasVal = parseInt(numPizzas, 10);
+    const pesoBolaVal = Math.round(pesoBola);
+
+    // Validación estricta: si alguna variable requerida es NaN, undefined o no finita,
+    // no se pinta el paso a paso y se avisa por consola.
+    const checkVars = {
+      harinaTotal,
+      aguaTotal,
+      agua80,
+      aguaMitad,
+      aguaFinal,
+      salTotal,
+      levNum,
+      numPizzas: numPizzasVal,
+      pesoBola: pesoBolaVal
+    };
+
+    let hasInvalidVar = false;
+    for (const [key, val] of Object.entries(checkVars)) {
+      if (val === undefined || val === null || Number.isNaN(val) || !Number.isFinite(val)) {
+        console.warn(`[Paso a paso] Variable inválida detectada: ${key} = ${val}`);
+        hasInvalidVar = true;
+      }
+    }
+
+    if (!levTotal || levTotal === 'NaN' || levTotal === 'undefined') {
+      console.warn(`[Paso a paso] Levadura formateada inválida: "${levTotal}"`);
+      hasInvalidVar = true;
+    }
+
+    if (hasInvalidVar) {
+      container.innerHTML = '';
+      return;
+    }
+
+    // Lista de harinas para el paso 3
+    let flourText = '';
+    if (flours.length > 1) {
+      const flourParts = flours.map(f => {
+        const g = Math.round(harinaTotal * (f.pct / 100));
+        return isEn
+          ? `${g} g of ${flourName(f.flourId)} (${U.formatNumber(f.pct)}%)`
+          : `${g} g de ${flourName(f.flourId)} (${U.formatNumber(f.pct)}%)`;
+      });
+      const lastPart = flourParts.pop();
+      const joined = flourParts.length > 0
+        ? (flourParts.join(', ') + (isEn ? ' and ' : ' y ') + lastPart)
+        : lastPart;
+      flourText = isEn
+        ? `Since you have multiple flours, pre-mix them: ${joined}.`
+        : `Si tienes varias harinas, mézclalas previamente: ${joined}.`;
+    } else if (flours.length === 1) {
+      const fName = flourName(flours[0].flourId);
+      flourText = isEn
+        ? `Weigh the ${harinaTotal} g of ${fName}.`
+        : `Pesa los ${harinaTotal} g de ${fName}.`;
+    }
+
+    // Fases reales del planificador (única fuente de verdad). Cada fase trae su etapa
+    // (bloque / bollos), su tipo (n = nevera, t = temperatura ambiente), sus horas y, si hay
+    // fecha elegida, su rango horario. Así cada paso coge la fase (temperatura y horas) que
+    // de verdad le corresponde, en cualquier idioma, sin depender de textos traducidos.
+    const segData = window.__getPlannerSegments ? window.__getPlannerSegments() : null;
+    const segs = (segData && segData.list) ? segData.list : [];
+    const fermSegs = segs.filter(s => s.kind === 'ferment' && (s.w === 'n' || s.w === 't'));
+    const bloqueSegs = fermSegs.filter(s => s.stage === 'bloque');
+    const bollosSegs = fermSegs.filter(s => s.stage === 'bollos');
+    const shapeSeg = segs.find(s => s.kind === 'shape');
+
+    const horaBoleado = (shapeSeg && shapeSeg.start) ? fmtPlannerTime(shapeSeg.start, isEn) : '';
+    const horaHornear = (segData && segData.bakeAt) ? fmtPlannerTime(segData.bakeAt, isEn) : '';
+
+    const tempCVal = isFinite(tempC) ? tempC : 23;
+    const coldTVal = isFinite(coldT) ? coldT : 4;
+    const fmtH = (h) => U.formatNumber(h, 1);
+    const sumHours = (list) => list.reduce((a, s) => a + s.hours, 0);
+    // Rango "de X a Y" de un grupo de fases consecutivas (null si no hay fecha elegida).
+    const segRange = (list) => {
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (first && last && first.start && last.end) {
+        return { from: fmtPlannerTime(first.start, isEn), to: fmtPlannerTime(last.end, isEn) };
+      }
+      return null;
+    };
+    // "19 h en la nevera a 10 °C" / "5 h a 23 °C", según el tipo de cada fase.
+    const describeSegs = (list) => list.map(s => {
+      if (s.w === 'n') {
+        return isEn
+          ? `${fmtH(s.hours)} h in the fridge at ${coldTVal} °C`
+          : `${fmtH(s.hours)} h en la nevera a ${coldTVal} °C`;
+      }
+      return isEn
+        ? `${fmtH(s.hours)} h at ${tempCVal} °C`
+        : `${fmtH(s.hours)} h a ${tempCVal} °C`;
+    }).join(' + ');
+
+    const steps = [];
+
+    // 1. Agua
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Start with the water." : "Empieza por el agua.",
+      body: isEn
+        ? `You'll use ${aguaTotal} grams, as cold as possible. Begin by pouring in 80% of the total (${agua80} g). In summer or if kneading a large batch, replace part of the water with ice so the mixer doesn't overheat the dough.`
+        : `Vas a usar ${aguaTotal} gramos, y lo más fría posible. Empieza echando el 80% del total (${agua80} g). En verano o si amasas mucha cantidad, cambia parte del agua por hielo para que la amasadora no sobrecaliente la masa.`
+    });
+
+    // 2. Levadura
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Dissolve the yeast." : "Disuelve la levadura.",
+      body: isEn
+        ? `Dissolve the ${levTotal} g of yeast directly in the water. You can do this with your fingers.`
+        : `Deshaz los ${levTotal} g de levadura directamente en el agua. Puedes hacerlo con los dedos.`
+    });
+
+    // 3. Harina
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Time for the flour." : "Turno de la harina.",
+      body: isEn
+        ? `Add the flour to the water with the yeast and knead until well combined. ${flourText} Add a couple of extra grams of flour because some dough is always lost on the bowl and hands. Use half of the remaining water (${aguaMitad} g) to help the flour incorporate well.`
+        : `Añade la harina al agua con la levadura y amasa hasta que esté bien integrada. ${flourText} Añade un par de gramos de harina extra porque siempre se pierde algo de masa en el bol y en las manos. Usa la mitad del agua restante (${aguaMitad} g) para ayudar a que se integre bien la harina.`
+    });
+
+    // 4. Amasado
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Knead." : "Amasa.",
+      body: isEn
+        ? `Incorporate the ingredients well. If using a mixer, start at low speed.`
+        : `Integra bien los ingredientes. Si usas amasadora, empieza a velocidad baja.`
+    });
+
+    // 5. Sal
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Add the salt." : "Incorpora la sal.",
+      body: isEn
+        ? `When the flour and water are already combined and the dough looks uniform, add ${salTotal} g of salt. It helps tighten the gluten network, but it also tends to warm up the dough, so be careful. Pour in the remaining water (${aguaFinal} g) to help dissolve the salt.`
+        : `Cuando la harina y el agua ya estén integradas y la masa tenga un aspecto uniforme, añade ${salTotal} g de sal. Ayuda a tensar la malla de gluten, pero también tiende a calentar la masa, ten cuidado. Echa el agua restante (${aguaFinal} g) para ayudar a disolver la sal.`
+    });
+
+    // 6. Amasado continuo
+    steps.push({
+      group: 'masa',
+      theme: 'terracota',
+      tag: null,
+      title: isEn ? "Knead." : "Amasa.",
+      body: isEn
+        ? `Continue until the dough stops sticking to the bowl walls, is smooth, and its internal temperature is around 23–25 °C (73–77 °F). Don't watch the clock.`
+        : `Sigue hasta que la masa deje de pegarse a las paredes del bol, esté lisa y su temperatura interior ronde los 23–25 °C. No te guíes por tiempos.`
+    });
+
+    // 7. Reposo
+    steps.push({
+      group: 'fermentacion',
+      theme: 'ambar',
+      tag: '20–30 min',
+      title: isEn ? "Bulk rest." : "Reposo en bloque.",
+      body: isEn
+        ? `Take the dough out, build tension by shaping a large ball, and let it rest 20-30 minutes covered with a bowl or a damp cloth. Don't worry if it isn't completely smooth.`
+        : `Saca la masa, dale tensión formando una bola grande y déjala reposar 20-30 minutos tapada con un bol o un paño húmedo. No te preocupes si no está del todo lisa.`
+    });
+
+    // 8. Fermentación en bloque (solo si el plan tiene fase de bloque). Toma la fase de
+    // bloque del planificador: nevera (n) o temperatura ambiente (t), con su temperatura,
+    // horas y rango horario propios. Mismo formato en español e inglés.
+    const bulkFridge = bloqueSegs.filter(s => s.w === 'n');
+    const hasBulkFridge = bulkFridge.length > 0;
+    if (bloqueSegs.length > 0) {
+      const blockDesc = describeSegs(bloqueSegs);
+      const blockRange = segRange(bloqueSegs);
+      let blockPlanText = blockDesc;
+      if (blockRange) {
+        blockPlanText = isEn
+          ? `from ${blockRange.from} to ${blockRange.to} (${blockDesc})`
+          : `de ${blockRange.from} a ${blockRange.to} (${blockDesc})`;
+      }
+      const blockH = fmtH(sumHours(bloqueSegs));
+      const blockT = Math.round(U.tempValue(hasBulkFridge ? coldTVal : tempCVal));
+      const blockTag = `${blockH} h · ${blockT} ${U.tempUnit()}`;
+      steps.push({
+        group: 'fermentacion',
+        theme: hasBulkFridge ? 'azul' : 'ambar',
+        tag: blockTag,
+        title: isEn ? "Bulk fermentation." : "Fermentación en bloque.",
+        body: isEn
+          ? `After the previous rest, the dough has already gained a lot of strength. Give it a bit more tension again, you'll see it becomes smoother. Let the whole dough ferment, tightly sealed in a container: ${blockPlanText}. It doesn't need to double: once it has grown 50 to 70% it's ready to ball.`
+          : `Tras el reposo anterior, la masa ya ha ganado mucha fuerza. Vuelve a darle algo de tensión, verás que se vuelve más lisa. Deja fermentar la masa entera, bien tapada y hermética en un recipiente: ${blockPlanText}. No hace falta que doble: con que crezca entre un 50 y un 70 % está lista para bolear.`
+      });
+    }
+
+    // 9. Boleado: si el bloque fermentó en la nevera, la masa sale del frío en este
+    // paso ("Saca la masa de la nevera a las 16:00 y divídela en...").
+    let boleadoPlanText = horaBoleado ? (isEn ? ` at ${horaBoleado}` : ` a las ${horaBoleado}`) : '';
+    const ballsWord = numPizzasVal === 1 ? (isEn ? 'ball' : 'bola') : (isEn ? 'balls' : 'bolas');
+    let boleadoBody = '';
+    if (hasBulkFridge) {
+      boleadoBody = isEn
+        ? `Take the dough out of the fridge${boleadoPlanText} and divide it into ${numPizzasVal} ${ballsWord} of ${pesoBolaVal} g. Shape each with tension.`
+        : `Saca la masa de la nevera${boleadoPlanText} y divídela en ${numPizzasVal} ${ballsWord} de ${pesoBolaVal} g. Forma cada una con tensión.`;
+    } else {
+      boleadoBody = isEn
+        ? `Divide the dough into ${numPizzasVal} ${ballsWord} of ${pesoBolaVal} g and shape each with tension${boleadoPlanText}.`
+        : `Divide la masa en ${numPizzasVal} ${ballsWord} de ${pesoBolaVal} g y forma cada una con tensión${boleadoPlanText}.`;
+    }
+    steps.push({
+      group: 'fermentacion',
+      theme: 'ambar',
+      tag: null,
+      title: isEn ? "Ball shaping." : "Boleado.",
+      body: boleadoBody
+    });
+
+    // 10. Fermentación de las bolas: toma la fase de bollos del planificador (nevera o
+    // temperatura ambiente, con su temperatura, horas y rango horario propios).
+    const bollosFridge = bollosSegs.filter(s => s.w === 'n');
+    const bollosAmbient = bollosSegs.filter(s => s.w === 't');
+    const hasBollosFridge = bollosFridge.length > 0;
+    if (hasBollosFridge) {
+      const fr = segRange(bollosFridge);
+      const fridgePlanText = fr
+        ? (isEn ? ` (from ${fr.from} to ${fr.to})` : ` (de ${fr.from} a ${fr.to})`)
+        : '';
+      const fridgeHours = fmtH(sumHours(bollosFridge));
+      const fridgeTagT = Math.round(U.tempValue(coldTVal));
+      steps.push({
+        group: 'fermentacion',
+        theme: 'azul',
+        tag: `${fridgeHours} h · ${fridgeTagT} ${U.tempUnit()}`,
+        title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
+        body: isEn
+          ? `Place the balls in an airtight container. Store the balls in the fridge at ${coldTVal} °C for ${fridgeHours} h${fridgePlanText}. Leave them out at room temperature for a while beforehand so the yeast wakes up.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Guarda las bolas en la nevera a ${coldTVal} °C durante ${fridgeHours} h${fridgePlanText}. Déjalas antes un rato fuera a temperatura ambiente para que la levadura despierte.`
+      });
+    } else if (bollosAmbient.length > 0) {
+      const ar = segRange(bollosAmbient);
+      const ballsPlanText = ar
+        ? (isEn ? ` (from ${ar.from} to ${ar.to})` : ` (de ${ar.from} a ${ar.to})`)
+        : '';
+      const ambientHours = fmtH(sumHours(bollosAmbient));
+      const ambientTagT = Math.round(U.tempValue(tempCVal));
+      steps.push({
+        group: 'fermentacion',
+        theme: 'ambar',
+        tag: `${ambientHours} h · ${ambientTagT} ${U.tempUnit()}`,
+        title: isEn ? "Ball fermentation." : "Fermentación de las bolas.",
+        body: isEn
+          ? `Place the balls in an airtight container. Leave them at room temperature (${tempCVal} °C) for ${ambientHours} h${ballsPlanText}.`
+          : `Coloca las bolas en un recipiente tapado y hermético. Déjalas a temperatura ambiente (${tempCVal} °C) durante ${ambientHours} h${ballsPlanText}.`
+      });
+    }
+
+    // 11. Sácalas (solo si las bolas estuvieron en la nevera). En "Solo bollos" con
+    // nevera, las bolas van al frío y luego atemperan fuera. En "Bloque + bollos" con
+    // nevera, lo que va al frío es el bloque y sale para bolear (paso 9), por lo que
+    // las bolas nunca entran en la nevera y no hay paso "Sácalas".
+    if (bollosFridge.length > 0) {
+      const lastFridge = bollosFridge[bollosFridge.length - 1];
+      const hoursAfterFridge = sumHours(fermSegs.slice(fermSegs.indexOf(lastFridge) + 1));
+      const sacarAt = lastFridge.end ? fmtPlannerTime(lastFridge.end, isEn) : '';
+      let hoursBeforeTxt = '';
+      if (hoursAfterFridge > 0) {
+        const n = fmtH(hoursAfterFridge);
+        const one = (hoursAfterFridge === 1);
+        hoursBeforeTxt = isEn
+          ? `${n} ${one ? 'hour' : 'hours'} before baking`
+          : `${n} ${one ? 'hora' : 'horas'} antes de hornear`;
+      }
+      let sacarPlanText = '';
+      if (sacarAt) {
+        sacarPlanText = isEn
+          ? ` at ${sacarAt}${hoursBeforeTxt ? ` (${hoursBeforeTxt})` : ''}`
+          : ` a las ${sacarAt}${hoursBeforeTxt ? ` (${hoursBeforeTxt})` : ''}`;
+      } else if (hoursBeforeTxt) {
+        sacarPlanText = ` ${hoursBeforeTxt}`;
+      }
+      const sacarTag = hoursAfterFridge > 0
+        ? `${fmtH(hoursAfterFridge)} h ${isEn ? 'before' : 'antes'}`
+        : (sacarAt || null);
+      steps.push({
+        group: 'hornear',
+        theme: 'verde',
+        tag: sacarTag,
+        title: isEn ? "Take them out." : "Sácalas.",
+        body: isEn
+          ? `Take the dough balls out of the fridge${sacarPlanText} so they temper well and finish fermenting.`
+          : `Sácalas de la nevera${sacarPlanText} para que se atemperen bien y terminen de fermentar.`
+      });
+    }
+
+    // 12. Hora de cocinar
+    let cocinarPlanText = horaHornear ? (isEn ? ` at ${horaHornear}` : ` a las ${horaHornear}`) : '';
+    const ovenTempStr = U.isImperial() ? '850–930 °F' : '450–500 °C';
+    let cookTag = ovenTempStr;
+    if (segData && segData.bakeAt) {
+      try {
+        const bakeTimeOnly = new Intl.DateTimeFormat(isEn ? 'en-US' : 'es-ES', {
+          hour: '2-digit', minute: '2-digit', hour12: false
+        }).format(new Date(segData.bakeAt));
+        if (bakeTimeOnly) cookTag = `${bakeTimeOnly} · ${ovenTempStr}`;
+      } catch (e) {}
+    }
+    steps.push({
+      group: 'hornear',
+      theme: 'verde',
+      tag: cookTag,
+      title: isEn ? "Time to cook." : "Hora de cocinar.",
+      body: isEn
+        ? `With your pizza balls ready, just stretch the dough, top it, and slide it into the oven${cocinarPlanText}.`
+        : `Con las bolas de pizza ya listas, solo tienes que estirar la masa, poner los ingredientes y meterla en el horno${cocinarPlanText}.`
+    });
+
+    // Comprobación de seguridad final: si algún paso renderizado contiene "NaN" o "undefined",
+    // no se pinta nada y se avisa por consola.
+    for (const s of steps) {
+      if (s.title.includes('NaN') || s.title.includes('undefined') ||
+          s.body.includes('NaN') || s.body.includes('undefined')) {
+        console.warn('[Paso a paso] Texto con NaN o undefined detectado:', s);
+        container.innerHTML = '';
+        return;
+      }
+    }
+
+    // Grupos por fases con mini-título en mayúsculas pequeñas.
+    // Solo aparecen si ese grupo tiene pasos en el modo activo.
+    const groupDefs = [
+      { id: 'masa', title: isEn ? "THE DOUGH" : "LA MASA" },
+      { id: 'fermentacion', title: isEn ? "REST AND FERMENTATION" : "REPOSO Y FERMENTACIÓN" },
+      { id: 'hornear', title: isEn ? "BAKE TIME" : "A HORNEAR" }
+    ];
+
+    let html = '';
+    groupDefs.forEach(g => {
+      const gSteps = steps.filter(s => s.group === g.id);
+      if (gSteps.length === 0) return;
+
+      html += `<li class="step-group-header" role="presentation"><span class="step-group-title">${g.title}</span></li>`;
+      gSteps.forEach(s => {
+        const idx = steps.indexOf(s);
+        const isLastInGroup = (gSteps.indexOf(s) === gSteps.length - 1);
+        const tagHtml = s.tag ? `<span class="step-tag">${s.tag}</span> ` : '';
+        html += `<li class="step-item step-item--${s.theme}${isLastInGroup ? ' is-last-in-group' : ''}"><div class="step-marker" aria-hidden="true"><span class="step-pill">${idx + 1}<span class="step-dot">.</span></span> </div><div class="step-content"><div class="step-head"><strong class="step-title">${s.title}</strong> ${tagHtml}</div><p class="step-body">${s.body}</p></div></li>`;
+      });
+    });
+
+    container.innerHTML = html;
+  }
+
+  window.__updateStepByStep = renderStepByStep;
+  window.addEventListener('pizzaLangChange', renderStepByStep);
+  window.addEventListener('pizzaUnitsChange', renderStepByStep);
+  setTimeout(renderStepByStep, 400);
+})();
+
+// --- NOTIFICACIONES LOCALES DEL PLANIFICADOR ---
+(function initPlannerNotifications() {
+  const btn = document.getElementById('btnPlannerNotify');
+  const txt = document.getElementById('btnPlannerNotifyText');
+  const status = document.getElementById('plannerNotifyStatus');
+  if (!btn || !txt) return;
+
+  let activeTimers = [];
+
+  function updateUI() {
+    const I18N = window.PizzaI18N;
+    if (!I18N) return;
+    if (unsupportedShown) renderUnsupportedWarning();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('pizza_scheduled_notifs')); } catch(e){}
+
+    if (saved && saved.count > 0 && activeTimers.length > 0) {
+      btn.classList.add('is-active');
+      txt.textContent = I18N.t('plannerNotifyCancelBtn');
+      if (status) {
+        status.style.display = 'block';
+        status.textContent = I18N.t('plannerNotifyScheduled').replace('{n}', saved.count);
+      }
+    } else {
+      btn.classList.remove('is-active');
+      txt.textContent = I18N.t('plannerNotifyBtn');
+      if (status) status.style.display = 'none';
+    }
+  }
+
+  function cancelNotifications(showToastMsg) {
+    const I18N = window.PizzaI18N;
+    activeTimers.forEach(id => clearTimeout(id));
+    activeTimers = [];
+    try { localStorage.removeItem('pizza_scheduled_notifs'); } catch(e){}
+    updateUI();
+    if (showToastMsg && I18N) window.showToast?.(I18N.t('plannerNotifyCancelledToast'));
+  }
+
+  // Dispara una notificación inmediata de un hito del planificador.
+  //
+  // NOTA ARQUITECTURA / PRODUCCIÓN PWA:
+  // Actualmente los avisos del planificador se programan en primer plano con setTimeout
+  // en la ventana activa (por eso la interfaz advierte que la pestaña debe seguir abierta).
+  // Para que los recordatorios sobrevivan al cierre del navegador o de la PWA en producción,
+  // la programación futura deberá delegarse al Service Worker (mediante Background Sync,
+  // Periodic Background Sync o Web Push API).
+  function triggerNotification(title, body) {
+    const notifOptions = {
+      body: body,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      vibrate: [200, 100, 200]
+    };
+
+    function fallbackNotification() {
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body: body, icon: './icon-192.png' });
+        }
+      } catch (err) {
+        console.warn('Error showing fallback notification:', err);
+      }
+    }
+
+    try {
+      // Comprobamos si existe un Service Worker registrado y activo mediante getRegistration().
+      // IMPORTANTE: NO usamos .ready de serviceWorker porque esa promesa se queda perpetuamente
+      // pendiente si no hay ningún Service Worker registrado (p. ej. en entornos beta o desarrollo),
+      // impidiendo que la notificación llegue a mostrarse.
+      if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistration === 'function') {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.active && typeof reg.showNotification === 'function') {
+            reg.showNotification(title, notifOptions).catch(fallbackNotification);
+          } else {
+            fallbackNotification();
+          }
+        }).catch(() => {
+          fallbackNotification();
+        });
+      } else {
+        fallbackNotification();
+      }
+    } catch(e) {
+      console.warn('Error showing notification:', e);
+      fallbackNotification();
+    }
+  }
+
+  // Aviso visible cuando el navegador no tiene API de notificaciones (p. ej. iPhone con la
+  // web sin instalar). Se pinta en línea bajo el botón, no en un toast de 2 s, para que
+  // se pueda leer con calma; se vuelve a traducir si cambia el idioma.
+  const warnEl = document.getElementById('plannerNotifyWarn');
+  let unsupportedShown = false;
+  function renderUnsupportedWarning() {
+    const I18N = window.PizzaI18N;
+    if (!warnEl || !I18N) return;
+    warnEl.textContent = I18N.t('plannerNotifyNoSupport');
+    warnEl.style.display = 'block';
+  }
+  function showUnsupportedWarning() {
+    unsupportedShown = true;
+    renderUnsupportedWarning();
+  }
+
+  async function scheduleNotifications() {
+    const I18N = window.PizzaI18N;
+    if (typeof Notification === 'undefined') {
+      showUnsupportedWarning();
+      return;
+    }
+
+    let perm = Notification.permission;
+    if (perm !== 'granted') {
+      try {
+        perm = await Notification.requestPermission();
+      } catch(e) {}
+    }
+    if (perm !== 'granted') {
+      if (I18N) window.showToast?.(I18N.t('plannerNotifyPermissionDenied'));
+      return;
+    }
+
+    const items = window.__plannerTimeline || [];
+    const now = Date.now();
+    const futureMilestones = [];
+
+    items.forEach(it => {
+      if (!it.t || it.t.getTime() <= now) return;
+      const desc = (it.x || '').toLowerCase();
+      const tag = (it.g || '').toLowerCase();
+
+      if (tag.includes('reposo') || desc.includes('reposo')) {
+        futureMilestones.push({
+          title: I18N.t('notifRestTitle'),
+          body: I18N.t('notifRestBody'),
+          time: it.t
+        });
+      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole')) {
+        futureMilestones.push({
+          title: I18N.t('notifBolearTitle'),
+          body: I18N.t('notifBolearBody'),
+          time: it.t
+        });
+      } else if (tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) {
+        futureMilestones.push({
+          title: I18N.t('notifNeveraTitle'),
+          body: I18N.t('notifNeveraBody'),
+          time: it.t
+        });
+      } else if (desc.includes('lista') || desc.includes('ready') || tag.includes('hornear') || tag.includes('bake')) {
+        futureMilestones.push({
+          title: I18N.t('notifHornearTitle'),
+          body: I18N.t('notifHornearBody'),
+          time: it.t
+        });
+      }
+    });
+
+    if (futureMilestones.length === 0) {
+      if (I18N) window.showToast?.(I18N.t('plannerNotifyNoFuture'));
+      return;
+    }
+
+    cancelNotifications(false);
+
+    futureMilestones.forEach(m => {
+      const delay = m.time.getTime() - now;
+      const tid = setTimeout(() => {
+        triggerNotification(m.title, m.body);
+      }, delay);
+      activeTimers.push(tid);
+    });
+
+    try {
+      localStorage.setItem('pizza_scheduled_notifs', JSON.stringify({
+        count: futureMilestones.length,
+        createdAt: now
+      }));
+    } catch(e){}
+
+    updateUI();
+    if (I18N) window.showToast?.(I18N.t('plannerNotifyScheduledToast').replace('{n}', futureMilestones.length));
+  }
+
+  btn.addEventListener('click', () => {
+    if (activeTimers.length > 0) {
+      cancelNotifications(true);
+    } else {
+      scheduleNotifications();
+    }
+  });
+
+  window.__updatePlannerNotifications = updateUI;
+  window.addEventListener('pizzaLangChange', updateUI);
+  updateUI();
 })();
