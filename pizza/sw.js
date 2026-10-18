@@ -41,7 +41,13 @@ const ASSETS_TO_CACHE = [
   './ing-harina.png',
   './ing-agua.png',
   './ing-sal.png',
-  './ing-levadura.png'
+  './ing-levadura.png',
+  './wn-reloj.png',
+  './wn-paso.png',
+  './wn-compartir.png',
+  './wn-camara.png',
+  './wn-estrella.png',
+  './wn-martillo.png'
 ];
 
 self.addEventListener('install', (event) => {
