@@ -4346,19 +4346,57 @@ window.stepColdTemp = function(dir) {
     }
   }
 
+  // Emite un timbre suave de temporizador mediante Web Audio API si la pestaña está abierta.
+  function playNotificationSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime;
+      const playTone = (freq, startOffset, duration) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + startOffset);
+        gain.gain.setValueAtTime(0.001, now + startOffset);
+        gain.gain.exponentialRampToValueAtTime(0.35, now + startOffset + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + startOffset + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + startOffset);
+        osc.stop(now + startOffset + duration);
+      };
+      // Doble tono suave de campana de cocina (Sol5 -> Do6)
+      playTone(784, 0, 0.5);
+      playTone(1046.5, 0.15, 0.7);
+    } catch(e) {}
+  }
+
   // Dispara una notificación inmediata de un hito del planificador.
   function triggerNotification(title, body) {
+    playNotificationSound();
+
     const notifOptions = {
       body: body,
       icon: './icon-192.png',
       badge: './icon-192.png',
-      vibrate: [200, 100, 200]
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
+      silent: false
     };
 
     function fallbackNotification() {
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(title, { body: body, icon: './icon-192.png' });
+          new Notification(title, {
+            body: body,
+            icon: './icon-192.png',
+            requireInteraction: true,
+            silent: false
+          });
         }
       } catch (err) {
         console.warn('Error showing fallback notification:', err);
