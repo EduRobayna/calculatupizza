@@ -3556,11 +3556,39 @@ window.stepColdTemp = function(dir) {
     window.__plannerStartMs = t;
     
     const items = [];
+    let prevW = null;
+    let prevStage = null;
     ph.forEach(x => {
-      if (x[0] === 'h') items.push({ t: new Date(t), x: x[1], c: COL.h, g: '' });
-      else { items.push({ t: new Date(t), x: x[1] + ' (' + durFmt(x[2]) + ')', c: COL[x[3]], g: getTag()[x[3]] }); t += x[2] * 36e5; }
+      if (x[0] === 'h') {
+        items.push({
+          t: new Date(t),
+          x: x[1],
+          c: COL.h,
+          g: '',
+          phaseKind: 'h',
+          stage: 'bollos',
+          prevW: prevW,
+          prevStage: prevStage
+        });
+      } else {
+        items.push({
+          t: new Date(t),
+          x: x[1] + ' (' + durFmt(x[2]) + ')',
+          c: COL[x[3]],
+          g: getTag()[x[3]],
+          phaseKind: 'f',
+          hours: x[2],
+          w: x[3],
+          stage: x[4] || null,
+          prevW: prevW,
+          prevStage: prevStage
+        });
+        prevW = x[3];
+        prevStage = x[4] || null;
+        t += x[2] * 36e5;
+      }
     });
-    items.push({ t: new Date(t), x: I18N.t('plannerLista'), c: '#6cc17e', g: I18N.t('plannerAHornear') });
+    items.push({ t: new Date(t), x: I18N.t('plannerLista'), c: '#6cc17e', g: I18N.t('plannerAHornear'), isBake: true });
     
     pTl.innerHTML = items.map(s => {
       if (s.t) {
@@ -4426,18 +4454,33 @@ window.stepColdTemp = function(dir) {
       let title = '';
       let body = '';
 
-      if (tag.includes('reposo') || desc.includes('reposo')) {
-        title = I18N.t('notifRestTitle');
-        body = I18N.t('notifRestBody');
-      } else if (desc.includes('formar') || desc.includes('shape') || tag.includes('bole') || desc.includes('bollo')) {
-        title = I18N.t('notifBolearTitle');
-        body = I18N.t('notifBolearBody');
-      } else if (tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) {
-        title = I18N.t('notifNeveraTitle');
-        body = I18N.t('notifNeveraBody');
-      } else if (desc.includes('lista') || desc.includes('ready') || tag.includes('hornear') || tag.includes('bake')) {
+      if (it.isBake || desc.includes('lista') || desc.includes('ready') || tag.includes('hornear') || tag.includes('bake')) {
         title = I18N.t('notifHornearTitle');
         body = I18N.t('notifHornearBody');
+      } else if (it.w === 'r' || (it.phaseKind !== 'h' && (tag.includes('reposo') || desc.includes('reposo')))) {
+        title = I18N.t('notifRestTitle');
+        body = I18N.t('notifRestBody');
+      } else if ((it.w === 'n' && it.stage === 'bloque') || ((tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) && (desc.includes('bloque') || desc.includes('bulk')))) {
+        title = I18N.t('notifMasaNeveraTitle');
+        body = I18N.t('notifMasaNeveraBody');
+      } else if ((it.stage === 'bollos' && it.w === 't' && it.prevW === 'n') || (desc.includes('saca') && (desc.includes('nevera') || desc.includes('fridge')))) {
+        title = I18N.t('notifNeveraTitle');
+        body = I18N.t('notifNeveraBody');
+      } else if (it.phaseKind === 'h' || desc.includes('formar') || desc.includes('shape') || tag.includes('bole') || (desc.includes('bollo') && !desc.includes('temperatura ambiente') && !desc.includes('controlada'))) {
+        title = I18N.t('notifBolearTitle');
+        if (it.prevW === 'n' && it.prevStage === 'bloque') {
+          body = I18N.t('notifBolearFromFridgeBody');
+        } else {
+          body = I18N.t('notifBolearBody');
+        }
+      } else if (tag.includes('nevera') || tag.includes('fridge') || desc.includes('controlada')) {
+        if (desc.includes('bloque') || desc.includes('bulk')) {
+          title = I18N.t('notifMasaNeveraTitle');
+          body = I18N.t('notifMasaNeveraBody');
+        } else {
+          title = I18N.t('notifNeveraTitle');
+          body = I18N.t('notifNeveraBody');
+        }
       } else {
         title = it.x.replace(/<[^>]*>?/gm, '').replace(/\s*\([^)]*\)/, '').trim();
         body = it.x.replace(/<[^>]*>?/gm, '').trim();
